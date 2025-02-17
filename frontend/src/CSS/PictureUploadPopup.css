@@ -1,0 +1,143 @@
+.picture-upload-form {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: white;
+    padding: 20px;
+    border-radius: 12px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+    width: 400px;
+    max-width: 90%;
+    z-index: 1000;
+}
+
+.picture-upload-form-content {
+    position: relative;
+}
+
+.picture-upload-form-close {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: none;
+    border: none;
+    font-size: 18px;
+    cursor: pointer;
+    color: #666;
+}
+
+.picture-upload-form-close:hover {
+    color: #000;
+}
+
+.picture-upload-form h2 {
+    margin-top: 0;
+    font-size: 22px;
+    text-align: center;
+    color: #333;
+}
+
+.picture-upload-form-inner {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.picture-upload-form-label {
+    font-size: 14px;
+    color: #555;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.picture-upload-form input,
+.picture-upload-form textarea {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    font-size: 14px;
+}
+
+.picture-upload-form textarea {
+    resize: vertical;
+    min-height: 80px;
+}
+
+.picture-upload-form input:focus,
+.picture-upload-form textarea:focus {
+    outline: none;
+    border-color: #007bff;
+    box-shadow: 0 0 4px rgba(0, 123, 255, 0.3);
+}
+
+.picture-upload-form-tag-list,
+.picture-upload-form-people-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 5px;
+}
+
+.picture-upload-form-tag,
+.picture-upload-form-person {
+    background: #007bff;
+    color: white;
+    font-size: 12px;
+    padding: 5px 10px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.picture-upload-form-tag button,
+.picture-upload-form-person button {
+    background: none;
+    border: none;
+    color: white;
+    cursor: pointer;
+    font-size: 14px;
+}
+
+.picture-upload-form-tag button:hover,
+.picture-upload-form-person button:hover {
+    color: #ffcccc;
+}
+
+.picture-upload-form-checkbox {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+    color: #333;
+}
+
+.picture-upload-form-button-container {
+    text-align: center;
+    margin-top: 10px;
+}
+
+.picture-upload-form-upload-button {
+    background: #007bff;
+    color: white;
+    border: none;
+    padding: 10px 15px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background 0.2s ease-in-out;
+}
+
+.picture-upload-form-upload-button:hover {
+    background: #0056b3;
+}
+
+.picture-upload-form-message {
+    text-align: center;
+    color: #28a745;
+    font-size: 14px;
+    margin-top: 10px;
+}

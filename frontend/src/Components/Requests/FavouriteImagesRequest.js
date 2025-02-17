@@ -5,7 +5,7 @@ import ImagePopup from '../Popups/ImagePopup';
 const FavouriteImageRequest = () => {
     const [pictures, setPictures] = useState([]);
     const [error, setError] = useState(null);
-    const [selectedImage, setSelectedImage] = useState(null);
+    const [selectedImageIndex, setSelectedImageIndex] = useState(null);
 
     useEffect(() => {
         const fetchPictures = async () => {
@@ -30,7 +30,11 @@ const FavouriteImageRequest = () => {
                     const picturesWithThumbnails = await Promise.all(
                         pictureData.data.map(async (picture) => {
                             const thumbnailResponse = await fetch(`${server}/get/thumbnail/${picture.picture_serial}`, {
-                                method: 'GET'
+                                method: 'GET',
+                                headers: {
+                                    'Authorization': token,
+                                    'Content-Type': 'application/json'
+                                },
                             });
 
                             if (!thumbnailResponse.ok) {
@@ -55,11 +59,26 @@ const FavouriteImageRequest = () => {
         fetchPictures();
     }, []);
 
-    const openImagePopup = (image) => {
-        setSelectedImage(image);
+    const openImagePopup = (index) => {
+        setSelectedImageIndex(index);
     };
 
-    const closeImagePopup = () => setSelectedImage(null);
+    const closeImagePopup = () => setSelectedImageIndex(null);
+
+    const handleNext = () => {
+        if (selectedImageIndex < pictures.length - 1) {
+            setSelectedImageIndex(selectedImageIndex + 1);
+        }
+    };
+
+    const handlePrevious = () => {
+        if (selectedImageIndex > 0) {
+            setSelectedImageIndex(selectedImageIndex - 1);
+        }
+    };
+
+    const hasNext = selectedImageIndex < pictures.length - 1;
+    const hasPrevious = selectedImageIndex > 0;
 
     if (error) {
         return <div>{error}</div>;
@@ -67,15 +86,25 @@ const FavouriteImageRequest = () => {
 
     return (
         <div>
-            {pictures.map((picture) => (
-                <div key={picture.picture_serial} className="picture-item" onClick={() => openImagePopup(picture)}>
-                    <img src={picture.thumbnailUrl} alt={picture.picture_name} />
-                    <h3>{picture.picture_title}</h3>
-                    <p>{picture.picture_description}</p>
-                </div>
-            ))}
-            {selectedImage && (
-                <ImagePopup image={selectedImage} closePopup={closeImagePopup} />
+            <div className="picture-list">
+                {pictures.map((picture, index) => (
+                    <div key={picture.picture_serial} className="picture-item" onClick={() => openImagePopup(index)}>
+                        <img src={picture.thumbnailUrl} alt={picture.picture_name} />
+                        <h3>{picture.picture_title}</h3>
+                        <p>{picture.picture_description}</p>
+                    </div>
+                ))}
+            </div>
+            {selectedImageIndex !== null && (
+                <ImagePopup
+                    pictures={pictures}
+                    selectedIndex={selectedImageIndex}
+                    closePopup={closeImagePopup}
+                    onNext={handleNext}
+                    onPrevious={handlePrevious}
+                    hasNext={hasNext}
+                    hasPrevious={hasPrevious}
+                />
             )}
         </div>
     );

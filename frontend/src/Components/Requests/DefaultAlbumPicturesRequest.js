@@ -77,13 +77,20 @@ const DefaultAlbumPicturesRequest = () => {
 
     const closeImagePopup = () => setSelectedImageIndex(null);
 
-    const handleNextImage = () => {
-        setSelectedImageIndex((prevIndex) => (prevIndex + 1) % pictures.length);
+    const handleNext = () => {
+        if (selectedImageIndex < pictures.length - 1) {
+            setSelectedImageIndex(selectedImageIndex + 1);
+        }
     };
 
-    const handlePrevImage = () => {
-        setSelectedImageIndex((prevIndex) => (prevIndex - 1 + pictures.length) % pictures.length);
+    const handlePrevious = () => {
+        if (selectedImageIndex > 0) {
+            setSelectedImageIndex(selectedImageIndex - 1);
+        }
     };
+
+    const hasNext = selectedImageIndex < pictures.length - 1;
+    const hasPrevious = selectedImageIndex > 0;
 
     if (error) {
         return <div>{error}</div>;
@@ -91,24 +98,29 @@ const DefaultAlbumPicturesRequest = () => {
 
     return (
         <div>
-            <button className="upload-button create-album-button button" onClick={openUploadPopup}>
-                Upload Picture
-            </button>
-            {pictures.map((picture, index) => (
-                <div key={picture.picture_serial} className="picture-item" onClick={() => openImagePopup(index)}>
-                    <img src={picture.thumbnailUrl} alt={picture.picture_name} />
-                    <h3>{picture.picture_title}</h3>
-                    <p>{picture.picture_description}</p>
-                </div>
-            ))}
+            <div className="button-container">
+                <button className="create-album-button" onClick={openUploadPopup}>
+                    Upload Picture
+                </button>
+            </div>
+            <div className="picture-list">
+                {pictures.map((picture, index) => (
+                    <div key={picture.picture_serial} className="picture-item" onClick={() => openImagePopup(index)}>
+                        <img src={picture.thumbnailUrl} alt={picture.picture_name} />
+                        <h3>{picture.picture_title}</h3>
+                        <p>{picture.picture_description}</p>
+                    </div>
+                ))}
+            </div>
             {selectedImageIndex !== null && (
                 <ImagePopup
-                    image={pictures[selectedImageIndex]}
+                    pictures={pictures}
+                    selectedIndex={selectedImageIndex}
                     closePopup={closeImagePopup}
-                    onNext={handleNextImage}
-                    onPrevious={handlePrevImage}
-                    hasNext={selectedImageIndex < pictures.length - 1}
-                    hasPrevious={selectedImageIndex > 0}
+                    onNext={handleNext}
+                    onPrevious={handlePrevious}
+                    hasNext={hasNext}
+                    hasPrevious={hasPrevious}
                 />
             )}
             <PictureUploadPopup isOpen={isUploadPopupOpen} onClose={closeUploadPopup} />

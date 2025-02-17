@@ -53,22 +53,24 @@ const DefaultImageAlbumRequest = () => {
     };
 
     return (
-        <div>
-            <button onClick={openPopup} className="create-album-button button">
-                Create Album
-            </button>
+        <div className="container">
+            <div className="button-container">
+                <button onClick={openPopup} className="create-album-button">
+                    Create Album
+                </button>
+            </div>
             <CreateDefaultImageAlbumPopup isOpen={isPopupOpen} onClose={closePopup} />
             {loading ? (
-                <p>Loading...</p>
+                <p className="loading">Loading...</p>
             ) : error ? (
-                <p>{error}</p>
+                <p className="error">{error}</p>
             ) : (
-                <div>
+                <div className="albums-container">
                     {albums.map((album) => (
                         <div 
                             key={album.album_serial}
                             onClick={() => handleAlbumClick(album.album_serial)}
-                            style={{ cursor: "pointer" }}
+                            className="album-card"
                         >
                             <h2>{album.album_name}</h2>
                             <p>{album.album_description}</p> 

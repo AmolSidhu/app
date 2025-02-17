@@ -15,6 +15,9 @@ import VideoUploadPage from "./Pages/Videos/VideoUploadPage";
 import VideoPage from "./Pages/Videos/VideoPage";
 import VideoStreamPage from "./Pages/Videos/VideoStreamPage";
 import VideoSearchPage from "./Pages/Videos/VideoSearchPage";
+import VideoCustomListPage from "./Pages/Videos/VideoCustomListPage";
+import VideoFavouritePage from "./Pages/Videos/VideoFavouritePage";
+import VideoTitleSearchPage from "./Pages/Videos/VideoTitleSearchPage";
 
 //Picture Pages
 import CustomImageAlbumsPage from "./Pages/Pictures/CustomImageAlbumsPage";
@@ -43,12 +46,15 @@ function App() {
         <Route path="/video/list" element={<VideoPage />} />
         <Route path="/video/stream/" element={<VideoStreamPage />} />
         <Route path="/video/search/" element={<VideoSearchPage />} />
+        <Route path="/video/customlists/" element={<VideoCustomListPage />} />
+        <Route path="/video/favourites/" element={<VideoFavouritePage />} />
+        <Route path="/video/search/v/" element={<VideoTitleSearchPage />} />
 
-        <Route path="/albums/" element={<DefaultImageAlbumsPage />} />
+        <Route path="/pictures/albums/" element={<DefaultImageAlbumsPage />} />
         <Route path="/pictures/" element={<DefaultPicturePage />} />
-        <Route path="/myalbums/" element={<CustomImageAlbumsPage />} />
+        <Route path="/pictures/myalbums/" element={<CustomImageAlbumsPage />} />
         <Route path="/mypictures/" element={<CustomPicturePage />} />
-        <Route path="/favourites/" element={<FavouriteImagesPage />} />
+        <Route path="/pictures/favourites/" element={<FavouriteImagesPage />} />
         <Route path="/picture/search/" element={<PictureSearchPage />} />
 
         <Route path="*" element={<NotFound />} />

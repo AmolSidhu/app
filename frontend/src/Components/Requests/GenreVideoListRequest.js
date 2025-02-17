@@ -116,32 +116,32 @@ function GenreVideoListRequest() {
   };
 
   if (error) {
-    return <div>Error: {error}</div>;
+    return <div className="error-message">Error: {error}</div>;
   }
 
   return (
-    <div>
+    <div className="video-list-container">
       {genres.map((genre, index) => (
-        <div key={index}>
-          <h2>{genre}</h2>
-          <div className="video-scroll-container">
-            {videosByGenre[genre] &&
-              videosByGenre[genre].videos.map((video, index) => (
-                <div
-                  key={index}
-                  className="video-item"
-                  onClick={() => openPopup(video.serial)}
-                >
-                  <img src={video.image_url} alt={video.title} />
-                </div>
-              ))}
-          </div>
-          <div className="pagination-controls">
-            <button onClick={() => handlePrevPage(genre)} disabled={currentPages[genre] === 1}>
-              Previous
+        <div key={index} className="genre-section">
+          <h2 className="genre-title">{genre}</h2>
+          <div className="video-navigation">
+            <button onClick={() => handlePrevPage(genre)} disabled={currentPages[genre] === 1} className="nav-arrow">
+              &#9665;
             </button>
-            <button onClick={() => handleNextPage(genre)} disabled={!videosByGenre[genre]?.hasMore}>
-              Next
+            <div className="video-list">
+              {videosByGenre[genre] &&
+                videosByGenre[genre].videos.map((video, index) => (
+                  <div
+                    key={index}
+                    className="video-item"
+                    onClick={() => openPopup(video.serial)}
+                  >
+                    <img src={video.image_url} alt={video.title} />
+                  </div>
+                ))}
+            </div>
+            <button onClick={() => handleNextPage(genre)} disabled={!videosByGenre[genre]?.hasMore} className="nav-arrow">
+              &#9655;
             </button>
           </div>
         </div>

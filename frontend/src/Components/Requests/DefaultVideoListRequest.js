@@ -85,37 +85,30 @@ function DefaultVideoListRequest() {
   };
 
   if (error) {
-    return <div>Error: {error}</div>;
+    return <div className="error-message">Error: {error}</div>;
   }
 
   return (
-    <div style={{ padding: '20px' }}>
+    <div className="video-list-container">
       <h1>Video List</h1>
-      <div
-        style={{
-          display: 'flex',
-          flexWrap: 'nowrap',
-          overflowX: 'auto',
-          gap: '15px'
-        }}
-      >
-        {videos.map((video, index) => (
-          <div
-            key={index}
-            style={{ minWidth: '200px', cursor: 'pointer' }}
-            onClick={() => openPopup(video.serial)}
-          >
-            <img
-              src={video.image_url}
-              alt={video.title}
-              style={{ width: '100%', borderRadius: '8px' }}
-            />
-          </div>
-        ))}
-      </div>
-      <div className="pagination-controls">
-        <button onClick={handlePrevPage} disabled={page === 1}>Previous</button>
-        <button onClick={handleNextPage} disabled={!hasMore}>Next</button>
+      <div className="video-navigation">
+        <button onClick={handlePrevPage} disabled={page === 1} className="nav-arrow">
+          &#9665;
+        </button>
+        <div className="video-list">
+          {videos.map((video, index) => (
+            <div
+              key={index}
+              className="video-item"
+              onClick={() => openPopup(video.serial)}
+            >
+              <img src={video.image_url} alt={video.title} />
+            </div>
+          ))}
+        </div>
+        <button onClick={handleNextPage} disabled={!hasMore} className="nav-arrow">
+          &#9655;
+        </button>
       </div>
       {selectedSerial && (
         <div className="popup">

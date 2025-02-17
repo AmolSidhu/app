@@ -30,10 +30,8 @@ function VideoSearchRequest() {
 
         const responseData = await response.json();
 
-        // Access the "data" field in the API response
         const videos = responseData.data;
 
-        // Ensure the videos data is an array
         if (!Array.isArray(videos)) {
           throw new Error("API response 'data' is not an array");
         }

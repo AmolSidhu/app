@@ -24,21 +24,22 @@ const MainNavbar = () => {
         <Navbar.Collapse id="basic-navbar-nav">
           <Nav className="w-100 justify-content-between">
             <NavDropdown title="Pictures" id="pictures-dropdown" menuVariant="light">
-              <NavDropdown.Item href="/albums/">Albums</NavDropdown.Item>
-              <NavDropdown.Item href="/myalbums/">My Albums</NavDropdown.Item>
-              <NavDropdown.Item href="/myfavourites/">My Favourites</NavDropdown.Item>
+              <NavDropdown.Item href="/pictures/albums/">Albums</NavDropdown.Item>
+              <NavDropdown.Item href="/pictures/myalbums/">My Albums</NavDropdown.Item>
+              <NavDropdown.Item href="/pictures/favourites/">My Favourites</NavDropdown.Item>
             </NavDropdown>
 
             <NavDropdown title="Videos" id="video-dropdown" menuVariant="light">
               <NavDropdown.Item href="/video/list/">Videos</NavDropdown.Item>
               <NavDropdown.Item href="/video/upload/">Upload</NavDropdown.Item>
-              <NavDropdown.Item href="/favourites/">Favourites</NavDropdown.Item>
+              <NavDropdown.Item href="/video/customlists/">Custom Lists</NavDropdown.Item>
+              <NavDropdown.Item href="/video/favourites/">Favourites</NavDropdown.Item>
             </NavDropdown>
 
             <NavDropdown title="Profile" id="profile-dropdown" menuVariant="light">
               <NavDropdown.Item href="/albums/">Test 1</NavDropdown.Item>
               <NavDropdown.Item href="/myalbums/">Test 2</NavDropdown.Item>
-              <NavDropdown.Item href="/myfavourites/">Test 3</NavDropdown.Item>
+              <NavDropdown.Item href="/pictures/favourites/">Test 3</NavDropdown.Item>
             </NavDropdown>
 
             <Logout onLogout={LogoutRequest} />

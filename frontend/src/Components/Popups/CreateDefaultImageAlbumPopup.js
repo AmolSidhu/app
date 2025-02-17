@@ -57,29 +57,31 @@ const CreateDefaultImageAlbumPopup = ({ isOpen, onClose }) => {
     }
 
     return (
-        <div className="popup">
-            <div className="popup-content">
-                <button onClick={onClose}>Close</button>
+        <div className="picture-upload-form">
+            <div className="picture-upload-form-content">
+                <button className="picture-upload-form-close" onClick={onClose}>✕</button>
                 <h2>Create Album</h2>
-                <form onSubmit={handleCreateAlbum}>
-                    <label>
+                <form className="picture-upload-form-inner" onSubmit={handleCreateAlbum}>
+                    <label className="picture-upload-form-label">
                         Album Name:
                         <input
+                            className="picture-upload-form-input"
                             type="text"
                             value={albumName}
                             onChange={(e) => setAlbumName(e.target.value)}
                             required
                         />
                     </label>
-                    <label>
+                    <label className="picture-upload-form-label">
                         Album Description:
                         <textarea
+                            className="picture-upload-form-textarea"
                             value={albumDescription}
                             onChange={(e) => setAlbumDescription(e.target.value)}
                             required
                         />
                     </label>
-                    <label>
+                    <label className="picture-upload-form-label">
                         Tags:
                         <input
                             type="text"
@@ -88,18 +90,20 @@ const CreateDefaultImageAlbumPopup = ({ isOpen, onClose }) => {
                             onKeyDown={handleTagKeyDown}
                             placeholder="Enter a tag and press Enter"
                         />
-                        <div>
+                        <div className="picture-upload-form-tag-list">
                             {tags.map((tag, index) => (
-                                <span key={index} className="tag">
+                                <span key={index} className="picture-upload-form-tag">
                                     {tag}
                                     <button type="button" onClick={() => handleRemoveTag(index)}>x</button>
                                 </span>
                             ))}
                         </div>
                     </label>
-                    <button type="submit">Create Album</button>
+                    <div className="picture-upload-form-button-container">
+                        <button className="picture-upload-form-upload-button" type="submit">Create Album</button>
+                    </div>
                 </form>
-                {message && <p>{message}</p>}
+                {message && <p className="picture-upload-form-message">{message}</p>}
             </div>
         </div>
     );

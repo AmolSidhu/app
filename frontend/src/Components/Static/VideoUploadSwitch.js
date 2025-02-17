@@ -10,7 +10,7 @@ const VideoUploadSwitch = () => {
     };
 
     return (
-        <div className="app-container">
+        <div className="video-upload-switch">
             <div className="toggle-buttons">
                 <button onClick={() => setIsBatchUpload(false)} className={!isBatchUpload ? 'active' : ''}>
                     Single Upload

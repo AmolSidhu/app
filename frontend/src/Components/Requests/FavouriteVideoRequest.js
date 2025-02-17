@@ -2,21 +2,19 @@ import React, { useState, useEffect } from "react";
 import VideoDetailPopup from "../Popups/VideoDetailPopup";
 import server from "../Static/Constants";
 
-function VideoHistoryRequest() {
+function FavouriteVideoRequest() {
   const [videos, setVideos] = useState([]);
   const [error, setError] = useState(null);
   const [selectedSerial, setSelectedSerial] = useState(null);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [hasMore, setHasMore] = useState(false);
 
   useEffect(() => {
-    fetchVideos(currentPage);
-  }, [currentPage]);
+    fetchVideos();
+  }, []);
 
-  const fetchVideos = async (page) => {
+  const fetchVideos = async () => {
     try {
       const token = localStorage.getItem("token");
-      const response = await fetch(`${server}/get/recently_viewed_videos/?page=${page}&limit=5`, {
+      const response = await fetch(`${server}/get/favourite_videos/`, {
         method: "GET",
         headers: {
           Authorization: token,
@@ -31,7 +29,7 @@ function VideoHistoryRequest() {
       const data = await response.json();
       const fetchedVideos = [];
 
-      for (let video of data.data) {  
+      for (let video of data.data) {
         try {
           const thumbnailResponse = await fetch(`${server}/get/video_thumbnail/${video.serial}`, {
             method: "GET",
@@ -58,7 +56,6 @@ function VideoHistoryRequest() {
       }
 
       setVideos(fetchedVideos);
-      setHasMore(data.has_more);
     } catch (error) {
       setError(error.message);
     }
@@ -72,18 +69,6 @@ function VideoHistoryRequest() {
     setSelectedSerial(null);
   };
 
-  const handlePrevPage = () => {
-    if (currentPage > 1) {
-      setCurrentPage(currentPage - 1);
-    }
-  };
-
-  const handleNextPage = () => {
-    if (hasMore) {
-      setCurrentPage(currentPage + 1);
-    }
-  };
-
   if (error) {
     return <div className="error-message">Error: {error}</div>;
   }
@@ -91,38 +76,26 @@ function VideoHistoryRequest() {
   if (videos.length === 0) {
     return (
       <div className="video-list-container">
-        <h1>Video History</h1>
-        <p>No recently viewed videos found.</p>
+        <h1 className="page-title">Favourites</h1>
+        <p className="empty-message">You don't have any favourited videos. Add some videos to your favourites.</p>
       </div>
     );
   }
 
   return (
     <div className="video-list-container">
-      <h1>Video History</h1>
-      <div className="video-navigation">
-        <button onClick={handlePrevPage} disabled={currentPage === 1} className="nav-arrow">
-          &#9665;
-        </button>
-        <div className="video-list">
-          {videos.map((video, index) => (
-            <div
-              key={index}
-              className="video-item"
-              onClick={() => openPopup(video.serial)}
-            >
-              <img src={video.image_url} alt={video.title} />
-            </div>
-          ))}
-        </div>
-        <button onClick={handleNextPage} disabled={!hasMore} className="nav-arrow">
-          &#9655;
-        </button>
+      <h1 className="page-title">Favourites</h1>
+      <div className="video-grid-container">
+        {videos.map((video, index) => (
+          <div key={index} className="video-grid-item" onClick={() => openPopup(video.serial)}>
+            <img src={video.image_url} alt={video.title} />
+          </div>
+        ))}
       </div>
       {selectedSerial && (
         <div className="popup">
           <div className="popup-inner">
-            <button onClick={closePopup}>Close</button>
+            <button onClick={closePopup} className="popup-close-btn">Close</button>
             <VideoDetailPopup serial={selectedSerial} onClose={closePopup} />
           </div>
         </div>
@@ -131,4 +104,4 @@ function VideoHistoryRequest() {
   );
 }
 
-export default VideoHistoryRequest;
+export default FavouriteVideoRequest;

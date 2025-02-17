@@ -1,0 +1,136 @@
+.video-list-container {
+    padding: 20px;
+    max-width: 1100px;
+    margin: auto;
+    text-align: center;
+}
+
+.video-list-container h1 {
+    color: #333;
+    margin-bottom: 20px;
+}
+
+.video-navigation {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 15px;
+}
+
+.nav-arrow {
+    background: none;
+    border: none;
+    font-size: 32px;
+    cursor: pointer;
+    padding: 10px;
+    color: #007bff;
+    transition: transform 0.2s ease-in-out;
+}
+
+.nav-arrow:disabled {
+    color: #ccc;
+    cursor: not-allowed;
+}
+
+.nav-arrow:hover:not(:disabled) {
+    transform: scale(1.2);
+}
+
+.genre-section {}
+
+.genre-title {}
+
+.video-list {
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+    flex-wrap: nowrap;
+    max-width: 100%;
+}
+
+.video-item {
+    flex: 1;
+    max-width: 200px;
+    cursor: pointer;
+    transition: transform 0.3s ease-in-out;
+}
+
+.video-item:hover {
+    transform: scale(1.05);
+}
+
+.video-item img {
+    width: 100%;
+    border-radius: 8px;
+    box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.2);
+}
+
+.video-grid-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 15px;
+    justify-content: center;
+    margin-top: 20px;
+}
+
+.video-grid-item {
+    cursor: pointer;
+    transition: transform 0.2s ease-in-out;
+}
+
+.video-grid-item img {
+    width: 100%;
+    border-radius: 8px;
+}
+
+.video-grid-item:hover {
+    transform: scale(1.05);
+}
+
+.search-form {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin: 40px auto;
+    gap: 10px;
+}
+
+.search-input {
+    width: 300px;
+    padding: 10px 15px;
+    font-size: 16px;
+    border: 2px solid #007bff;
+    border-radius: 25px;
+    outline: none;
+    transition: border-color 0.3s ease;
+}
+
+.search-input:focus {
+    border-color: #0056b3;
+}
+
+.search-button {
+    background-color: #007bff;
+    color: white;
+    padding: 10px 20px;
+    font-size: 16px;
+    border: none;
+    border-radius: 25px;
+    cursor: pointer;
+    transition: background 0.3s ease;
+}
+
+.search-button:hover {
+    background-color: #0056b3;
+}
+
+@media (max-width: 600px) {
+    .search-input {
+        width: 200px;
+    }
+
+    .search-form {
+        flex-direction: column;
+        gap: 15px;
+    }
+}

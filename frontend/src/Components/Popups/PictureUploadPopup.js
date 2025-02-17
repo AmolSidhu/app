@@ -119,16 +119,16 @@ const PictureUploadPopup = ({ isOpen, onClose }) => {
     }
 
     return (
-        <div className="popup">
-            <div className="popup-content">
-                <button className="close-button" onClick={onClose}>✕</button>
+        <div className="picture-upload-form">
+            <div className="picture-upload-form-content">
+                <button className="picture-upload-form-close" onClick={onClose}>✕</button>
                 <h2>Upload Picture</h2>
-                <form onSubmit={handleUpload}>
-                    <label>
+                <form className="picture-upload-form-inner" onSubmit={handleUpload}>
+                    <label className="picture-upload-form-label">
                         Image:
                         <input type="file" onChange={handleImageChange} required />
                     </label>
-                    <label>
+                    <label className="picture-upload-form-label">
                         Album Name:
                         <input
                             type="text"
@@ -138,7 +138,7 @@ const PictureUploadPopup = ({ isOpen, onClose }) => {
                             disabled
                         />
                     </label>
-                    <label>
+                    <label className="picture-upload-form-label">
                         Title:
                         <input
                             type="text"
@@ -147,7 +147,7 @@ const PictureUploadPopup = ({ isOpen, onClose }) => {
                             required
                         />
                     </label>
-                    <label>
+                    <label className="picture-upload-form-label">
                         Description:
                         <textarea
                             value={description}
@@ -155,7 +155,7 @@ const PictureUploadPopup = ({ isOpen, onClose }) => {
                             required
                         />
                     </label>
-                    <label>
+                    <label className="picture-upload-form-label">
                         Tags:
                         <input
                             type="text"
@@ -164,16 +164,16 @@ const PictureUploadPopup = ({ isOpen, onClose }) => {
                             onKeyDown={handleTagKeyDown}
                             placeholder="Enter a tag and press Enter"
                         />
-                        <div className="tag-list">
+                        <div className="picture-upload-form-tag-list">
                             {tags.map((tag, index) => (
-                                <span key={index} className="tag">
+                                <span key={index} className="picture-upload-form-tag">
                                     {tag}
                                     <button type="button" onClick={() => handleRemoveTag(index)}>x</button>
                                 </span>
                             ))}
                         </div>
                     </label>
-                    <label>
+                    <label className="picture-upload-form-label">
                         People:
                         <input
                             type="text"
@@ -182,16 +182,16 @@ const PictureUploadPopup = ({ isOpen, onClose }) => {
                             onKeyDown={handlePeopleKeyDown}
                             placeholder="Enter a person's name and press Enter"
                         />
-                        <div className="tag-list">
+                        <div className="picture-upload-form-people-list">
                             {people.map((person, index) => (
-                                <span key={index} className="tag">
+                                <span key={index} className="picture-upload-form-person">
                                     {person}
                                     <button type="button" onClick={() => handleRemovePerson(index)}>x</button>
                                 </span>
                             ))}
                         </div>
                     </label>
-                    <label>
+                    <label className="picture-upload-form-checkbox">
                         <input
                             type="checkbox"
                             checked={userEditable}
@@ -199,11 +199,11 @@ const PictureUploadPopup = ({ isOpen, onClose }) => {
                         />
                         User Editable
                     </label>
-                    <div className="button-container">
-                        <button className="upload-button button-bottom-middle" type="submit">Upload</button>
+                    <div className="picture-upload-form-button-container">
+                        <button className="picture-upload-form-upload-button" type="submit">Upload</button>
                     </div>
                 </form>
-                {message && <p>{message}</p>}
+                {message && <p className="picture-upload-form-message">{message}</p>}
             </div>
         </div>
     );

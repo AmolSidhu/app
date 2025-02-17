@@ -1,0 +1,16 @@
+{
+  "temp_videos_dir": "D:/bucket/main/temp/videos/",
+  "temp_json_dir": "D:/bucket/main/temp/json/",
+  "thumbnail_dir": "D:/bucket/main/data/thumbnails/",
+  "full_image_dir": "D:/bucket/main/data/full_image/",
+  "video_dir": "D:/bucket/main/data/video/",
+  "json_records_dir": "D:/bucket/main/data/records/json/",
+  "json_thumbnail_dir": "D:/bucket/main/data/records/thumbnail/",
+  "image_dir": "D:/bucket/main/data/image/",
+  "image_backup_dir": "D:/bucket/main/data/image_backup/",
+  "image_thumbnail_dir": "D:/bucket/main/data/thumbnail/",
+  "album_backup_dir": "D:/bucket/main/data/album_backup/",
+  "custom_album_backup_dir": "D:/bucket/main/data/custom_album_backup/",
+  "favourites_backup_dir": "D:/bucket/main/data/favourites_backup/",
+  "data_source_upload_dir": "D:/bucket/main/data/data_source/upload/"
+}

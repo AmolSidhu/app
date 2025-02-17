@@ -183,7 +183,7 @@ class SingleVideoUploadForm extends Component {
     } = this.state;
 
     return (
-      <div>
+      <div className="single-video-upload-form">
         {errorMessage && <Alert variant="danger">{errorMessage}</Alert>}
         {message && (
           <Alert variant="success">
@@ -213,9 +213,9 @@ class SingleVideoUploadForm extends Component {
           </Form.Group>
           <Form.Group controlId="imdbLink">
             <Form.Label>IMDB Link:</Form.Label>
-            <p>
-              An IMDB Link will overwrite all details for Title, Tags,
-              Directors, Stars, Writers, Thumbnail and Description if valid
+            <p className="form-text text-muted">
+              An IMDB Link will overwrite all details for Title, Tags, Directors,
+              Stars, Writers, Thumbnail, and Description if valid
             </p>
             <Form.Control
               type="text"
@@ -233,13 +233,12 @@ class SingleVideoUploadForm extends Component {
           </Form.Group>
           <Form.Group controlId="tags">
             <Form.Label>Tags:</Form.Label>
-            <div>
+            <div className="d-flex flex-wrap">
               {this.state.tags.map((tag) => (
                 <Badge
                   key={tag}
                   pill
-                  style={{ backgroundColor: this.state[tag] ? "blue" : "gray" }}
-                  className="mr-1 mb-1 clickable"
+                  className="mr-2 mb-2 clickable"
                   onClick={() => {
                     this.handleTagClick(tag);
                   }}
@@ -247,24 +246,21 @@ class SingleVideoUploadForm extends Component {
                   {tag}
                 </Badge>
               ))}
-              <br />
-              <br />
-              <Badge pill variant="info" className="mr-1 mb-1">
-                +
-              </Badge>
+            </div>
+            <div className="d-flex align-items-center">
               <Form.Control
                 type="text"
                 value={customTag}
                 onChange={this.handleCustomTagChange}
                 placeholder="Add custom tag"
-                className="d-inline-block w-auto"
+                className="d-inline-block w-auto mb-2 custom-tag-input"
               />
               <Button
                 variant="primary"
                 onClick={this.handleAddCustomTag}
-                className="ml-2"
+                className="ml-2 mb-2"
               >
-                Add
+                Add Tag
               </Button>
             </div>
           </Form.Group>
@@ -421,10 +417,12 @@ class SingleVideoUploadForm extends Component {
               onChange={this.handleInputChange}
             />
           </Form.Group>
-          <Button type="submit">Upload</Button>
+          <Button type="primary" variant="success">
+            Upload
+          </Button>
         </Form>
         {progress > 0 && (
-          <div>
+          <div className="progress-container mt-3">
             <ProgressBar
               now={progress}
               label={`${progress}%`}

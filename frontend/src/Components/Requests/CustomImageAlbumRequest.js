@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import server from "../Static/Constants";
-import ImagePopup from "../Popups/ImagePopup";
+import CreatecustomImageAlbumPopup from "../Popups/CreateCustomImageAlbumPopup";
 
 const CustomImageAlbumRequest = () => {
     const [albums, setAlbums] = useState([]);
@@ -53,22 +53,24 @@ const CustomImageAlbumRequest = () => {
     };
 
     return (
-        <div>
-            <button onClick={openPopup} className="create-album-button">
-                Create Album
-            </button>
-            <ImagePopup isOpen={isPopupOpen} onClose={closePopup} />
+        <div className='container'>
+            <div className="button-container">
+                <button onClick={openPopup} className="create-album-button">
+                    Create Album
+                </button>
+            </div>
+            <CreatecustomImageAlbumPopup isOpen={isPopupOpen} onClose={closePopup} />
             {loading ? (
-                <p>Loading...</p>
+                <p className="loading">Loading...</p>
             ) : error ? (
-                <p>{error}</p>
+                <p className="error">{error}</p>
             ) : (
-                <div>
+                <div className="albums-container">
                     {albums.map((album) => (
                         <div 
                             key={album.album_serial}
                             onClick={() => handleAlbumClick(album.album_serial)}
-                            style={{ cursor: "pointer" }}
+                            className="album-card"
                         >
                             <h2>{album.album_name}</h2>
                             <p>{album.album_description}</p> 

@@ -194,7 +194,7 @@ class BatchVideoUploadForm extends Component {
     } = this.state;
 
     return (
-      <div>
+      <div className="video-upload-container">
         {errorMessage && <Alert variant="danger">{errorMessage}</Alert>}
         {message && (
           <Alert variant="success">
@@ -205,20 +205,25 @@ class BatchVideoUploadForm extends Component {
             />
           </Alert>
         )}
-        <Form onSubmit={this.handleSubmit}>
-          <Form.Group controlId="video">
+        <Form onSubmit={this.handleSubmit} className="video-upload-form">
+          <Form.Group controlId="video" className="form-group">
             <Form.Label>Videos:</Form.Label>
             <Form.Control
               type="file"
               multiple
               onChange={this.handleFilesChange}
+              className="form-control"
             />
           </Form.Group>
-
+    
           <DragDropContext onDragEnd={this.onDragEnd}>
             <Droppable droppableId="videoData">
               {(provided) => (
-                <div {...provided.droppableProps} ref={provided.innerRef}>
+                <div
+                  {...provided.droppableProps}
+                  ref={provided.innerRef}
+                  className="drag-drop-area"
+                >
                   {videoData.map((data, index) => (
                     <Draggable
                       key={data.file.name}
@@ -230,11 +235,11 @@ class BatchVideoUploadForm extends Component {
                           ref={provided.innerRef}
                           {...provided.draggableProps}
                           {...provided.dragHandleProps}
-                          className="mb-3"
+                          className="drag-drop-item"
                         >
                           <h5>Video {index + 1}</h5>
                           <p>{data.name}</p>
-                          <Form.Group controlId={`episode${index}`}>
+                          <Form.Group controlId={`episode${index}`} className="form-group">
                             <Form.Label>Episode:</Form.Label>
                             <Form.Control
                               type="text"
@@ -246,9 +251,10 @@ class BatchVideoUploadForm extends Component {
                                   e.target.value
                                 )
                               }
+                              className="form-control"
                             />
                           </Form.Group>
-                          <Form.Group controlId={`season${index}`}>
+                          <Form.Group controlId={`season${index}`} className="form-group">
                             <Form.Label>Season:</Form.Label>
                             <Form.Control
                               type="text"
@@ -260,6 +266,7 @@ class BatchVideoUploadForm extends Component {
                                   e.target.value
                                 )
                               }
+                              className="form-control"
                             />
                           </Form.Group>
                         </div>
@@ -271,20 +278,24 @@ class BatchVideoUploadForm extends Component {
               )}
             </Droppable>
           </DragDropContext>
-
-          <Form.Group controlId="thumbnail">
+    
+          <Form.Group controlId="thumbnail" className="form-group">
             <Form.Label>Thumbnails:</Form.Label>
-            <Form.Control type="file" onChange={this.handleImageChange} />
+            <Form.Control
+              type="file"
+              onChange={this.handleImageChange}
+              className="form-control"
+            />
           </Form.Group>
-
-          <Form.Group controlId="tags">
+    
+          <Form.Group controlId="tags" className="form-group">
             <Form.Label>Tags:</Form.Label>
             <div>
               {this.state.tags.map((tag) => (
                 <Badge
                   key={tag}
                   variant={this.state[tag] ? "primary" : "secondary"}
-                  className="mr-2 mb-2 clickable"
+                  className="tags-badge"
                   onClick={() => this.handleTagClick(tag)}
                 >
                   {tag}
@@ -292,13 +303,14 @@ class BatchVideoUploadForm extends Component {
               ))}
             </div>
           </Form.Group>
-
-          <Form.Group controlId="customTag">
+    
+          <Form.Group controlId="customTag" className="form-group custom-tag-container">
             <Form.Label>Add Custom Tag:</Form.Label>
             <Form.Control
               type="text"
               value={customTag}
               onChange={this.handleCustomTagChange}
+              className="form-control"
             />
             <Button
               variant="primary"
@@ -308,8 +320,8 @@ class BatchVideoUploadForm extends Component {
               Add Tag
             </Button>
           </Form.Group>
-
-          <Form.Group controlId="description">
+    
+          <Form.Group controlId="description" className="form-group">
             <Form.Label>Description:</Form.Label>
             <Form.Control
               as="textarea"
@@ -317,30 +329,32 @@ class BatchVideoUploadForm extends Component {
               value={this.state.description}
               onChange={this.handleInputChange}
               name="description"
+              className="form-control"
             />
           </Form.Group>
-
-          <Form.Group controlId="imdbLink">
+    
+          <Form.Group controlId="imdbLink" className="form-group">
             <Form.Label>IMDB Link:</Form.Label>
             <Form.Control
               type="text"
               value={this.state.imdbLink}
               onChange={this.handleInputChange}
               name="imdbLink"
+              className="form-control"
             />
           </Form.Group>
-
-          {/* Render Directors */}
-          <Form.Group controlId="directors">
+    
+          <Form.Group controlId="directors" className="form-group">
             <Form.Label>Directors:</Form.Label>
             {directors.map((director, index) => (
-              <div key={index} className="d-flex align-items-center mb-2">
+              <div key={index} className="person-field">
                 <Form.Control
                   type="text"
                   value={director}
                   onChange={(e) =>
                     this.handlePersonChange("directors", index, e.target.value)
                   }
+                  className="form-control"
                 />
                 <Button
                   variant="danger"
@@ -351,27 +365,25 @@ class BatchVideoUploadForm extends Component {
                 </Button>
               </div>
             ))}
-            <div>
-              <Button
-                variant="primary"
-                onClick={() => this.handleAddPerson("directors")}
-              >
-                Add Director
-              </Button>
-            </div>
+            <Button
+              variant="primary"
+              onClick={() => this.handleAddPerson("directors")}
+            >
+              Add Director
+            </Button>
           </Form.Group>
-
-          {/* Render Stars */}
-          <Form.Group controlId="stars">
+    
+          <Form.Group controlId="stars" className="form-group">
             <Form.Label>Stars:</Form.Label>
             {stars.map((star, index) => (
-              <div key={index} className="d-flex align-items-center mb-2">
+              <div key={index} className="person-field">
                 <Form.Control
                   type="text"
                   value={star}
                   onChange={(e) =>
                     this.handlePersonChange("stars", index, e.target.value)
                   }
+                  className="form-control"
                 />
                 <Button
                   variant="danger"
@@ -382,25 +394,25 @@ class BatchVideoUploadForm extends Component {
                 </Button>
               </div>
             ))}
-            <div>
-              <Button
-                variant="primary"
-                onClick={() => this.handleAddPerson("stars")}
-              >
-                Add Star
-              </Button>
-            </div>
+            <Button
+              variant="primary"
+              onClick={() => this.handleAddPerson("stars")}
+            >
+              Add Star
+            </Button>
           </Form.Group>
-          <Form.Group controlId="writers">
+    
+          <Form.Group controlId="writers" className="form-group">
             <Form.Label>Writers:</Form.Label>
             {writers.map((writer, index) => (
-              <div key={index} className="d-flex align-items-center mb-2">
+              <div key={index} className="person-field">
                 <Form.Control
                   type="text"
                   value={writer}
                   onChange={(e) =>
                     this.handlePersonChange("writers", index, e.target.value)
                   }
+                  className="form-control"
                 />
                 <Button
                   variant="danger"
@@ -411,25 +423,25 @@ class BatchVideoUploadForm extends Component {
                 </Button>
               </div>
             ))}
-            <div>
-              <Button
-                variant="primary"
-                onClick={() => this.handleAddPerson("writers")}
-              >
-                Add Writer
-              </Button>
-            </div>
+            <Button
+              variant="primary"
+              onClick={() => this.handleAddPerson("writers")}
+            >
+              Add Writer
+            </Button>
           </Form.Group>
-          <Form.Group controlId="creators">
+    
+          <Form.Group controlId="creators" className="form-group">
             <Form.Label>Creators:</Form.Label>
             {creators.map((creator, index) => (
-              <div key={index} className="d-flex align-items-center mb-2">
+              <div key={index} className="person-field">
                 <Form.Control
                   type="text"
                   value={creator}
                   onChange={(e) =>
                     this.handlePersonChange("creators", index, e.target.value)
                   }
+                  className="form-control"
                 />
                 <Button
                   variant="danger"
@@ -440,27 +452,39 @@ class BatchVideoUploadForm extends Component {
                 </Button>
               </div>
             ))}
-            <div>
-              <Button
-                variant="primary"
-                onClick={() => this.handleAddPerson("creators")}
-              >
-                Add Creator
-              </Button>
-            </div>
+            <Button
+              variant="primary"
+              onClick={() => this.handleAddPerson("creators")}
+            >
+              Add Creator
+            </Button>
           </Form.Group>
-
-          <Form.Group controlId="title">
+    
+          <Form.Group controlId="criticRating" className="form-group">
+            <Form.Label>Critic Rating:</Form.Label>
+            <Form.Control
+              type="number"
+              min="0"
+              max="10"
+              value={this.state.criticRating}
+              onChange={this.handleInputChange}
+              name="criticRating"
+              className="form-control"
+            />
+          </Form.Group>
+    
+          <Form.Group controlId="title" className="form-group">
             <Form.Label>Title:</Form.Label>
             <Form.Control
               type="text"
               value={this.state.title}
               onChange={this.handleInputChange}
               name="title"
+              className="form-control"
             />
           </Form.Group>
-
-          <Form.Group controlId="existingSeries">
+    
+          <Form.Group controlId="existingSeries" className="form-group">
             <Form.Check
               type="checkbox"
               label="Existing Series"
@@ -469,26 +493,27 @@ class BatchVideoUploadForm extends Component {
               name="existingSeries"
             />
           </Form.Group>
-
+    
           {this.state.existingSeries && (
-            <Form.Group controlId="masterSerial">
+            <Form.Group controlId="masterSerial" className="form-group">
               <Form.Label>Master Serial:</Form.Label>
               <Form.Control
                 type="text"
                 value={this.state.master_serial}
                 onChange={this.handleInputChange}
                 name="master_serial"
+                className="form-control"
               />
             </Form.Group>
           )}
-
+    
           <Button variant="primary" type="submit">
-            Upload Videos
+            Upload
           </Button>
         </Form>
       </div>
     );
   }
-}
+}    
 
 export default BatchVideoUploadForm;

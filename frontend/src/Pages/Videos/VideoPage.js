@@ -4,6 +4,7 @@ import DefaultVideoListRequest from '../../Components/Requests/DefaultVideoListR
 import VideoHistoryRequest from '../../Components/Requests/VideoHistoryRequest';
 import GenreVideoListRequest from '../../Components/Requests/GenreVideoListRequest';
 import VideoSearhPopup from '../../Components/Popups/VideoSearchPopup';
+import VideoTitleSearchRequest from '../../Components/Requests/VideoTitleSearchRequest';
 
 const VideoPage = () => {
     const [isSearchVisible, setIsSearchVisible] = useState(false);
@@ -70,6 +71,7 @@ const VideoPage = () => {
                     <VideoSearhPopup />
                 </div>
             )}
+            <VideoTitleSearchRequest />
             <DefaultVideoListRequest />
             <VideoHistoryRequest />
             <GenreVideoListRequest />
