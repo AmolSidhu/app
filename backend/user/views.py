@@ -2,17 +2,18 @@ from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework import status
 from django.http import JsonResponse
-from django.core.mail import send_mail
 from django.db.models import Q
-from django.conf import settings
 from django.utils import timezone
 from secrets import token_urlsafe
+from django.core.mail import send_mail
+from django.conf import settings
 
 from .models import Credentials
-from functions.auth_functions import token_generator, auth_check
+from functions.auth_functions import token_generator, auth_check, send_verification_email
 
 import logging
 import hashlib
+import threading
 
 logger = logging.getLogger(__name__)
 
@@ -20,31 +21,27 @@ logger = logging.getLogger(__name__)
 def register(request):
     if request.method == 'POST':
         try:
-            existing_user = Credentials.objects.filter(Q(username=request.data['username']) | Q(email=request.data['email'])).first()
+            existing_user = Credentials.objects.filter(
+                Q(username=request.data['username']) | Q(email=request.data['email'])
+            ).first()
             if existing_user:
                 return JsonResponse({'msg': 'User already exists'},
-                                        status=status.HTTP_400_BAD_REQUEST)
-            else:
-                if str(request.data['password']) != str(request.data['confirmPassword']):
-                    response = JsonResponse({'msg': 'Passwords do not match'},
-                                            status=status.HTTP_400_BAD_REQUEST)
-                    return response
-                else:
-                    password = hashlib.sha256(request.data['password'].encode()).hexdigest()
-                    new_user = Credentials.objects.create(
-                        username=request.data['username'],
-                        email=request.data['email'],
-                        password=password,
-                        verification_code=1234
-                    )
-                    new_user.save()
-                    subject = 'Verification Code'
-                    message = f'Your verification code is: {new_user.verification_code}'
-                    email_from = settings.EMAIL_HOST_USER
-                    recipient_list = [new_user.email]
-                    send_mail(subject, message, email_from, recipient_list)
+                                    status=status.HTTP_400_BAD_REQUEST)
+            if request.data['password'] != request.data['confirmPassword']:
+                return JsonResponse({'msg': 'Passwords do not match'},
+                                    status=status.HTTP_400_BAD_REQUEST)
+            password = hashlib.sha256(request.data['password'].encode()).hexdigest()
+            new_user = Credentials.objects.create(
+                username=request.data['username'],
+                email=request.data['email'],
+                password=password,
+                verification_code=1234
+            )
+            new_user.save()
+            threading.Thread(target=send_verification_email, args=(
+                new_user.email, new_user.verification_code)).start()
             return JsonResponse({'msg': 'User registered successfully'},
-                                                status=status.HTTP_200_OK)
+                                status=status.HTTP_200_OK)
         except Exception as e:
             logging.error(f"Error during registration: {str(e)}")
             return Response({'message': 'Internal server error'},

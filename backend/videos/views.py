@@ -11,12 +11,12 @@ import logging
 import json
 import os
 
-from .models import TempVideo, Video, VideoRecord, VideoHistory, VideoGenre, VideoQuery
-from .queries import get_video_list_query, get_video_by_genre_query, get_recently_viewed_query, get_video_search_query, get_record_data, video_search_query
+from .models import TempVideo, Video, VideoRecord, VideoHistory, VideoGenre, VideoQuery, CustomVideoList, CustomVideoListRecords, VideoFavourites
+from .queries import get_video_list_query, get_video_by_genre_query, get_recently_viewed_query, get_video_search_query, get_record_data, video_search_query, get_custom_video_list_records_query, get_favourite_videos_query
 
 from functions.auth_functions import auth_check
 from functions.search_parameters import build_video_query_parameters
-from core.serializer import TempVideoSerializer, VideoQuerySerializer
+from core.serializer import TempVideoSerializer, VideoQuerySerializer, CustomVideoListSerializer
 
 logger = logging.getLogger(__name__)
 
@@ -296,7 +296,7 @@ def get_video_data(request, serial):
             user = auth_response['user']
             user_id = user.username
             with connection.cursor() as cursor:
-                cursor.execute(get_record_data(), [user_id, user_id, serial])
+                cursor.execute(get_record_data(), [user_id, user_id, user_id, user_id, serial])
                 result = cursor.fetchone()
             if not result:
                 return Response({'message': 'Video not found'},
@@ -304,21 +304,28 @@ def get_video_data(request, serial):
             columns = [
                 'video_name', 'video_directors', 'video_stars', 'video_writers',
                 'video_creators', 'video_genres', 'video_description', 'video_rating',
-                'resume', 'resume_serial', 'video_serial', 'series', 'season_metadata', 'serial'
+                'resume', 'resume_serial', 'video_serial', 'series', 'season_metadata',
+                'serial', 'favourites', 'in_custom_album', 'not_in_custom_album'
             ]
             video_data = dict(zip(columns, result))
-            video_data['video_directors'] = video_data[
-                'video_directors'].split(', ') if video_data['video_directors'] else []
-            video_data['video_stars'] = video_data[
-                'video_stars'].split(', ') if video_data['video_stars'] else []
-            video_data['video_writers'] = video_data[
-                'video_writers'].split(', ') if video_data['video_writers'] else []
-            video_data['video_creators'] = video_data[
-                'video_creators'].split(', ') if video_data['video_creators'] else []
-            video_data['video_genres'] = video_data[
-                'video_genres'].split(', ') if video_data['video_genres'] else []
-            video_data['season_metadata'] = json.loads(video_data[
-                'season_metadata']) if video_data['season_metadata'] else {}
+            video_data['video_directors'] = video_data['video_directors'].split(
+                ', ') if video_data['video_directors'] else []
+            video_data['video_stars'] = video_data['video_stars'].split(
+                ', ') if video_data['video_stars'] else []
+            video_data['video_writers'] = video_data['video_writers'].split(
+                ', ') if video_data['video_writers'] else []
+            video_data['video_creators'] = video_data['video_creators'].split(
+                ', ') if video_data['video_creators'] else []
+            video_data['video_genres'] = video_data['video_genres'].split(
+                ', ') if video_data['video_genres'] else []
+            video_data['season_metadata'] = json.loads(
+                video_data['season_metadata']) if video_data['season_metadata'] else {}
+            video_data['in_custom_album'] = [
+                json.loads(album) for album in video_data['in_custom_album'] if album
+            ] if video_data['in_custom_album'] else []
+            video_data['not_in_custom_album'] = [
+                json.loads(album) for album in video_data['not_in_custom_album'] if album
+            ] if video_data['not_in_custom_album'] else []
             return Response(video_data, status=status.HTTP_200_OK)
         except Exception as e:
             logging.error(f"Error during video data retrieval: {str(e)}")
@@ -437,23 +444,18 @@ def recently_viewed_videos(request):
             return Response({'message': 'Internal server error'},
                             status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-@api_view(['POST'])
+@api_view(['GET'])
 def get_videos_by_search(request, search):
-    if request.method == 'POST':
+    if request.method == 'GET':
         try:
             token = request.headers.get('Authorization')
             auth_response = auth_check(token)
             if 'error' in auth_response:
                 return auth_response['error']
             user = auth_response['user']
-            user_id = user.id
-            permission = user.permission
             query = get_video_search_query()
             with connection.cursor() as cursor:
-                cursor.execute(query, [user_id,
-                                    f"%{search}%",
-                                    f"%{search}%",
-                                    permission,
+                cursor.execute(query, [f"%{search}%",
                                     ])
                 columns = [col[0] for col in cursor.description]
                 rows = cursor.fetchall()
@@ -567,7 +569,6 @@ def get_video_query(request, search_id):
                 columns = [col[0] for col in cursor.description]
                 rows = cursor.fetchall()
                 videos = [dict(zip(columns, row)) for row in rows]
-            print(videos)
             return Response({
                 'message': 'Videos retrieved successfully',
                 'data': videos
@@ -577,3 +578,215 @@ def get_video_query(request, search_id):
             return Response({'message': 'Internal server error'},
                             status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
+@api_view(['POST'])
+def create_custom_video_list(request):
+    if request.method == 'POST':
+        try:
+            token = request.headers.get('Authorization')
+            auth_response = auth_check(token)
+            if 'error' in auth_response:
+                return Response({'message': f'{auth_response["error"]}'},
+                                status=status.HTTP_401_UNAUTHORIZED)
+            user = auth_response['user']
+            user_id = user.username
+            list_name = request.data.get('list_name')
+            list_serial = None
+            while list_serial is None:
+                serial = token_urlsafe(8)
+                if CustomVideoList.objects.filter(
+                    list_serial=serial).exists():
+                    list_serial = None
+                else:
+                    list_serial = serial
+            new_record = CustomVideoList.objects.create(
+                list_name=list_name,
+                list_serial=list_serial,
+                user=user
+            )
+            record = CustomVideoListSerializer(new_record)
+            return Response({'message': 'Custom video list created successfully'},
+                            status=status.HTTP_201_CREATED)
+        except Exception as e:
+            logging.error(f"Error during custom video list creation: {str(e)}")
+            return Response({'message': 'Internal server error'},
+                            status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+@api_view(['POST'])
+def add_video_to_custom_list(request, video_serial, list_serial):
+    if request.method == 'POST':
+        try:
+            token = request.headers.get('Authorization')
+            auth_response = auth_check(token)
+            if 'error' in auth_response:
+                return Response({'message': f'{auth_response["error"]}'},
+                                status=status.HTTP_401_UNAUTHORIZED)
+            user = auth_response['user']
+            user_id = user.username
+            list_record = CustomVideoList.objects.filter(
+                list_serial=list_serial, user=user).first()
+            if not list_record:
+                return Response({'message': 'Custom video list not found'},
+                                status=status.HTTP_404_NOT_FOUND)
+            video_record = Video.objects.filter(serial=video_serial).first()
+            if not video_record:
+                return Response({'message': 'Video not found'},
+                                status=status.HTTP_404_NOT_FOUND)
+            new_list_record = CustomVideoListRecords.objects.create(
+                list_serial=list_record,
+                video_serial=video_record,
+                user=user
+            )
+            new_list_record.save()
+            return Response({'message': 'Video added to custom list successfully'},
+                            status=status.HTTP_201_CREATED)
+        except Exception as e:
+            logging.error(f"Error during adding video to custom list: {str(e)}")
+            return Response({'message': 'Internal server error'},
+                            status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+@api_view(['DELETE'])
+def remove_video_from_custom_list(request, video_serial, list_serial):
+    if request.method == 'DELETE':
+        try:
+            token = request.headers.get('Authorization')
+            auth_response = auth_check(token)
+            if 'error' in auth_response:
+                return Response({'message': f'{auth_response["error"]}'},
+                                status=status.HTTP_401_UNAUTHORIZED)
+            user = auth_response['user']
+            user_id = user.username
+            list_record = CustomVideoList.objects.filter(
+                list_serial=list_serial, user=user).first()
+            if not list_record:
+                return Response({'message': 'Custom video list not found'},
+                                status=status.HTTP_404_NOT_FOUND)
+            video_record = Video.objects.filter(serial=video_serial).first()
+            if not video_record:
+                return Response({'message': 'Video not found'},
+                                status=status.HTTP_404_NOT_FOUND)
+            list_record = CustomVideoListRecords.objects.filter(
+                list_serial=list_record, video_serial=video_record, user=user).first()
+            if not list_record:
+                return Response({'message': 'Video not found in custom list'},
+                                status=status.HTTP_404_NOT_FOUND)
+            list_record.delete()
+            return Response({'message': 'Video removed from custom list successfully'},
+                            status=status.HTTP_200_OK)
+        except Exception as e:
+            logging.error(f"Error during removing video from custom list: {str(e)}")
+            return Response({'message': 'Internal server error'},
+                            status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+@api_view(['GET'])
+def get_custom_video_lists(request):
+    if request.method == 'GET':
+        try:
+            token = request.headers.get('Authorization')
+            auth_response = auth_check(token)
+            if 'error' in auth_response:
+                return Response({'message': f'{auth_response["error"]}'},
+                                status=status.HTTP_401_UNAUTHORIZED)
+            user = auth_response['user']
+            records = CustomVideoList.objects.filter(user=user).values('list_name', 'list_serial')
+            data = list(records)
+            return Response({'message': 'Custom video lists retrieved successfully',
+                            'data': data},
+                            status=status.HTTP_200_OK)
+        except Exception as e:
+            logging.error(f"Error during custom video list retrieval: {str(e)}")
+            return Response({'message': 'Internal server error'},
+                            status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            
+@api_view(['GET'])
+def get_custom_video_list_records(request, list_serial):
+    if request.method == 'GET':
+        try:
+            token = request.headers.get('Authorization')
+            auth_response = auth_check(token)
+            if 'error' in auth_response:
+                return Response({'message': f'{auth_response["error"]}'},
+                                status=status.HTTP_401_UNAUTHORIZED)
+            user = auth_response['user']
+            user_id = user.username
+            page = int(request.query_params.get('page', 1))
+            limit = int(request.query_params.get('limit', 5))
+            offset = (page - 1) * limit
+            query = get_custom_video_list_records_query()
+            with connection.cursor() as cursor:
+                cursor.execute(query, [list_serial, user_id, limit + 1, offset])
+                columns = [col[0] for col in cursor.description]
+                rows = cursor.fetchall()
+                has_more = len(rows) > limit
+                videos = [dict(zip(columns, row)) for row in rows[:limit]]
+            return Response({
+                'message': 'Custom video list records retrieved successfully',
+                'data': {
+                    'videos': videos,
+                    'has_more': has_more,
+                }
+            }, status=status.HTTP_200_OK)
+        except Exception as e:
+            logging.error(f"Error during custom video list records retrieval: {str(e)}")
+            return Response({'message': 'Internal server error'},
+                            status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+@api_view(['POST'])
+def update_video_favourites(request, serial):
+    if request.method == 'POST':
+        try:
+            token = request.headers.get('Authorization')
+            auth_response = auth_check(token)
+            if 'error' in auth_response:
+                return Response({'message': f'{auth_response["error"]}'},
+                                status=status.HTTP_401_UNAUTHORIZED)
+            user = auth_response['user']
+            user_id = user.username
+            video = Video.objects.filter(serial=serial).first()
+            if not video:
+                return Response({'message': 'Video not found'},
+                                status=status.HTTP_404_NOT_FOUND)
+            if request.data['action'] == 'add':
+                new_favourite = VideoFavourites.objects.create(
+                    user=user,
+                    video=video
+                )
+                new_favourite.save()
+                return Response({'message': 'Video added to favourites successfully'},
+                                status=status.HTTP_201_CREATED)
+            if request.data['action'] == 'remove':
+                favourite = VideoFavourites.objects.filter(user=user, video=video).first()
+                if not favourite:
+                    return Response({'message': 'Video not found in favourites'},
+                                    status=status.HTTP_404_NOT_FOUND)
+                favourite.delete()
+                return Response({'message': 'Video removed from favourites successfully'},
+                                status=status.HTTP_200_OK)
+        except Exception as e:
+            logging.error(f"Error during updating video favourites: {str(e)}")
+            return Response({'message': 'Internal server error'},
+                            status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+@api_view(['GET'])
+def get_favourite_videos(request):
+    if request.method == 'GET':
+        try:
+            token = request.headers.get('Authorization')
+            auth_response = auth_check(token)
+            if 'error' in auth_response:
+                return Response({'message': f'{auth_response["error"]}'},
+                                status=status.HTTP_401_UNAUTHORIZED)
+            user = auth_response['user']
+            user_id = user.username
+            query = get_favourite_videos_query()
+            with connection.cursor() as cursor:
+                cursor.execute(query, [user_id])
+                columns = [col[0] for col in cursor.description]
+                rows = cursor.fetchall()
+                videos = [dict(zip(columns, row)) for row in rows]
+            return Response({'message': 'Favourite videos retrieved successfully',
+                'data': videos
+            }, status=status.HTTP_200_OK)
+        except Exception as e:
+            logging.error(f"Error during favourite video retrieval: {str(e)}")
+            return Response({'message': 'Internal server error'},
+                            status=status.HTTP_500_INTERNAL_SERVER_ERROR)

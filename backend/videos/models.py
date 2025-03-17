@@ -99,6 +99,29 @@ class Video(models.Model):
             self.comments.all().delete()
             self.history.all().delete()
             self.delete()
+            
+class CustomVideoList(models.Model):
+    list_serial = models.CharField(max_length=100, unique=True, primary_key=True, null=False)
+    user = models.ForeignKey('user.Credentials', on_delete=models.CASCADE, related_name='custom_list')
+    list_name = models.CharField(max_length=100, null=False)
+    create_date = models.DateTimeField(auto_now_add=True, null=False)
+    last_updated = models.DateTimeField(auto_now=True, null=False)
+    
+    class Meta:
+        db_table = 'custom_video_list'
+        verbose_name = 'Custom Video List'
+        verbose_name_plural = 'Custom Video Lists'
+
+class CustomVideoListRecords(models.Model):
+    video_serial = models.ForeignKey('Video', on_delete=models.CASCADE, related_name='custom_list_records', default=None, null=False)
+    list_serial = models.ForeignKey('CustomVideoList', on_delete=models.CASCADE, related_name='custom_list_records', default=None, null=False)
+    user = models.ForeignKey('user.Credentials', on_delete=models.CASCADE, related_name='custom_list_records', default=None, null=False)
+    date_added = models.DateTimeField(auto_now_add=True, null=False)
+    
+    class Meta:
+        db_table = 'custom_video_list_records'
+        verbose_name = 'Custom Video List Record'
+        verbose_name_plural = 'Custom Video List Records'
 
 class VideoTags(models.Model):
     tag = models.CharField(max_length=100, null=False)
@@ -236,7 +259,7 @@ class MyVideoList(models.Model):
 
 class VideoFavourites(models.Model):
     user = models.ForeignKey('user.Credentials', on_delete=models.CASCADE, related_name='favourites', null=False)
-    favourites_list_serial = models.CharField(max_length=100, unique=True, primary_key=True, null=False)
+    video = models.ForeignKey('Video', on_delete=models.CASCADE, related_name='favourites', null=False)
     create_date = models.DateTimeField(auto_now_add=True, null=False)
     last_updated = models.DateTimeField(auto_now=True, null=False)
     
@@ -244,18 +267,6 @@ class VideoFavourites(models.Model):
         db_table = 'video_favourites'
         verbose_name = 'Video Favourite'
         verbose_name_plural = 'Video Favourites'
-
-class VideoFavouriteRecords(models.Model):
-    master_record = models.ForeignKey('Video', on_delete=models.CASCADE, related_name='favourites', null=False)
-    serial = models.ForeignKey('VideoRecord', on_delete=models.CASCADE, related_name='favourites', null=False)
-    user = models.ForeignKey('user.Credentials', on_delete=models.CASCADE, related_name='video_favourites', null=False)
-    favourite_date = models.DateTimeField(auto_now_add=True, null=False)
-    last_updated = models.DateTimeField(auto_now=True, null=False)
-    
-    class Meta:
-        db_table = 'video_favourite_records'
-        verbose_name = 'Video Favourite Record'
-        verbose_name_plural = 'Video Favourite Records'
 
 class FailedVideoRecords(models.Model):
     video_name = models.CharField(max_length=100)

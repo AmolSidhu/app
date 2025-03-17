@@ -192,7 +192,7 @@ const ImagePopup = ({ pictures, selectedIndex, closePopup, onNext, onPrevious, h
                                             </div>
                                         )}
                                     </div>
-                                    <button onClick={() => window.location.href = `/edit_picture/${image.picture_serial}`}>Edit Picture</button>
+                                    <button onClick={() => window.location.href = `/edit/picture/?serial=${image.picture_serial}`}>Edit Picture</button>
                                 </div>
                             )}
                         </div>

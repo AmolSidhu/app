@@ -2,7 +2,7 @@ from rest_framework import serializers
 
 from pictures.models import DefaultAlbums, Picture, MyAlbums, PictureQuery
 from user.models import Credentials
-from videos.models import Video, TempVideo, VideoRecord, FailedVideoRecords, VideoQuery
+from videos.models import Video, TempVideo, VideoRecord, FailedVideoRecords, VideoQuery, CustomVideoList
 from management.models import Identifier, IdentifierTempTable
 
 class PictureSerializer(serializers.ModelSerializer):
@@ -68,4 +68,9 @@ class VideoQuerySerializer(serializers.ModelSerializer):
 class PictureQuerySerializer(serializers.ModelSerializer):
     class Meta:
         model = PictureQuery
+        fields = '__all__'
+        
+class CustomVideoListSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CustomVideoList
         fields = '__all__'

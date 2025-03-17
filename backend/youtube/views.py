@@ -14,11 +14,24 @@ def create_youtube_playlist(request):
         token = request.headers.get('Authorization')
         auth_response = auth_check(token)
         if 'error' in auth_response:
-            return Response(auth_response['error'], status=status.HTTP_401_UNAUTHORIZED)
+            return Response(auth_response['error'])
         user = auth_response['user']
     except Exception as e:
         logger.error(f'Error in create_youtube_playlist: {e}')
         return Response({'message': 'An error occurred while creating the YouTube playlist.'},
+                        status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+@api_view(['POST'])
+def upload_video(request):
+    try:
+        token = request.headers.get('Authorization')
+        auth_response = auth_check(token)
+        if 'error' in auth_response:
+            return Response(auth_response['error'])
+        user = auth_response['user']
+    except Exception as e:
+        logger.error(f'Error in upload_video: {e}')
+        return Response({'message': 'An error occurred while uploading the video.'},
                         status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 @api_view(['POST'])
@@ -61,12 +74,11 @@ def get_playlist_videos(request, playlist_serial):
                         status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 @api_view(['PATCH'])
-def watch_youtube_video(request, video_serial):
+def watch_youtube_video(request, video_serial, token):
     try:
-        token = request.headers.get('Authorization')
         auth_response = auth_check(token)
         if 'error' in auth_response:
-            return Response(auth_response['error'], status=status.HTTP_401_UNAUTHORIZED)
+            return Response(auth_response['error'])
         user = auth_response['user']
     except Exception as e:
         logger.error(f'Error in watch_youtube_video: {e}')

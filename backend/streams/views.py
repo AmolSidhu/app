@@ -2,6 +2,7 @@ from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.decorators import api_view
 from django.http import StreamingHttpResponse
+from django.db import connection
 from django.http import JsonResponse
 from wsgiref.util import FileWrapper
 from io import BytesIO
@@ -10,8 +11,9 @@ import os
 import mimetypes
 import re
 
+from .queries import next_previous_episode_query, video_suggestion_query
 from functions.auth_functions import auth_check
-from videos.models import VideoRecord, VideoHistory
+from videos.models import VideoRecord, VideoHistory, Video
 
 logger = logging.getLogger(__name__)
 
@@ -124,5 +126,60 @@ def update_playback_time(request, serial):
                                 status=status.HTTP_200_OK)
         except Exception as e:
             logging.error(f"Error during video upload: {str(e)}")
+            return JsonResponse({'message': 'Internal server error'},
+                                status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+@api_view(['GET'])
+def get_next_previous_episode(request, video_serial):
+    if request.method == 'GET':
+        try:
+            token = request.headers.get('Authorization')
+            auth = auth_check(token)
+            if 'error' in auth:
+                return auth['error']
+            user = auth['user']
+            query = next_previous_episode_query()
+            with connection.cursor() as cursor:
+                cursor.execute(query, [video_serial])
+                columns = [col[0] for col in cursor.description]
+                row = cursor.fetchone()
+                if row:
+                    data = dict(zip(columns, row))
+                else:
+                    data = []
+                print(data)
+            if not data:
+                return JsonResponse({'message': 'No video data found'},
+                                     status=status.HTTP_404_NOT_FOUND)
+            return Response({'message': 'Video data fetched', 'data': [data]},
+                            status=status.HTTP_200_OK)
+        except Exception as e:
+            logging.error(f"Error fetching next/previous episode: {str(e)}")
+            return JsonResponse({'message': 'Internal server error'},
+                                 status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+            
+@api_view(['GET'])
+def get_video_suggestions(request, video_serial):
+    if request.method == 'GET':
+        try:
+            token = request.headers.get('Authorization')
+            auth = auth_check(token)
+            if 'error' in auth:
+                return auth['error']
+            user = auth['user']
+            query = video_suggestion_query()
+            with connection.cursor() as cursor:
+                cursor.execute(query, [video_serial])
+                columns = [col[0] for col in cursor.description]
+                rows = cursor.fetchall()
+                data = [dict(zip(columns, row)) for row in rows]
+            if not data:
+                return JsonResponse({'message': 'No video data found'},
+                                    status=status.HTTP_404_NOT_FOUND)
+            return Response({'message': 'Video data fetched', 'data': data},
+                            status=status.HTTP_200_OK)
+        except Exception as e:
+            logging.error(f"Error fetching video suggestions: {str(e)}")
             return JsonResponse({'message': 'Internal server error'},
                                 status=status.HTTP_500_INTERNAL_SERVER_ERROR)

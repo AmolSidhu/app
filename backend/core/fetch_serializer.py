@@ -30,4 +30,4 @@ class VideoFetchSerializer(serializers.ModelSerializer):
     class Meta:
         model = Video
         fields = ['title', 'description',
-                  'uploaded_date', 'serial'] 
+                  'uploaded_date', 'serial']

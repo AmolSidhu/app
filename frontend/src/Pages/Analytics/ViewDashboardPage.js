@@ -1,24 +1,21 @@
 import React, {useEffect} from "react";
 import MainNavbar from "../../Components/Static/MainNavbar";
-import EditVideoForm from "../../Components/Forms/EditVideoForm";
 
-const EditVideoPage = () => {
+const ViewDashboardPage = () => {
     useEffect(() => {
         const token = localStorage.getItem("token");
         if (!token) {
           window.location.href = "/login/";
         } else {
-          document.title = "Edit Video";
+          document.title = "View Dashboard";
         }
     }, []);
-
     return (
         <div>
-            <MainNavbar />
-            <h1>Edit Video</h1>
-            <EditVideoForm />
+        <MainNavbar />
+        <h1>View Dashboard</h1>
         </div>
     );
 }
 
-export default EditVideoPage;
+export default ViewDashboardPage;

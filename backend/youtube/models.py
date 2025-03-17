@@ -8,6 +8,11 @@ class YoutubeLists(models.Model):
     update_date = models.DateTimeField(auto_now=True)
     user = models.ForeignKey('user.Credentials', on_delete=models.CASCADE)
     
+    class Meta:
+        db_table = 'youtube_lists'
+        verbose_name = 'Youtube List'
+        verbose_name_plural = 'Youtube Lists'
+    
 class YoutubeListRecord(models.Model):
     serial = models.CharField(max_length=100, primary_key=True, unique=True, null=False)
     youtube_list = models.ForeignKey(YoutubeLists, on_delete=models.CASCADE)
@@ -16,7 +21,9 @@ class YoutubeListRecord(models.Model):
     update_date = models.DateTimeField(auto_now=True)
     
     class Meta:
-        unique_together = ('youtube_list', 'youtube_video')
+        db_table = 'youtube_list_record'
+        verbose_name = 'Youtube List Record'
+        verbose_name_plural = 'Youtube List Records'
 
 class YoutubeVideoRecord(models.Model):
     serial = models.CharField(max_length=100, primary_key=True, unique=True, null=False)
@@ -27,6 +34,11 @@ class YoutubeVideoRecord(models.Model):
     create_date = models.DateTimeField(auto_now_add=True)
     update_date = models.DateTimeField(auto_now=True)
     user = models.ForeignKey('user.Credentials', on_delete=models.CASCADE)
+    
+    class Meta:
+        db_table = 'youtube_video_record'
+        verbose_name = 'Youtube Video Record'
+        verbose_name_plural = 'Youtube Video Records'
 
 class YoutubeVideoHistory(models.Model):
     user = models.ForeignKey('user.Credentials', on_delete=models.CASCADE)
@@ -36,4 +48,42 @@ class YoutubeVideoHistory(models.Model):
     update_date = models.DateTimeField(auto_now=True)
     
     class Meta:
-        unique_together = ('user', 'youtube_video')
+        db_table = 'youtube_video_history'
+        verbose_name = 'Youtube Video History'
+        verbose_name_plural = 'Youtube Video Histories'
+
+class YoutubeVideoComments(models.Model):
+    youtube_video = models.ForeignKey(YoutubeVideoRecord, on_delete=models.CASCADE)
+    comment = models.TextField(null=False)
+    create_date = models.DateTimeField(auto_now_add=True)
+    update_date = models.DateTimeField(auto_now=True)
+    user = models.ForeignKey('user.Credentials', on_delete=models.CASCADE)
+    
+    class Meta:
+        db_table = 'youtube_video_comments'
+        verbose_name = 'Youtube Video Comment'
+        verbose_name_plural = 'Youtube Video Comments'
+        
+class YoutubeVideoLikes(models.Model):
+    youtube_video = models.ForeignKey(YoutubeVideoRecord, on_delete=models.CASCADE)
+    user = models.ForeignKey('user.Credentials', on_delete=models.CASCADE)
+    video_rating =models.BooleanField(default=True)
+    create_date = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        db_table = 'youtube_video_likes'
+        verbose_name = 'Youtube Video Like'
+        verbose_name_plural = 'Youtube Video Likes'
+        
+class YoutubeVideoAnalytics(models.Model):
+    youtube_video = models.ForeignKey(YoutubeVideoRecord, on_delete=models.CASCADE)
+    video_visual_profile = models.JSONField(default=dict)
+    video_audio_profile = models.JSONField(default=dict)
+    video_emotion_profile = models.JSONField(default=dict)
+    create_date = models.DateTimeField(auto_now_add=True)
+    update_date = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        db_table = 'youtube_video_analytics'
+        verbose_name = 'Youtube Video Analytic'
+        verbose_name_plural = 'Youtube Video Analytics'

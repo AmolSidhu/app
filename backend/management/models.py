@@ -7,6 +7,7 @@ class Identifier(models.Model):
     last_updated = models.DateTimeField(auto_now=True, null=False)
     title = models.CharField(max_length=100, null=True)
     json_location = models.CharField(max_length=300, null=True)
+    rerun_status = models.BooleanField(default=False, null=False)
     
     class Meta:
         db_table = 'identifiers'

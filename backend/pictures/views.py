@@ -5,16 +5,17 @@ from django.utils import timezone
 from django.db import connection
 from django.http import FileResponse, JsonResponse
 from secrets import token_urlsafe
-from PIL import Image
+from PIL import Image, ExifTags
 
 from functions.auth_functions import auth_check
+from functions.image_functions import extract_exif_data
 from functions.search_parameters import build_picture_query_parameters
 from functions.json_formats import json_image_backup, json_album_backup, custom_album_backup, json_revision_format_for_albums
 from functions.json_formats import json_revision_format_for_custom_albums, json_revision_format_for_images
 from .models import DefaultAlbums, Picture, MyAlbums, MyAlbumPictures, FavouritePictures, ImageTags, ImagePeopleTags, PictureQuery
-from .queries import custom_album_data_query, favourite_pictures_query, picture_search_query
-from core.serializer import PictureSerializer, DefaultAlbumsSerializer, MyAlbumsSerializer, PictureQuerySerializer
-from core.fetch_serializer import PictureFetchSerializer, DefaultAlbumFetchSerializer, PicturePopupData, MyAlbumsFetchSerializer
+from .queries import custom_album_data_query, favourite_pictures_query, picture_search_query, picture_data_query
+from core.serializer import DefaultAlbumsSerializer, MyAlbumsSerializer, PictureQuerySerializer
+from core.fetch_serializer import PictureFetchSerializer, DefaultAlbumFetchSerializer, MyAlbumsFetchSerializer
 
 import logging
 import json
@@ -25,7 +26,6 @@ logger = logging.getLogger(__name__)
 @api_view(['POST'])
 def upload_picture(request):
     if request.method == 'POST':
-        print(request.data)
         try:
             token = request.headers.get('Authorization')
             auth_response = auth_check(token)
@@ -48,16 +48,13 @@ def upload_picture(request):
             full_backup_path = os.path.join(f'{image_backup_dir}{current_time}')
             os.makedirs(full_backup_path, exist_ok=True)
             unique_token = False
-            user_editable_status = request.data['user_editable']
-            if user_editable_status == 'true':
-                user_editable_status = True
-            else:
-                user_editable_status = False
             while not unique_token:
                 serial = token_urlsafe(10)
                 existing_image = Picture.objects.filter(picture_serial=serial).first()
                 if not existing_image:
                     unique_token = True
+            exif_dict = extract_exif_data(image)
+            user_editable_status = request.data['user_editable'].lower() == 'true'
             json_format = json_image_backup(
                 image_name=image.name,
                 image_path=image_dir,
@@ -71,7 +68,8 @@ def upload_picture(request):
                 uploaded_by=user.username,
                 user_editable=user_editable_status,
                 status='A',
-                originanl_image_extension=image.name.split('.')[-1]
+                originanl_image_extension=image.name.split('.')[-1],
+                exif_data=exif_dict
             )
             with open(f'{full_backup_path}/{serial}.json', 'w') as f:
                 json.dump(json_format, f, indent=4, ensure_ascii=False)
@@ -81,6 +79,20 @@ def upload_picture(request):
                     f.write(chunk)
             image_pathway_dir = f'{image_dir}/{serial}.png'
             image_original = Image.open(image)
+            try:
+                for orientation in ExifTags.TAGS.keys():
+                    if ExifTags.TAGS[orientation] == 'Orientation':
+                        break
+                exif = image_original._getexif()
+                if exif and orientation in exif:
+                    if exif[orientation] == 3:
+                        image_original = image_original.rotate(180, expand=True)
+                    elif exif[orientation] == 6:
+                        image_original = image_original.rotate(270, expand=True)
+                    elif exif[orientation] == 8:
+                        image_original = image_original.rotate(90, expand=True)
+            except (AttributeError, KeyError, IndexError, TypeError):
+                pass
             image_original.save(image_pathway_dir, 'PNG', quality=100)
             image_original.close()
             image_thumbnail = Image.open(image_pathway_dir)
@@ -138,7 +150,6 @@ def get_picture(request, album):
             if 'error' in auth_response:
                 return Response({'message': f'{auth_response["error"]}'},
                                 status=status.HTTP_403_FORBIDDEN)
-            user = auth_response['user']
             current_album = DefaultAlbums.objects.filter(album_serial=album).first()
             if not current_album:
                 return Response({'message': 'Album does not exist'},
@@ -146,8 +157,6 @@ def get_picture(request, album):
             pictures = Picture.objects.filter(album=current_album,
                                             current_status='A').all()
             data = PictureFetchSerializer(pictures, many=True).data
-            tags = ImageTags.objects.filter(picture__album=current_album).all()
-            people = ImagePeopleTags.objects.filter(picture__album=current_album).all()
             return Response({'data': data},
                             status=status.HTTP_200_OK)       
         except Exception as e:
@@ -164,7 +173,6 @@ def get_tags(request, album_id):
             if 'error' in auth_response:
                 return Response({'message': f'{auth_response["error"]}'},
                                 status=status.HTTP_403_FORBIDDEN)
-            user = auth_response['user']
             current_album = DefaultAlbums.objects.filter(album_serial=album_id).first()
             if not current_album:
                 return Response({'message': 'Album does not exist'},
@@ -185,7 +193,6 @@ def update_picture(request, serial):
             auth_response = auth_check(token)
             if 'error' in auth_response:
                 return auth_response['error']
-            user = auth_response['user']
             picture_record = Picture.objects.filter(picture_serial=serial).first()
             if not picture_record:
                 return Response({'message': 'Image does not exist'},
@@ -246,7 +253,9 @@ def update_picture(request, serial):
                 picture_data = json.load(f)
             picture_data['Revision History'][timezone.now().isoformat()] = new_update
             with open(f'{picture_record.full_backup_path}{serial}.json', 'w') as f:
-                json.dump(picture_data, f, indent=4, ensure_ascii=False) 
+                json.dump(picture_data, f, indent=4, ensure_ascii=False)
+            return Response({'message': 'Image updated successfully'},
+                            status=status.HTTP_200_OK)
         except Exception as e:
             logging.error(f"Error during picture update: {str(e)}")
             return Response({'message': 'Internal server error'},
@@ -309,37 +318,21 @@ def get_picture_data(request, serial):
             token = request.headers.get('Authorization')
             auth_response = auth_check(token)
             if 'error' in auth_response:
-                return Response({'message': 'Image does not exist'},
+                return Response({'message': f'{auth_response["error"]}'},
                                 status=status.HTTP_403_FORBIDDEN)
             user = auth_response['user']
-            image = Picture.objects.filter(picture_serial=serial).first()
-            if not image:
-                return Response({'message': 'Image does not exist'},
-                                status=status.HTTP_400_BAD_REQUEST)
-            tags = ImageTags.objects.filter(picture=image).all()
-            people = ImagePeopleTags.objects.filter(picture=image).all()
-            custom_albums = MyAlbums.objects.filter(user=user).all()
-            in_custom_album_serial = []
-            in_custom_album_name = []
-            for album in custom_albums:
-                existing_picture = MyAlbumPictures.objects.filter(album=album, picture=serial).first()
-                if existing_picture:
-                    in_custom_album_serial.append(existing_picture.picture)
-                    in_custom_album_name.append(album.album_name)
-            favourite_picture = FavouritePictures.objects.filter(picture=image, user=user).exists()
-            if favourite_picture:
-                favourite = True
-            else:
-                favourite = False
-            data = PicturePopupData(image).data
-            data['picture_tags'] = [tag.tag for tag in tags]
-            data['picture_people'] = [person.person for person in people]
-            data['in_custom_album_serial'] = in_custom_album_serial
-            data['in_custom_album_name'] = in_custom_album_name
-            data['favourite'] = favourite
-            print(data)
-            return Response({'data': data},
-                            status=status.HTTP_200_OK)
+            user_id = user.username
+            query = picture_data_query()
+            with connection.cursor() as cursor:
+                cursor.execute(query, [user_id, user_id, serial])
+                data = cursor.fetchall()
+                if not data:
+                    return Response({'data': {}},
+                                    status=status.HTTP_200_OK)
+                columns = [col[0] for col in cursor.description]
+                data = dict(zip(columns, data[0]))
+                return JsonResponse({'data': data},
+                                    status=status.HTTP_200_OK)
         except Exception as e:
             logging.error(f"Error during image info retrieval: {str(e)}")
             return Response({'message': 'Internal server error'},
@@ -404,7 +397,6 @@ def get_albums(request):
             if 'error' in auth_response:
                 return Response({'message': f'{auth_response["error"]}'},
                                 status=status.HTTP_403_FORBIDDEN)
-            user = auth_response['user']
             all_albums = DefaultAlbums.objects.filter(album_status='A').all()
             data = DefaultAlbumFetchSerializer(all_albums, many=True).data
             return Response({'data': data},
@@ -423,7 +415,6 @@ def update_album(request, serial):
             if 'error' in auth_response:
                 return Response({'message': f'{auth_response["error"]}'},
                                 status=status.HTTP_403_FORBIDDEN)
-            user = auth_response['user']
             album_record = DefaultAlbums.objects.filter(album_serial=serial).first()
             if not album_record:
                 return Response({'message': 'Album does not exist'},
@@ -464,7 +455,7 @@ def update_album(request, serial):
                             status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         
 @api_view(['POST'])
-def create_custom_album(request):
+def create_custom_image_album(request):
     if request.method == 'POST':
         try:
             token = request.headers.get('Authorization')
@@ -523,7 +514,12 @@ def add_image_to_custom_album(request, album_serial, image_serial):
                 return Response({'message': f'{auth_response["error"]}'},
                                 status=status.HTTP_403_FORBIDDEN)
             user = auth_response['user']
-            album = MyAlbums.objects.filter(album_serial=album_serial).first()
+            user_id = user.username
+            picture = Picture.objects.filter(picture_serial=image_serial).first()
+            if not picture:
+                return Response({'message': 'Image does not exist'},
+                                status=status.HTTP_400_BAD_REQUEST)
+            album = MyAlbums.objects.filter(album_serial=album_serial, user=user_id).first()
             if not album:
                 return Response({'message': 'Album does not exist'},
                                 status=status.HTTP_400_BAD_REQUEST)
@@ -550,7 +546,7 @@ def add_image_to_custom_album(request, album_serial, image_serial):
                             status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 @api_view(['GET'])
-def get_custom_album(request):
+def get_custom_image_album(request):
     if request.method == 'GET':
         try:
             token = request.headers.get('Authorization')
@@ -577,14 +573,13 @@ def get_custom_album_images(request, serial):
             if 'error' in auth_response:
                 return Response({'message': f'{auth_response["error"]}'},
                                 status=status.HTTP_403_FORBIDDEN)
-            user = auth_response['user']
             existing_album = MyAlbums.objects.filter(album_serial=serial).first()
             if not existing_album:
                 return Response({'message': 'Album does not exist'},
                                 status=status.HTTP_400_BAD_REQUEST)
             query = custom_album_data_query()
             with connection.cursor() as cursor:
-                cursor.execute(query, [existing_album.id])
+                cursor.execute(query, [serial])
                 data = cursor.fetchall()
                 if not data:
                     return Response({'data': []},
@@ -599,7 +594,7 @@ def get_custom_album_images(request, serial):
                             status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 @api_view(['PATCH'])
-def update_custom_album(request, serial):
+def update_custom_image_album(request, serial):
     if request.method == 'PATCH':
         try:
             token = request.headers.get('Authorization')
@@ -644,7 +639,7 @@ def update_custom_album(request, serial):
                             status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         
 @api_view(['POST'])
-def add_to_favourites(request, serial):
+def update_image_favourites(request, serial):
     if request.method == 'POST':
         try:
             token = request.headers.get('Authorization')
@@ -657,11 +652,30 @@ def add_to_favourites(request, serial):
             if not picture:
                 return Response({'message': 'Image does not exist'},
                                 status=status.HTTP_400_BAD_REQUEST)
-            new_favourite = FavouritePictures.objects.create(
-                user=user,
-                picture=picture
-            )
-            new_favourite.save()
+            if request.data['action'] == 'add': 
+                serial = None
+                while not serial:
+                    serial = token_urlsafe(10)
+                    existing_favourite = FavouritePictures.objects.filter(serial=serial).first()
+                    if existing_favourite:
+                        serial = None
+                new_favourite = FavouritePictures.objects.create(
+                    user=user,
+                    picture=picture,
+                    serial=serial
+                )
+                new_favourite.save()
+                return Response({'message': 'Image added to favourites successfully'},
+                                status=status.HTTP_201_CREATED)
+            if request.data['action'] == 'remove':
+                favourite_record = FavouritePictures.objects.filter(user=user,
+                                                                    picture=picture).first()
+                if not favourite_record:
+                    return Response({'message': 'Image not in favourites'},
+                                    status=status.HTTP_400_BAD_REQUEST)
+                favourite_record.delete()
+                return Response({'message': 'Image removed from favourites successfully'},
+                                status=status.HTTP_200_OK)
             return Response({'message': 'Image added to favourites successfully'},
                             status=status.HTTP_201_CREATED)
         except Exception as e:
@@ -670,7 +684,7 @@ def add_to_favourites(request, serial):
                             status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         
 @api_view(['GET'])
-def get_favourites(request):
+def get_image_favourites(request):
     if request.method == 'GET':
         try:
             token = request.headers.get('Authorization')
@@ -679,24 +693,25 @@ def get_favourites(request):
                 return Response({'message': f'{auth_response["error"]}'},
                                 status=status.HTTP_403_FORBIDDEN)
             user = auth_response['user']
+            user_id = user.username
             query = favourite_pictures_query()
             with connection.cursor() as cursor:
-                cursor.execute(query, [user.id])
+                cursor.execute(query, [user_id])
                 data = cursor.fetchall()
                 if not data:
                     return Response({'data': []},
                                     status=status.HTTP_200_OK)
                 columns = [col[0] for col in cursor.description]
                 data = [dict(zip(columns, row)) for row in data]
-                return JsonResponse({'data': data},
-                                    status=status.HTTP_200_OK)
+            return JsonResponse({'data': data},
+                                status=status.HTTP_200_OK)
         except Exception as e:
             logging.error(f"Error during favourites retrieval: {str(e)}")
             return Response({'message': 'Internal server error'},
                             status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 @api_view(['DELETE'])
-def remove_from_favourites(request, serial):
+def remove_from_image_favourites(request, serial):
     if request.method == 'DELETE':
         try:
             token = request.headers.get('Authorization')
@@ -723,7 +738,7 @@ def remove_from_favourites(request, serial):
                             status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 @api_view(['DELETE'])
-def remove_from_custom_album(request, album_serial, image_serial):
+def remove_from_custom_image_album(request, album_serial, image_serial):
     if request.method == 'DELETE':
         try:
             token = request.headers.get('Authorization')
@@ -732,11 +747,12 @@ def remove_from_custom_album(request, album_serial, image_serial):
                 return Response({'message': f'{auth_response["error"]}'},
                                 status=status.HTTP_403_FORBIDDEN)
             user = auth_response['user']
+            user_id = user.username
             image_record = Picture.objects.filter(picture_serial=image_serial).first()
             if not image_record:
                 return Response({'message': 'Image does not exist'},
                                 status=status.HTTP_400_BAD_REQUEST)
-            album_record = MyAlbums.objects.filter(album_serial=album_serial).first()
+            album_record = MyAlbums.objects.filter(album_serial=album_serial, user=user_id).first()
             if not album_record:
                 return Response({'message': 'Album does not exist'},
                                 status=status.HTTP_400_BAD_REQUEST)
@@ -746,14 +762,14 @@ def remove_from_custom_album(request, album_serial, image_serial):
             if image_serial not in album_data['Image Entries']:
                 return Response({'message': 'Image not in album'},
                                 status=status.HTTP_400_BAD_REQUEST)
-            album_data['Image Entries'].remove(image_serial)
-            with open(album_file, 'w') as f:
-                json.dump(album_data, f, indent=4, ensure_ascii=False)
             custom_picture = MyAlbumPictures.objects.filter(album=album_record,
                                                            picture=image_record).first()
             if not custom_picture:
                 return Response({'message': 'Image not in album'},
                                 status=status.HTTP_400_BAD_REQUEST)
+            album_data['Image Entries'].remove(image_serial)
+            with open(album_file, 'w') as f:
+                json.dump(album_data, f, indent=4, ensure_ascii=False)
             custom_picture.delete()
             return Response({'message': 'Image removed from custom album successfully'},
                             status=status.HTTP_200_OK)
@@ -772,7 +788,6 @@ def generate_picture_query(request):
                 return Response({'message': f'{auth_response["error"]}'},
                                 status=status.HTTP_403_FORBIDDEN)
             user = auth_response['user']
-            user_id = user.username
             query = request.data.get('searchRows', [])
             if not query:
                 return Response({'message': 'searchRows is required and cannot be empty'},
@@ -830,7 +845,6 @@ def generate_picture_query(request):
 @api_view(['GET'])
 def get_picture_query(request, search_id):
     if request.method == 'GET':
-        print('reached')
         try:
             token = request.headers.get('Authorization')
             auth_response = auth_check(token)
@@ -839,7 +853,6 @@ def get_picture_query(request, search_id):
                                 status=status.HTTP_403_FORBIDDEN)
             user = auth_response['user']
             search = PictureQuery.objects.filter(query_id=search_id, user=user).first()
-            print(search.picture_exact_tags)
             if not search:
                 return Response({'message': 'Query does not exist'},
                                 status=status.HTTP_404_NOT_FOUND)
@@ -850,7 +863,6 @@ def get_picture_query(request, search_id):
                 columns = [col[0] for col in cursor.description]
                 rows = cursor.fetchall()
                 pictures = [dict(zip(columns, row)) for row in rows]
-                print(pictures)
             return Response({'message': 'Pictures retrieved successfully',
                              'data': pictures},
                             status=status.HTTP_200_OK)

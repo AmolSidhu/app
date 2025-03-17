@@ -13,6 +13,7 @@ class Picture(models.Model):
     picture_title = models.CharField(max_length=100, null=False)
     date_uploaded = models.DateTimeField(auto_now_add=True, null=False)
     description = models.TextField(null=True)
+    last_updated_by = models.ForeignKey('user.Credentials', on_delete=models.CASCADE, null=True, related_name='last_updated_by')
     last_updated = models.DateTimeField(auto_now=True, null=False)
     current_status = models.CharField(max_length=100, default='A', null=False)
     album_pathway = models.CharField(max_length=100, null=False)
@@ -70,7 +71,7 @@ class DefaultAlbums(models.Model):
 class FavouritePictures(models.Model):
     serial = models.CharField(max_length=100, unique=True, primary_key=True, null=False)
     user = models.ForeignKey('user.Credentials', on_delete=models.CASCADE, null=False)
-    picture = models.ForeignKey('Picture', on_delete=models.CASCADE, null=False)
+    picture = models.ForeignKey('Picture', on_delete=models.CASCADE, null=False, to_field='picture_serial')
     date_added = models.DateTimeField(auto_now_add=True, null=False)
     
     class Meta:

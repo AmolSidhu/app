@@ -1,6 +1,8 @@
 import React, {useEffect} from 'react';
 import MainNavbar from '../../Components/Static/MainNavbar';
 import VideoStreamRequest from '../../Components/Requests/VideoStreamRequest';
+import VideoSuggestionsRequest from '../../Components/Requests/VideoSuggestionsRequest';
+import StreamDataRequest from '../../Components/Requests/StreamDataRequest';
 
 const VideoStreamPage = () => {
     useEffect(() => {
@@ -15,6 +17,8 @@ const VideoStreamPage = () => {
         <div>
             <MainNavbar />
             <VideoStreamRequest />
+            <StreamDataRequest />
+            <VideoSuggestionsRequest />
         </div>
     )
 };

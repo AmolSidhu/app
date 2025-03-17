@@ -1,24 +1,23 @@
 import React, {useEffect} from "react";
 import MainNavbar from "../../Components/Static/MainNavbar";
-import EditVideoForm from "../../Components/Forms/EditVideoForm";
+import DataSourceSwitch from "../../Components/Static/DataSourceSwitch";
 
-const EditVideoPage = () => {
+const UploadDataSourcePage = () => {
     useEffect(() => {
         const token = localStorage.getItem("token");
         if (!token) {
           window.location.href = "/login/";
         } else {
-          document.title = "Edit Video";
+          document.title = "Upload Data";
         }
     }, []);
-
     return (
         <div>
-            <MainNavbar />
-            <h1>Edit Video</h1>
-            <EditVideoForm />
+        <MainNavbar />
+        <h1>Upload Data Source</h1>
+        <DataSourceSwitch />
         </div>
     );
 }
 
-export default EditVideoPage;
+export default UploadDataSourcePage;

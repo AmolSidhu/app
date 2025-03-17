@@ -133,12 +133,6 @@ def imdb_data():
     
     for video in videos:
         try:
-            if video.imdb_link is None or video.imdb_link == '':
-                video.current_status = "J"
-                video.last_updated = timezone.now()
-                video.save()
-                continue
-            
             existing_record = None
             if video.existing_series:
                 existing_record = Video.objects.filter(
@@ -146,6 +140,17 @@ def imdb_data():
                 ).first() or TempVideo.objects.filter(
                     master_serial=video.master_serial
                 ).first()
+
+            if video.imdb_link is None or video.imdb_link == '':
+                if existing_record:
+                    pass
+                else:
+                    video.current_status = "J"
+                    video.imdb_added = True
+                    video.last_updated = timezone.now()
+                    video.save()
+                    continue
+                
             
             previous_passed_record = None
             if video.series == True and existing_record == None:
@@ -163,14 +168,15 @@ def imdb_data():
                 video.image_added = True
                 video.title = existing_record.title if existing_record else previous_passed_record.title
                 video.description = existing_record.description if existing_record else previous_passed_record.description
-                video.tags = existing_record.tags if existing_record else previous_passed_record.tags
                 video.imdb_rating = existing_record.imdb_rating if existing_record else previous_passed_record.imdb_rating
+                video.imdb_link = existing_record.imdb_link if existing_record else previous_passed_record.imdb_link
                 video.main_tag = existing_record.main_tag if existing_record else previous_passed_record.main_tag
-                video.directors = existing_record.directors if existing_record else previous_passed_record.directors
-                video.writers = existing_record.writers if existing_record else previous_passed_record.writers
-                video.stars = existing_record.stars if existing_record else previous_passed_record.stars
-                video.creators = existing_record.creators if existing_record else previous_passed_record.creators
-                video.age_rating = existing_record.age_rating if existing_record else previous_passed_record.age_rating
+                if previous_passed_record and not existing_record:
+                    video.directors = previous_passed_record.directors
+                    video.writers = previous_passed_record.writers
+                    video.stars = previous_passed_record.stars
+                    video.creators = previous_passed_record.creators
+                    video.tags = previous_passed_record.tags
                 video.save()
                 continue
 
@@ -196,6 +202,7 @@ def imdb_data():
         except Exception as e:
             if video.imdb_failed_attempts >= 3:
                 video.current_status = "J"
+                video.imdb_added = True
                 video.last_updated = timezone.now()
                 video.imdb_failed_attempts += 1
             else:
@@ -290,11 +297,7 @@ def visual_profile():
     
     for video in videos:
         try:
-            filename = video.master_serial if video.series else video.serial
-            if video.series:
-                master_record = Video.objects.filter(serial=video.master_serial).first()
-                if master_record:
-                    filename = master_record.serial
+            filename = video.master_serial
             
             video_path = f'{video.video_location}{video.serial}.mp4'
             cap = cv2.VideoCapture(video_path)
@@ -309,22 +312,24 @@ def visual_profile():
             
             total_saturation = 0
             frame_count = 0
-            thumbnail_path = f'{video.thumbnail_location}{filename}.jpg'
             
-            if not os.path.exists(thumbnail_path) or video.imdb_link_failed or not video.image_added:
-                total_frames = cap.get(cv2.CAP_PROP_FRAME_COUNT)
-                target_frame = int(total_frames * 0.1)
+            if not video.existing_series:
+                thumbnail_path = f'{video.thumbnail_location}{filename}.jpg'
                 
-                ret, frame = cap.read()
-                if not ret:
-                    logger.error(f"Failed to read frame for {video.serial}")
-                    continue
-                
-                cv2.imwrite(thumbnail_path, frame)
-                video.thumbnail_location = thumbnail_location
-                video.save()
-                
-                cap.set(cv2.CAP_PROP_POS_FRAMES, target_frame)
+                if not os.path.exists(thumbnail_path) or video.imdb_link_failed or not video.image_added:
+                    total_frames = cap.get(cv2.CAP_PROP_FRAME_COUNT)
+                    target_frame = int(total_frames * 0.1)
+                    
+                    ret, frame = cap.read()
+                    if not ret:
+                        logger.error(f"Failed to read frame for {video.serial}")
+                        continue
+                    
+                    cv2.imwrite(thumbnail_path, frame)
+                    video.thumbnail_location = thumbnail_location
+                    video.save()
+                    
+                    cap.set(cv2.CAP_PROP_POS_FRAMES, target_frame)
             
             ret, frame = cap.read()
             if not ret:

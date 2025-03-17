@@ -1,7 +1,11 @@
 import os
+from logging.handlers import RotatingFileHandler, TimedRotatingFileHandler
+from logging import Formatter
 from pathlib import Path
-from datetime import timedelta
+import time
+from datetime import timedelta, datetime
 from dotenv import load_dotenv
+from core.log_config import CustomTimedRotatingFileHandler
 
 load_dotenv()
 
@@ -22,25 +26,53 @@ ALLOWED_HOSTS = ['http://localhost:3000',
                  '127.0.0.1',
                  ]
 
+# Logging Config
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+LOG_DIR = os.path.join(BASE_DIR, "logs")
+if not os.path.exists(LOG_DIR):
+    os.makedirs(LOG_DIR)
+
+MAIN_LOG_FILE = os.path.join(LOG_DIR, "server_logs.log")
+
+class UTCFormatter(Formatter):
+    def converter(self, timestamp):
+        return time.gmtime(timestamp)
+
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
     'formatters': {
         'standard': {
-            'format': '%(asctime)s [%(levelname)s] %(name)s: %(message)s'
+            '()': UTCFormatter,
+            'format': '%(asctime)s [%(levelname)s] %(name)s: %(message)s',
+            'datefmt': '%Y-%m-%d %H:%M:%S',
         },
     },
     'handlers': {
-        'file': {
+        'file_main': {
             'level': 'INFO',
-            'class': 'logging.FileHandler',
+            'class': 'logging.handlers.RotatingFileHandler',
             'formatter': 'standard',
-            'filename': 'server_log.log',
-        }
+            'filename': MAIN_LOG_FILE,
+            'maxBytes': 5 * 1024 * 1024,
+            'backupCount': 5,
+        },
+        'file_daily': {
+            'level': 'INFO',
+            'class': 'core.log_config.CustomTimedRotatingFileHandler',
+            'log_dir': LOG_DIR,
+            'formatter': 'standard',
+            'base_filename': 'log',
+            'when': 'midnight',
+            'interval': 1,
+            'backupCount': 7,
+            'encoding': 'utf-8',
+            'utc': True,
+        },
     },
     'loggers': {
         'django': {
-            'handlers': ['file'],
+            'handlers': ['file_main', 'file_daily'],
             'level': 'INFO',
             'propagate': True,
         },
@@ -48,7 +80,6 @@ LOGGING = {
 }
 
 # Application definition
-
 INSTALLED_APPS = [
     'core',
     'user',
@@ -57,6 +88,7 @@ INSTALLED_APPS = [
     'streams',
     'management',
     'analytics',
+    'youtube',
     'rest_framework',
     'django.contrib.admin',
     'django.contrib.auth',
@@ -100,10 +132,8 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'core.wsgi.application'
 
-
 # Database
 # https://docs.djangoproject.com/en/5.0/ref/settings/#databases
-
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
@@ -125,11 +155,8 @@ EMAIL_USE_TLS = os.getenv('EMAIL_USE_TLS') == 'True'
 EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER')
 EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD')
 
-
-
 # Password validation
 # https://docs.djangoproject.com/en/5.0/ref/settings/#auth-password-validators
-
 AUTH_PASSWORD_VALIDATORS = [
     {
         'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
@@ -148,7 +175,6 @@ AUTH_PASSWORD_VALIDATORS = [
 
 # Internationalization
 # https://docs.djangoproject.com/en/5.0/topics/i18n/
-
 LANGUAGE_CODE = 'en-us'
 
 TIME_ZONE = 'UTC'
@@ -160,12 +186,10 @@ USE_TZ = True
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.0/howto/static-files/
-
 STATIC_URL = 'static/'
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.0/ref/settings/#default-auto-field
-
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 CORS_ORIGIN_ALLOW_ALL = True
@@ -181,7 +205,9 @@ CORS_ALLOW_HEADERS = [
     'Resume-Time',
 ]
 
-CORS_EXPOSE_HEADERS = ['Resume-Time']
+CORS_EXPOSE_HEADERS = [
+    'Resume-Time'
+]
 
 CORS_ALLOW_METHODS = [
     'DELETE',

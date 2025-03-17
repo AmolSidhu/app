@@ -1,8 +1,8 @@
 import React, {useEffect} from "react";
 import MainNavbar from "../../Components/Static/MainNavbar";
-import EditVideoForm from "../../Components/Forms/EditVideoForm";
+import EditPictureForm from "../../Components/Forms/EditPictureForm";
 
-const EditVideoPage = () => {
+const EditPicturePage = () => {
     useEffect(() => {
         const token = localStorage.getItem("token");
         if (!token) {
@@ -16,9 +16,9 @@ const EditVideoPage = () => {
         <div>
             <MainNavbar />
             <h1>Edit Video</h1>
-            <EditVideoForm />
+            <EditPictureForm />
         </div>
     );
 }
 
-export default EditVideoPage;
+export default EditPicturePage;

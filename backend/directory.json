@@ -12,5 +12,6 @@
   "album_backup_dir": "D:/bucket/main/data/album_backup/",
   "custom_album_backup_dir": "D:/bucket/main/data/custom_album_backup/",
   "favourites_backup_dir": "D:/bucket/main/data/favourites_backup/",
-  "data_source_upload_dir": "D:/bucket/main/data/data_source/upload/"
+  "data_source_upload_dir": "D:/bucket/main/data/data_source/upload/",
+  "data_source_item_dir": "D:/bucket/main/data/data_source/item/"
 }

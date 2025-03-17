@@ -2,6 +2,7 @@ from selenium import webdriver
 from selenium.webdriver.edge.service import Service
 from selenium.webdriver.common.by import By
 from selenium.webdriver.edge.options import Options
+from webdriver_manager.microsoft import EdgeChromiumDriverManager
 import unicodedata
 import time
 import requests
@@ -15,7 +16,7 @@ def imdb_scraper(imdb_link, serial, identifier=False):
     options.add_argument('user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3')
     options.add_argument('--headless')
     options.add_argument('--disable-gpu')
-    service = Service(executable_path='./driver/msedgedriver.exe')
+    service = Service(EdgeChromiumDriverManager().install())
     driver = webdriver.Edge(service=service, options=options)
 
     driver.get(imdb_link)
@@ -150,25 +151,23 @@ def imdb_scraper(imdb_link, serial, identifier=False):
         try:
             for primary_tag in primary_tags:
                 if primary_tag.is_displayed():
-                    nested_tags = primary_tag.find_elements(By.XPATH, "following-sibling::*")
-                    skip_breaker = primary_tag.text.strip()
-                    for nested_tag in nested_tags:
-                        nested_name = nested_tag.text.strip()
-                        if nested_name:
-                            if nested_name == skip_breaker:
-                                continue
-                            elif nested_name in breakers:
-                                break
-                            names = re.findall(r'[A-Z][a-z]*\s[A-Z][a-z]*', nested_name)
-                            for name in names:
-                                if name:
-                                    try:
-                                        url = nested_tag.find_element(By.TAG_NAME, 'a').get_attribute('href')
-                                    except:
-                                        url = None
-                                    result.append({"name": name, "url": url})
-                        else:
+                    sibling_tags = primary_tag.find_elements(By.XPATH, "following-sibling::*")
+
+                    for sibling in sibling_tags:
+                        text = sibling.text.strip()
+
+                        if text in breakers:
                             break
+                        
+                        link_elements = sibling.find_elements(By.TAG_NAME, 'a')
+                        
+                        for link_element in link_elements:
+                            name = link_element.text.strip()
+                            url = link_element.get_attribute('href')
+
+                            if name and url:
+                                result.append({"name": name, "url": url})
+                    
                     if result:
                         break
         except Exception as e:

@@ -36,9 +36,19 @@ const MainNavbar = () => {
               <NavDropdown.Item href="/video/favourites/">Favourites</NavDropdown.Item>
             </NavDropdown>
 
+            <NavDropdown title='Youtube' id='youtube-dropdown' menuVariant='light'>
+              <NavDropdown.Item href='/youtube/lists/'>My Videos</NavDropdown.Item>
+            </NavDropdown>
+
+            <NavDropdown title="Analytics" id="analytics-dropdown" menuVariant="light">
+            <NavDropdown.Item href="/analytics/upload/">Upload Data Source</NavDropdown.Item>
+              <NavDropdown.Item href="/analytics/create/">Create Dashboard</NavDropdown.Item>
+              <NavDropdown.Item href="/analytics/view/">View Dashboard</NavDropdown.Item>
+            </NavDropdown>
+
             <NavDropdown title="Profile" id="profile-dropdown" menuVariant="light">
-              <NavDropdown.Item href="/albums/">Test 1</NavDropdown.Item>
-              <NavDropdown.Item href="/myalbums/">Test 2</NavDropdown.Item>
+              <NavDropdown.Item href="/profile/">My Profile</NavDropdown.Item>
+              <NavDropdown.Item href="/view/videouploads">My Video Uploads</NavDropdown.Item>
               <NavDropdown.Item href="/pictures/favourites/">Test 3</NavDropdown.Item>
             </NavDropdown>
 

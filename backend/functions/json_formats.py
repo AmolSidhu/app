@@ -25,7 +25,7 @@ def json_imdb_video_record(title, release_year, motion_picture_rating, runtime, 
 
 def json_image_backup(image_name, image_path, image_extension, image_serial, image_description,
                       image_upload_time, tags, people, album, uploaded_by, status, user_editable,
-                      originanl_image_extension):
+                      originanl_image_extension, exif_data):
     return {
         'Image Name': image_name,
         'Image Path': image_path,
@@ -40,7 +40,8 @@ def json_image_backup(image_name, image_path, image_extension, image_serial, ima
         'Uploaded By': uploaded_by,
         'Non-User Editable': user_editable,
         'Status': status,
-        'Revision History': {}
+        'Revision History': {},
+        'Exif Data': exif_data
     }
     
 def json_revision_format_for_images(title=None, description=None, tags=None, people=None, status=None):

@@ -1,10 +1,13 @@
 from django.http import JsonResponse
 from rest_framework import status
+from django.core.mail import send_mail
 
 import jwt
 
 from core.settings import SECRET_KEY
 from user.models import Credentials
+
+from django.conf import settings
 
 
 def token_generator(username, email):
@@ -32,3 +35,10 @@ def auth_check(token):
         return {'error': JsonResponse({'message': 'User not found'},
                                       status=status.HTTP_404_NOT_FOUND)}
     return {'user': user}
+
+def send_verification_email(email, verification_code):
+    subject = 'Verification Code'
+    message = f'Your verification code is: {verification_code}'
+    email_from = settings.EMAIL_HOST_USER
+    recipient_list = [email]
+    send_mail(subject, message, email_from, recipient_list)
