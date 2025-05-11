@@ -9,6 +9,7 @@ import "./CSS/General.css";
 import "./CSS/VideoPage.css";
 import "./CSS/PictureAlbum.css";
 import "./CSS/PictureUploadPopup.css";
+import "./CSS/MusicPage.css";
 
 import "./CSS/VideoPopup.css";
 import "./CSS/StandardPopup.css";

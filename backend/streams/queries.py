@@ -14,7 +14,7 @@ WITH ordered_videos AS (
         LAG(vr.episode) OVER (PARTITION BY vr.master_record_id ORDER BY vr.season, vr.episode) AS prev_episode
     FROM video_record vr
     WHERE vr.master_record_id = (
-        SELECT master_record_id FROM video_record WHERE video_serial = 'LDbrmQVfpsg'
+        SELECT master_record_id FROM video_record WHERE video_serial = %s
     )
 )
 SELECT 

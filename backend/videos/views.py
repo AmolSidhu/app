@@ -11,7 +11,7 @@ import logging
 import json
 import os
 
-from .models import TempVideo, Video, VideoRecord, VideoHistory, VideoGenre, VideoQuery, CustomVideoList, CustomVideoListRecords, VideoFavourites
+from .models import TempVideo, Video, VideoRecord, VideoHistory, VideoGenre, VideoQuery, CustomVideoList, CustomVideoListRecords, VideoFavourites, VideoRequest
 from .queries import get_video_list_query, get_video_by_genre_query, get_recently_viewed_query, get_video_search_query, get_record_data, video_search_query, get_custom_video_list_records_query, get_favourite_videos_query
 
 from functions.auth_functions import auth_check
@@ -34,7 +34,7 @@ def upload_video(request):
                 directory = json.load(f)
             temp_videos_dir = directory['temp_videos_dir']
             os.makedirs(temp_videos_dir, exist_ok=True)
-            thumbnail_dir = directory['thumbnail_dir']
+            thumbnail_dir = directory['video_thumbnail_dir']
             os.makedirs(thumbnail_dir, exist_ok=True)
             video_dir = directory['video_dir']
             os.makedirs(video_dir, exist_ok=True)
@@ -106,7 +106,7 @@ def upload_video(request):
             serializer = TempVideoSerializer(new_temp_video)
             return Response({'message': 'Video uploaded successfully'}, status=status.HTTP_201_CREATED)
         except Exception as e:
-            logging.error(f"Error during video upload: {str(e)}")
+            logger.error(f"Error during video upload: {str(e)}")
             return Response({'message': 'Internal server error'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         
 @api_view(['POST'])
@@ -122,7 +122,7 @@ def batch_video_upload(request):
             with open('directory.json', 'r') as f:
                 directory = json.load(f)
             temp_videos_dir = directory['temp_videos_dir']
-            thumbnail_dir = directory['thumbnail_dir']
+            thumbnail_dir = directory['video_thumbnail_dir']
             video_dir = directory['video_dir']
             os.makedirs(temp_videos_dir, exist_ok=True)
             os.makedirs(thumbnail_dir, exist_ok=True)
@@ -788,5 +788,53 @@ def get_favourite_videos(request):
             }, status=status.HTTP_200_OK)
         except Exception as e:
             logging.error(f"Error during favourite video retrieval: {str(e)}")
+            return Response({'message': 'Internal server error'},
+                            status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            
+@api_view(['POST'])
+def create_video_request(request):
+    if request.method == 'POST':
+        try:
+            token = request.headers.get('Authorization')
+            auth_response = auth_check(token)
+            if 'error' in auth_response:
+                return Response({'message': f'{auth_response["error"]}'},
+                                status=status.HTTP_401_UNAUTHORIZED)
+            user = auth_response['user']
+            new_request = VideoRequest.objects.create(
+                user=user,
+                request_title=request.data.get('request_title'),
+                request_description=request.data.get('request_description')
+            )
+            new_request.save()    
+            return Response({'message': 'Video request created successfully'},
+                            status=status.HTTP_201_CREATED)
+        except Exception as e:
+            logging.error(f"Error during video request creation: {str(e)}")
+            return Response({'message': 'Internal server error'},
+                            status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+@api_view(['GET'])
+def get_video_requests(request):
+    print('get_video_requests')
+    if request.method == 'GET':
+        try:
+            token = request.headers.get('Authorization')
+            auth_response = auth_check(token)
+            if 'error' in auth_response:
+                return Response({'message': f'{auth_response["error"]}'},
+                                status=status.HTTP_401_UNAUTHORIZED)
+            user = auth_response['user']
+            user_requests = VideoRequest.objects.filter(user=user).values(
+                'request_title', 'request_description', 'request_date', 'request_status')
+            user_requests = list(user_requests)
+            if not user_requests:
+                return Response({'message': 'No video requests found'},
+                                status=status.HTTP_404_NOT_FOUND)
+            return Response({'message': 'Video requests retrieved successfully',
+                            'data': user_requests},
+                            status=status.HTTP_200_OK)
+        except Exception as e:
+            logging.error(f"Error during video request retrieval: {str(e)}")
             return Response({'message': 'Internal server error'},
                             status=status.HTTP_500_INTERNAL_SERVER_ERROR)

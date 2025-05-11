@@ -18,6 +18,7 @@ import VideoSearchPage from "./Pages/Videos/VideoSearchPage";
 import VideoCustomListPage from "./Pages/Videos/VideoCustomListPage";
 import VideoFavouritePage from "./Pages/Videos/VideoFavouritePage";
 import VideoTitleSearchPage from "./Pages/Videos/VideoTitleSearchPage";
+import MakeVideoRequestPage from "./Pages/Videos/MakeVideoRequestPage";
 
 //Picture Pages
 import CustomImageAlbumsPage from "./Pages/Pictures/CustomImageAlbumsPage";
@@ -31,6 +32,7 @@ import PictureSearchPage from "./Pages/Pictures/PictureSearchPage";
 import MyVideoUploadsPage from "./Pages/Management/MyVideoUploadsPage";
 import EditVideoPage from "./Pages/Management/EditVideoPage";
 import EditPicturePage from "./Pages/Management/EditPicturePage";
+import ViewMyVideoRequestsPage from "./Pages/Management/ViewMyVideoRequestsPage";
 
 //Analytics Pages
 import CreateDashboardPage from "./Pages/Analytics/CreateDashboardPage";
@@ -40,6 +42,9 @@ import ViewDashboardPage from "./Pages/Analytics/ViewDashboardPage";
 import MyYoutubeListsPage from "./Pages/Youtube/MyYoutubeListsPage";
 import UploadDataSourcePage from "./Pages/Analytics/UploadDataSourcePage";
 import YoutubeStreamPage from "./Pages/Youtube/YoutubeStreamPage";
+
+//Music Pages
+import ViewAllMusicAlbumsPage from "./Pages/Music/ViewAllMusicAlbumsPage";
 
 //Misc Pages
 import NotFound from "./Pages/Misc/NotFoundPage";
@@ -63,6 +68,7 @@ function App() {
         <Route path="/video/customlists/" element={<VideoCustomListPage />} />
         <Route path="/video/favourites/" element={<VideoFavouritePage />} />
         <Route path="/video/search/v/" element={<VideoTitleSearchPage />} />
+        <Route path="/video/request/" element={<MakeVideoRequestPage />} />
 
         <Route path="/pictures/albums/" element={<DefaultImageAlbumsPage />} />
         <Route path="/pictures/" element={<DefaultPicturePage />} />
@@ -74,13 +80,16 @@ function App() {
         <Route path="/view/videouploads/" element={<MyVideoUploadsPage />} />
         <Route path="/edit/video/" element={<EditVideoPage />} />
         <Route path="/edit/picture/" element={<EditPicturePage />} />
+        <Route path="/view/videorequests/" element={<ViewMyVideoRequestsPage />} />
 
         <Route path="/analytics/createdashboard/" element={<CreateDashboardPage />} />
         <Route path="/analytics/upload/" element={<UploadDataSourcePage />} />
         <Route path="/analytics/viewdashboard/" element={<ViewDashboardPage />} />
 
-        <Route path="/youtube/mylists/" element={<MyYoutubeListsPage />} />
+        <Route path="/youtube/lists/" element={<MyYoutubeListsPage />} />
         <Route path="/youtube/stream/" element={<YoutubeStreamPage />} />
+
+        <Route path="/music/albums/" element={<ViewAllMusicAlbumsPage />} />
 
         <Route path="*" element={<NotFound />} />
       </Routes>

@@ -11,7 +11,7 @@ import pandas as pd
 
 from functions.auth_functions import auth_check
 
-from .models import DataSourceUpload
+from .models import DataSourceUpload, Dashboards, DashboardItem, DashboardItemData
 
 logger = logging.getLogger(__name__)
 
@@ -75,11 +75,122 @@ def create_dashboard(request):
             if 'error' in auth_response:
                 return Response({'message': f'{auth_response["error"]}'},
                                 status=status.HTTP_403_FORBIDDEN)
+            serial = None
+            while serial is None:
+                serial = token_urlsafe(8)
+                if Dashboards.objects.filter(dashboard_serial=serial).exists():
+                    serial = None
+            new_dashboard = Dashboards(
+                user=auth_response['user'],
+                data_source=DataSourceUpload.objects.get(serial=request.data['data_source_serial']),
+                dashboard_serial=serial,
+                dashboard_name=request.data['dashboard_name'],
+                dashboard_data_order={},
+                date_created=timezone.now(),
+                date_last_updated=timezone.now()
+            )
+            new_dashboard.save()
             return Response({'message': 'Create Dashboard'},
                             status=status.HTTP_201_CREATED)
         except Exception as e:
             logger.error(f'Error creating dashboard: {e}')
             return Response({'message': 'Error creating dashboard'},
+                            status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            
+@api_view(['POST'])
+def create_dashboard_item(request, serial):
+    if request.method == 'POST':
+        try:
+            token = request.headers.get('Authorization')
+            auth_response = auth_check(token)
+            if 'error' in auth_response:
+                return Response({'message': f'{auth_response["error"]}'},
+                                status=status.HTTP_403_FORBIDDEN)
+            current_dashboard = Dashboards.objects.filter(dashboard_serial=serial).first()
+            if not current_dashboard:
+                return Response({'message': 'Dashboard not found'},
+                                status=status.HTTP_404_NOT_FOUND)
+            serial = None
+            while serial is None:
+                serial = token_urlsafe(8)
+                if DashboardItem.objects.filter(dashboard_item_serial=serial).exists():
+                    serial = None
+            new_dashboard_item = DashboardItem(
+                user=auth_response['user'],
+                dashboard=current_dashboard,
+                dashboard_item_serial=serial,
+                dashboard_data_serial=current_dashboard.data_source,
+                item_type=request.data['item_type'],
+                item_order=request.data['item_order'],
+            )
+            new_dashboard_item.save()
+            return Response({'message': 'Create Dashboard Item'},
+                            status=status.HTTP_201_CREATED)
+        except Exception as e:
+            logger.error(f'Error creating dashboard item: {e}')
+            return Response({'message': 'Error creating dashboard item'},
+                            status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+@api_view(['POST'])
+def create_dashboard_item_data(request, dashboard_serial, dashboard_item_serial):
+    if request.method == 'POST':
+        try:
+            token = request.headers.get('Authorization')
+            auth_response = auth_check(token)
+            if 'error' in auth_response:
+                return Response({'message': f'{auth_response["error"]}'},
+                                status=status.HTTP_403_FORBIDDEN)
+            current_dashboard = Dashboards.objects.filter(
+                dashboard_serial=dashboard_serial,
+                user=auth_response['user']
+            ).first()
+            if not current_dashboard:
+                return Response({'message': 'Dashboard not found'},
+                                status=status.HTTP_404_NOT_FOUND)
+            current_dashboard_item = DashboardItem.objects.filter(
+                dashboard_item_serial=dashboard_item_serial,
+                dashboard=current_dashboard,
+                user=auth_response['user']
+            ).first()
+            if not current_dashboard_item:
+                return Response({'message': 'Dashboard item not found'},
+                                status=status.HTTP_404_NOT_FOUND)
+            item_types = ['Graph', 'Table', 'Text']
+            if request.data.get('data_item_type') not in item_types:
+                return Response({'message': 'Data Item Type does not match any existing item type'},
+                                status=status.HTTP_405_METHOD_NOT_ALLOWED)
+            serial = None
+            while serial is None:
+                serial = token_urlsafe(8)
+                if DashboardItemData.objects.filter(serial=serial).exists():
+                    serial = None
+            with open('directory.json', 'r') as f:
+                directory = json.load(f)
+            data_source_item_dir = directory['data_source_item_dir']
+            os.makedirs(data_source_item_dir, exist_ok=True)
+            new_dashboard_item_data = DashboardItemData(
+                user=auth_response['user'],
+                serial=serial,
+                dashboard_item=current_dashboard_item,
+                dashboard_item_location=data_source_item_dir,
+                data_item_name=request.data['data_item_name'],
+                data_item_type=request.data['data_item_type'],
+            )
+            new_dashboard_item_data.save()
+            if request.data.get('data_item_type') == 'Graph':
+                pass
+            elif request.data.get('data_item_type') == 'Table':
+                pass
+            elif request.data.get('data_item_type') == 'Text':
+                pass
+            else:
+                return Response({'message': 'Invalid data item type'},
+                                status=status.HTTP_400_BAD_REQUEST)
+            return Response({'message': 'Create Dashboard Item Data'},
+                            status=status.HTTP_201_CREATED)
+        except Exception as e:
+            logger.error(f'Error creating dashboard item data: {e}')
+            return Response({'message': 'Error creating dashboard item data'},
                             status=status.HTTP_500_INTERNAL_SERVER_ERROR)
             
 @api_view(['GET'])
@@ -125,31 +236,6 @@ def get_data_source_details(request, serial):
         except Exception as e:
             logger.error(f'Error getting data source details: {e}')
             return Response({'message': 'Error getting data source details'},
-                            status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-@api_view(['POST'])
-def create_dashboard_item(request, serial):
-    if request.method == 'POST':
-        try:
-            token = request.headers.get('Authorization')
-            auth_response = auth_check(token)
-            if 'error' in auth_response:
-                return Response({'message': f'{auth_response["error"]}'},
-                                status=status.HTTP_403_FORBIDDEN)
-            if request.data['data_item_type'] == 'chart':
-                return Response({'message': 'Create Chart Item'},
-                            status=status.HTTP_201_CREATED)
-            elif request.data['data_item_type'] == 'table':
-                return Response({'message': 'Create Table Item'},
-                            status=status.HTTP_201_CREATED)
-            elif request.data['data_item_type'] == 'text':
-                return Response({'message': 'Create Text Item'},
-                            status=status.HTTP_201_CREATED)
-            return Response({'message': 'Create Dashboard Item'},
-                            status=status.HTTP_201_CREATED)     
-        except Exception as e:
-            logger.error(f'Error creating dashboard item: {e}')
-            return Response({'message': 'Error creating dashboard item'},
                             status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 @api_view(['GET'])

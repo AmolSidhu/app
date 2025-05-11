@@ -1,7 +1,7 @@
 from moviepy.editor import VideoFileClip
 from django.utils import timezone
 from collections import defaultdict
-from django.db.models import F
+from secrets import token_urlsafe
 import numpy as np
 import subprocess
 import logging
@@ -15,8 +15,12 @@ import av
 from core.serializer import VideoSerializer, IdentifierSerializer, VideoRecordSerializer, FailedVideoRecordsSerializer
 from videos.models import Video, TempVideo, VideoRecord, VideoGenre, VideoTags, VideoDirectors, VideoStars, VideoWriters, VideoCreators
 from management.models import Identifier, IdentifierTempTable, TempGenreTable
+from youtube.models import YoutubeTempRecord, YoutubeVideoRecord, YoutubeListRecord, YoutubeLists
+from music.models import MusicTempRecord, ArtistRecord, ArtistGenres, MusicAlbumRecord, MusicTrackRecord
 from .scraper import imdb_scraper
-from .json_formats import json_imdb_video_record
+from .youtube_download_function import process_youtube_video
+from .json_formats import json_imdb_video_record, json_music_artist_record, json_music_album_record
+from .music_api import get_spotify_music_data, get_apple_music_data
 
 logger = logging.getLogger(__name__)
 
@@ -227,7 +231,7 @@ def identifier_check():
                 identifier_record = Identifier.objects.create(
                     identifier=imdb_id,
                     current_status="N",
-                    json_location=directory['json_records_dir']
+                    json_location=directory['json_imdb_records_dir']
                 )
                 serializer = IdentifierSerializer(identifier_record)
             
@@ -308,7 +312,7 @@ def visual_profile():
             with open('directory.json', 'r') as f:
                 directory = json.load(f)
             
-            thumbnail_location = directory['thumbnail_dir']
+            thumbnail_location = directory['video_thumbnail_dir']
             
             total_saturation = 0
             frame_count = 0
@@ -610,7 +614,7 @@ def add_identifiers():
                         identify_record = Identifier.objects.create(
                             identifier=entry,
                             current_status="S",
-                            json_location=directory['json_records_dir']
+                            json_location=directory['json_imdb_records_dir']
                         )
                         serializer = IdentifierSerializer(identify_record)
                 except Exception as e:
@@ -754,3 +758,196 @@ def delete_video_search_records():
 
 def delete_picture_search_records():
     return None
+
+def convert_temp_youtube_record():
+    finished = False
+    while not finished:
+        temp_record = YoutubeTempRecord.objects.filter(failed_status=False).first()
+        if temp_record is None:
+            finished = True
+            break
+        try:
+            youtube_data = process_youtube_video(
+                video_url=temp_record.youtube_link,
+                video_output_dir=temp_record.youtube_video_location,
+                thumbnail_output_dir=temp_record.youtube_thumbnail_location,
+                serial=temp_record.serial,
+            )
+            new_record = YoutubeVideoRecord.objects.create(
+                serial=temp_record.serial,
+                title=youtube_data[0],
+                description=youtube_data[1],
+                thumbnail_path=temp_record.youtube_thumbnail_location,
+                video_path=temp_record.youtube_video_location,
+                update_date=timezone.now(),
+                user=temp_record.user,
+            )
+            playlist_serials = [s.strip() for s in temp_record.add_to_playlists]
+            playlists = YoutubeLists.objects.filter(serial__in=playlist_serials)
+            playlist_map = {p.serial: p for p in playlists}
+            for serial in playlist_serials:
+                playlist = playlist_map.get(serial)
+                if not playlist:
+                    logger.warning(f"Playlist with serial '{serial}' not found in pre-fetched data. Skipping.")
+                    continue
+                record_serial = None
+                while record_serial is None:
+                    record_serial = token_urlsafe(16)
+                    if YoutubeListRecord.objects.filter(serial=record_serial).exists():
+                        record_serial = None
+                YoutubeListRecord.objects.create(
+                    serial=record_serial,
+                    youtube_list=playlist,
+                    youtube_video=new_record,
+                )
+            temp_record.delete()
+        except Exception as e:
+            logger.error(f"Error during YouTube video processing for {temp_record.serial}: {str(e)}")
+            temp_record.failed_status = True
+            temp_record.save()
+            video_path = os.path.join(temp_record.youtube_video_location, f"{temp_record.serial}.mp4")
+            thumbnail_path = os.path.join(temp_record.youtube_thumbnail_location, f"{temp_record.serial}.jpg")
+            if os.path.exists(video_path):
+                os.remove(video_path)
+            if os.path.exists(thumbnail_path):
+                os.remove(thumbnail_path)
+            continue
+
+def create_music_record():
+    finished = False
+    while not finished:
+        music_record = MusicTempRecord.objects.filter(failed_status=False).first()
+        if music_record is None:
+            finished = True
+            break
+
+        spotify_data = get_spotify_music_data(spotify_link=music_record.spotify_link)
+        if not spotify_data:
+            logger.error(f"Failed to fetch Spotify data for: {music_record.spotify_link}")
+            music_record.failed_status = True
+            music_record.save()
+            continue
+
+        album_info = spotify_data['album_info']
+        artist_info_list = spotify_data['artist_info']
+        if not artist_info_list:
+            logger.error(f"No artist info found for: {music_record.spotify_link}")
+            music_record.failed_status = True
+            music_record.save()
+            continue
+        artist_info = artist_info_list[0]
+
+        track_ids = [track['track_id'] for track in album_info['tracks']]
+
+        with open('directory.json', 'r') as f:
+            directory = json.load(f)
+        apple_music_path = directory['music_track_preview_dir']
+
+        apple_data = get_apple_music_data(
+            apple_link=music_record.apple_link,
+            tracks=track_ids,
+            apple_music_path=apple_music_path
+        )
+
+        try:
+            existing_record= None
+            artist_record_instance = ArtistRecord.objects.filter(serial=artist_info['artist_id']).first()
+
+            if not artist_record_instance:
+                logger.error(f"Artist record not found for artist_id: {artist_info['artist_id']}")
+                new_artist_record = ArtistRecord.objects.create(
+                    serial=artist_info['artist_id'],
+                    user=music_record.user,
+                    artist_name=artist_info['artist_name'],
+                    artist_image_location=artist_info['artist_image_location'],
+                    artist_popularity=artist_info['popularity'],
+                    artist_followers=artist_info['followers'],
+                    artist_spotify_link=artist_info['spotify_url'],
+                )
+                new_artist_record.save()
+
+                artist_record_instance = ArtistRecord.objects.filter(serial=artist_info['artist_id']).first()
+
+                json_artist_record = json_music_artist_record(
+                    artist_name=artist_info['artist_name'],
+                    artist_id=artist_info['artist_id'],
+                    popularity=artist_info['popularity'],
+                    followers=artist_info['followers'],
+                    spotify_url=artist_info['spotify_url'],
+                    genres=artist_info['genres'],
+                    image_url=artist_info['images'][0] if artist_info['images'] else None,
+                )
+                json_artist_dir = directory['music_artist_json_dir']
+                os.makedirs(json_artist_dir, exist_ok=True)
+                with open(f'{json_artist_dir}{artist_info["artist_id"]}.json',
+                          'w', encoding='utf-8') as f:
+                    json.dump(json_artist_record, f, indent=4, ensure_ascii=False)
+                existing_record = False
+            else:
+                print('check skipped')
+                existing_record = True
+
+            if artist_record_instance is not None:
+                if existing_record is True:
+                    pass
+                else:
+                    for genre in artist_info.get('genres', []):
+                        genre_record = ArtistGenres.objects.create(
+                            serial=token_urlsafe(16),
+                            artist=artist_record_instance,
+                            genre=genre,
+                        )
+                        genre_record.save()
+
+                new_album_record = MusicAlbumRecord.objects.create(
+                    serial=album_info['album_id'],
+                    user=music_record.user,
+                    artist_record=artist_record_instance,
+                    album_name=album_info['album_name'],
+                    album_image_location=album_info['album_image_location'],
+                    album_popularity=album_info['popularity'],
+                    album_type=album_info['album_type'],
+                    release_date=album_info['release_date'],
+                    total_tracks=album_info['total_tracks'],
+                    album_spotify_link=album_info['album_spotify_url'],
+                )
+                new_album_record.save()
+
+                json_album_record = json_music_album_record(
+                    album_name=album_info['album_name'],
+                    album_id=album_info['album_id'],
+                    artist_id=artist_info['artist_id'],
+                    album_type=album_info['album_type'],
+                    release_date=album_info['release_date'],
+                    total_tracks=album_info['total_tracks'],
+                    album_spotify_link=album_info['album_spotify_url'],
+                    album_popularity=album_info['popularity'],
+                    album_image_location=album_info['images'],
+                )
+                json_album_dir = directory['music_album_json_dir']
+                os.makedirs(json_album_dir, exist_ok=True)
+                with open(f'{json_album_dir}{album_info["album_id"]}.json',
+                          'w', encoding='utf-8') as f:
+                    json.dump(json_album_record, f, indent=4, ensure_ascii=False)
+
+                for track in album_info['tracks']:
+                    new_music_track_record = MusicTrackRecord.objects.create(
+                        serial=track['track_id'],
+                        user=music_record.user,
+                        album_record=new_album_record,
+                        artist_record=artist_record_instance,
+                        track_name=track['track_name'],
+                        track_number=track['track_number'],
+                        track_duration=track['duration_ms'],
+                        track_location=apple_music_path
+                    )
+                    new_music_track_record.save()
+
+                music_record.delete()
+            else:
+                logger.error(f"Artist record instance is None for artist_id: {artist_info['artist_id']}")
+
+        except Exception as e:
+            logger.error(f"Error during music record creation for {music_record.serial}: {str(e)}")
+            music_record.failed_status = True
+            music_record.save()

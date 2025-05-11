@@ -120,3 +120,30 @@ def json_revision_format_for_custom_albums(album_name=None, album_description=No
         'Album Description': album_description,
         'Album Status': album_status
     }
+
+def json_music_artist_record(artist_name, artist_id, popularity, followers,
+                             genres, spotify_url, image_url):
+    return {
+        'Artist Name': artist_name,
+        'Artist ID': artist_id,
+        'Popularity': popularity,
+        'Followers': followers,
+        'Genres': genres,
+        'Spotify URL': spotify_url,
+        'Image URL': image_url
+    }
+
+def json_music_album_record(album_name, album_id, artist_id, album_type, release_date,
+                             total_tracks, album_spotify_link, album_image_location,
+                             album_popularity):
+    return {
+        'Album Name': album_name,
+        'Album ID': album_id,
+        'Artist ID': artist_id,
+        'Album Type': album_type,
+        'Release Date': release_date,
+        'Total Tracks': total_tracks,
+        'Album Spotify Link': album_spotify_link,
+        'Album Popularity': album_popularity,
+        'Album Image Location': album_image_location
+    }

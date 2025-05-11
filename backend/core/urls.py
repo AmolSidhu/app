@@ -8,6 +8,7 @@ import videos.views
 import management.views
 import analytics.views
 import youtube.views
+import music.views
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -43,14 +44,14 @@ urlpatterns = [
     path('delete/image/custom_album/<str:album_serial>/<str:image_serial>/', pictures.views.remove_from_custom_image_album, name='remove_from_custom_image_album'),
     path('generate/picture_query/', pictures.views.generate_picture_query, name='generate_picture_query'),
     path('fetch/picture_query/<str:search_id>/', pictures.views.get_picture_query, name='fetch_picture_query'),
-    
+
     # Stream Routes
     path('get/video_stream/<str:serial>/<str:permission>/', streams.views.get_video_stream, name='get_video_stream'),
     path('get/video_history/<str:serial>/', streams.views.get_video_history, name='get_video_history'),
     path('update/playback_time/<str:serial>/', streams.views.update_playback_time, name='update_playback_time'),
     path('get/next_previous_episode/<str:video_serial>/', streams.views.get_next_previous_episode, name='get_next_previous_episode'),
     path('get/video_suggestions/<str:video_serial>/', streams.views.get_video_suggestions, name='get_video_suggestions'),
-    
+
     # Video Routes
     path('upload/video/', videos.views.upload_video, name='upload_video'),
     path('upload/batch_video/', videos.views.batch_video_upload, name='batch_video_upload'),
@@ -71,7 +72,9 @@ urlpatterns = [
     path('get/custom_list_videos/<str:list_serial>/', videos.views.get_custom_video_list_records, name='get_custom_video_list_records'),
     path('update/favourite_videos/<str:serial>/', videos.views.update_video_favourites, name='update_video_favourites'),
     path('get/favourite_videos/', videos.views.get_favourite_videos, name='get_favourite_videos'),
-    
+    path('create/video_request/', videos.views.create_video_request, name='create_video_request'),
+    path('get/video_requests/', videos.views.get_video_requests, name='get_video_requests'),
+
     # Management Routes
     path('import_identifier_api/', management.views.import_identifier_api, name='import_identifier_api'),
     path('update_episode_record/<int:season>/<int:episode>/', management.views.update_episode_record, name='update_episode_record'),
@@ -89,15 +92,18 @@ urlpatterns = [
     path('update/picture_record/<str:serial>/', management.views.update_picture_record, name='update_picture_record'),
     path('update/video_record/<str:serial>/', management.views.update_video_record, name='update_video_record'),
     path('update/video_episode/<str:serial>/', management.views.update_video_episode, name='update_video_episodes'),
-    
+
     # Youtube Routes
     path('create/youtube_playlist/', youtube.views.create_youtube_playlist, name='create_youtube_playlist'),
-    path('upload/youtube_video/', youtube.views.upload_video, name='upload_youtube_video'),
-    path('add/video/youtube_playlist/', youtube.views.add_video_to_playlist, name='add_video_to_playlist'),
+    path('upload/youtube_video/', youtube.views.upload_youtube_video, name='upload_youtube_video'),
+    path('add/video/youtube_playlist/', youtube.views.add_video_to_youtube_playlist, name='add_video_to_playlist'),
     path('get/youtube_playlists/', youtube.views.get_youtube_playlists, name='get_youtube_playlists'),
     path('get/playlist_videos/<str:playlist_serial>/', youtube.views.get_playlist_videos, name='get_playlist_videos'),
-    path('watch/youtube_video/<str:serial>/', youtube.views.watch_youtube_video, name='watch_youtube_video'),
-    
+    path('get/youtube_thumbnail/<str:serial>/', youtube.views.get_youtube_thumbnail, name='get_youtube_thumbnail'),
+    path('watch/youtube_video/<str:serial>/<str:token>/', youtube.views.watch_youtube_video, name='watch_youtube_video'),
+    path('update/youtube_playback_time/<str:serial>/', youtube.views.update_youtube_playback_time, name='update_youtube_playback_time'),
+    path('delete/youtube_video_from_playlist/<str:video_serial>/<str:playlist_serial>/', youtube.views.delete_youtube_video_from_playlist, name='delete_video_from_youtube_playlist'),
+
     # Analytics Routes
     path('upload/data_source/', analytics.views.upload_data_source, name='upload_data_source'),
     path('create/dashboard/', analytics.views.create_dashboard, name='create_dashboard'),
@@ -106,4 +112,14 @@ urlpatterns = [
     path('create/dashboard_item/<str:serial>', analytics.views.create_dashboard_item, name='create_dashboard_item'),
     path('get/dashboard/', analytics.views.get_dashboard, name='get_dashboard'),
     path('get/dashboard_item/<str:serial>/', analytics.views.get_dashboard_item, name='get_dashboard_item'),
+    
+    # Music Routes
+    path('upload/music_links/', music.views.upload_music_links, name='upload_music_links'),
+    path('get/music_albums/', music.views.get_music_albums, name='get_music_albums'),
+    path('get/music_album_data/<str:serial>/', music.views.get_music_album_data, name='get_music_album_data'),
+    path('get/music_tracks/<str:serial>/', music.views.get_music_tracks, name='get_music_tracks'),
+    path('get/artist_thumbnail/<str:serial>/', music.views.get_artist_thumbnail, name='get_artist_thumbnail'),
+    path('get/album_thumbnail/<str:serial>/', music.views.get_album_thumbnail, name='get_album_thumbnail'),
+    path('get/track_data/<str:serial>/', music.views.get_track_data, name='get_track_data'),
+    path('get/track_preview/<str:serial>/', music.views.get_track_preview, name='get_track_preview'),
 ]

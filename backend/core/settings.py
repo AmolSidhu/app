@@ -89,6 +89,7 @@ INSTALLED_APPS = [
     'management',
     'analytics',
     'youtube',
+    'music',
     'rest_framework',
     'django.contrib.admin',
     'django.contrib.auth',

@@ -26,7 +26,7 @@ def imdb_scraper(imdb_link, serial, identifier=False):
     
     with open('directory.json', 'r') as f:
         directory = json.load(f)
-    full_image_dir = directory['full_image_dir']
+    full_image_dir = directory['video_full_image_dir']
     os.makedirs(full_image_dir, exist_ok=True)
     thumbnail_dir = directory['thumbnail_dir']
     os.makedirs(thumbnail_dir, exist_ok=True)

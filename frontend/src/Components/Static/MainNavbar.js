@@ -34,10 +34,15 @@ const MainNavbar = () => {
               <NavDropdown.Item href="/video/upload/">Upload</NavDropdown.Item>
               <NavDropdown.Item href="/video/customlists/">Custom Lists</NavDropdown.Item>
               <NavDropdown.Item href="/video/favourites/">Favourites</NavDropdown.Item>
+              <NavDropdown.Item href="/video/request/">Create Video Request</NavDropdown.Item>
             </NavDropdown>
 
             <NavDropdown title='Youtube' id='youtube-dropdown' menuVariant='light'>
               <NavDropdown.Item href='/youtube/lists/'>My Videos</NavDropdown.Item>
+            </NavDropdown>
+
+            <NavDropdown title='Music' id='music-dropdown' menuVariant='light'>
+              <NavDropdown.Item href='/music/albums/'>Music Albums</NavDropdown.Item>
             </NavDropdown>
 
             <NavDropdown title="Analytics" id="analytics-dropdown" menuVariant="light">
@@ -49,7 +54,7 @@ const MainNavbar = () => {
             <NavDropdown title="Profile" id="profile-dropdown" menuVariant="light">
               <NavDropdown.Item href="/profile/">My Profile</NavDropdown.Item>
               <NavDropdown.Item href="/view/videouploads">My Video Uploads</NavDropdown.Item>
-              <NavDropdown.Item href="/pictures/favourites/">Test 3</NavDropdown.Item>
+              <NavDropdown.Item href="/view/videorequests/">My Video Requests</NavDropdown.Item>
             </NavDropdown>
 
             <Logout onLogout={LogoutRequest} />

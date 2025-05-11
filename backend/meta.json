@@ -2,6 +2,9 @@
     "version": "1.5.01",
     "enviroment": "development",
     "database": "postgresql",
+    "other_requirements": [
+        "ffmpeg"
+    ],
     "selenium_driver_version": "Edge V-18",
     "last_updated": "2025-02-16"
 }

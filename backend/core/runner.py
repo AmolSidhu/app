@@ -86,3 +86,13 @@ def start_delete_picture_query():
     scheduler = BackgroundScheduler()
     scheduler.add_job(job.delete_picture_search_records, 'interval', minutes=1)
     scheduler.start()
+    
+def start_convert_temp_youtube_record():
+    scheduler = BackgroundScheduler()
+    scheduler.add_job(job.convert_temp_youtube_record, 'interval', minutes=1)
+    scheduler.start()
+
+def start_create_music_record():
+    scheduler = BackgroundScheduler()
+    scheduler.add_job(job.create_music_record, 'interval', minutes=1)
+    scheduler.start()

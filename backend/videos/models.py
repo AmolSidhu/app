@@ -346,3 +346,16 @@ class VideoQuery(models.Model):
         db_table = 'video_query'
         verbose_name = 'Video Query'
         verbose_name_plural = 'Video Queries'
+        
+class VideoRequest(models.Model):
+    user = models.ForeignKey('user.Credentials', on_delete=models.CASCADE, related_name='video_requests', null=False)
+    request_date = models.DateTimeField(auto_now_add=True)
+    request_title = models.CharField(max_length=100, null=False)
+    request_description = models.TextField(null=False)
+    request_status = models.CharField(max_length=100, default="Pending", null=False)
+    request_last_updated = models.DateTimeField(auto_now=True, null=False)
+    
+    class Meta:
+        db_table = 'video_request'
+        verbose_name = 'Video Request'
+        verbose_name_plural = 'Video Requests'

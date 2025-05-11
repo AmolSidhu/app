@@ -140,14 +140,13 @@ def get_next_previous_episode(request, video_serial):
             user = auth['user']
             query = next_previous_episode_query()
             with connection.cursor() as cursor:
-                cursor.execute(query, [video_serial])
+                cursor.execute(query, [video_serial, video_serial])
                 columns = [col[0] for col in cursor.description]
                 row = cursor.fetchone()
                 if row:
                     data = dict(zip(columns, row))
                 else:
                     data = []
-                print(data)
             if not data:
                 return JsonResponse({'message': 'No video data found'},
                                      status=status.HTTP_404_NOT_FOUND)
@@ -157,7 +156,6 @@ def get_next_previous_episode(request, video_serial):
             logging.error(f"Error fetching next/previous episode: {str(e)}")
             return JsonResponse({'message': 'Internal server error'},
                                  status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
             
 @api_view(['GET'])
 def get_video_suggestions(request, video_serial):
