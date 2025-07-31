@@ -11,8 +11,11 @@ import logging
 import json
 import os
 
-from .models import TempVideo, Video, VideoRecord, VideoHistory, VideoGenre, VideoQuery, CustomVideoList, CustomVideoListRecords, VideoFavourites, VideoRequest
-from .queries import get_video_list_query, get_video_by_genre_query, get_recently_viewed_query, get_video_search_query, get_record_data, video_search_query, get_custom_video_list_records_query, get_favourite_videos_query
+from .models import (TempVideo, Video, VideoRecord, VideoHistory, VideoGenre, VideoQuery,
+                     CustomVideoList, CustomVideoListRecords, VideoFavourites, VideoRequest)
+from .queries import (get_video_list_query, get_video_by_genre_query, get_recently_viewed_query,
+                      get_video_search_query, get_record_data, video_search_query,
+                      get_custom_video_list_records_query, get_favourite_videos_query)
 
 from functions.auth_functions import auth_check
 from functions.search_parameters import build_video_query_parameters
@@ -24,13 +27,12 @@ logger = logging.getLogger(__name__)
 def upload_video(request):
     if request.method == 'POST':
         try:
-            request_data = request.data
             token = request.headers.get('Authorization')
             auth_response = auth_check(token)
             if 'error' in auth_response:
                 return Response({'message': f'{auth_response["error"]}'}, status=status.HTTP_401_UNAUTHORIZED)
             user = auth_response['user']
-            with open('directory.json', 'r') as f:
+            with open('json/directory.json', 'r') as f:
                 directory = json.load(f)
             temp_videos_dir = directory['temp_videos_dir']
             os.makedirs(temp_videos_dir, exist_ok=True)
@@ -119,7 +121,7 @@ def batch_video_upload(request):
                 return Response({'message': f'{auth_response["error"]}'},
                                 status=status.HTTP_401_UNAUTHORIZED)
             user = auth_response['user']
-            with open('directory.json', 'r') as f:
+            with open('json/directory.json', 'r') as f:
                 directory = json.load(f)
             temp_videos_dir = directory['temp_videos_dir']
             thumbnail_dir = directory['video_thumbnail_dir']
@@ -231,6 +233,26 @@ def batch_video_upload(request):
             logger.error(f"Error during batch video upload: {str(e)}")
             return Response({'message': 'Internal server error'},
                             status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+@api_view(['GET'])
+def get_series_serials(request):
+    if request.method == 'GET':
+        try:
+            token = request.headers.get('Authorization')
+            auth_response = auth_check(token)
+            if 'error' in auth_response:
+                return Response({'message': f'{auth_response["error"]}'},
+                                status=status.HTTP_401_UNAUTHORIZED)
+            user = auth_response['user']
+            series_serials = Video.objects.filter(
+                uploaded_by=user, series=True).values_list('master_serial', flat=True)
+            return Response({'message': 'Series serials retrieved successfully',
+                             'data': list(series_serials)},
+                            status=status.HTTP_200_OK)
+        except Exception as e:
+            logging.error(f"Error during series serial retrieval: {str(e)}")
+            return Response({'message': 'Internal server error'},
+                            status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         
 @api_view(['GET'])
 def get_videos(request):
@@ -248,15 +270,14 @@ def get_videos(request):
             offset = (page - 1) * limit
             query = get_video_list_query()
             with connection.cursor() as cursor:
-                cursor.execute(query, [user.username, permission,
-                                                        limit + 1, offset])
+                cursor.execute(query, [permission, limit + 1, offset])
                 columns = [col[0] for col in cursor.description]
                 rows = cursor.fetchall()
                 has_more = len(rows) > limit
                 videos = [dict(zip(columns, row)) for row in rows[:limit]]
             return Response({'message': 'Videos retrieved successfully',
-                                'data': {'videos': videos, 'has_more': has_more}},
-                                status=status.HTTP_200_OK)
+                             'data': {'videos': videos, 'has_more': has_more}},
+                            status=status.HTTP_200_OK)
         except Exception as e:
             logging.error(f"Error during video retrieval: {str(e)}")
             return Response({'message': 'Internal server error'},
@@ -296,7 +317,8 @@ def get_video_data(request, serial):
             user = auth_response['user']
             user_id = user.username
             with connection.cursor() as cursor:
-                cursor.execute(get_record_data(), [user_id, user_id, user_id, user_id, serial])
+                cursor.execute(get_record_data(), [user_id, user_id,
+                                                   user_id, user_id, serial])
                 result = cursor.fetchone()
             if not result:
                 return Response({'message': 'Video not found'},
@@ -393,26 +415,26 @@ def get_videos_by_genre(request, genre):
                 return Response({'message': f'{auth_response["error"]}'},
                                 status=status.HTTP_401_UNAUTHORIZED)
             user = auth_response['user']
-            user_id = user.username
             permission = user.permission
             page = int(request.query_params.get('page', 1))
             limit = int(request.query_params.get('limit', 5))
             offset = (page - 1) * limit
             query = get_video_by_genre_query()
             with connection.cursor() as cursor:
-                cursor.execute(query, [user_id, permission, genre, limit + 1, offset])
+                cursor.execute(query, [permission, genre, limit + 1, offset])
                 columns = [col[0] for col in cursor.description]
                 rows = cursor.fetchall()
                 has_more = len(rows) > limit
                 videos = [dict(zip(columns, row)) for row in rows[:limit]]
-                return Response({'message': 'Videos retrieved successfully',
-                                'data': {'videos': videos, 'has_more': has_more}},
-                                status=status.HTTP_200_OK)
+            return Response({
+                    'message': 'Videos retrieved successfully',
+                    'data': {'videos': videos, 'has_more': has_more}},
+                status=status.HTTP_200_OK)
         except Exception as e:
             logging.error(f"Error during genre video retrieval: {str(e)}")
-            return Response({'message': 'Internal server error'},
-                            status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
+            return Response(
+                {'message': 'Internal server error'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 @api_view(['GET'])
 def recently_viewed_videos(request):
@@ -421,7 +443,8 @@ def recently_viewed_videos(request):
             token = request.headers.get('Authorization')
             auth_response = auth_check(token)
             if 'error' in auth_response:
-                return auth_response['error']
+                return Response({'message': f'{auth_response["error"]}'},
+                                status=status.HTTP_401_UNAUTHORIZED)
             user = auth_response['user']
             user_id = user.username
             permission = user.permission
@@ -430,15 +453,14 @@ def recently_viewed_videos(request):
             limit = int(request.query_params.get('limit', 5))
             offset = (page - 1) * limit
             with connection.cursor() as cursor:
-                cursor.execute(query, [user_id, user_id,
-                                    permission,
-                                    limit + 1, offset])
+                cursor.execute(query, [user_id, permission, limit + 1, offset])
                 columns = [col[0] for col in cursor.description]
                 rows = cursor.fetchall()
-                videos = [dict(zip(columns, row)) for row in rows]
-                return Response({'message': 'Recently viewed videos retrieved successfully',
-                                'data': videos},
-                                status=status.HTTP_200_OK)
+                has_more = len(rows) > limit
+                videos = [dict(zip(columns, row)) for row in rows[:limit]]
+            return Response({'message': 'Recently viewed videos retrieved successfully',
+                             'data': {'videos': videos, 'has_more': has_more}},
+                            status=status.HTTP_200_OK)
         except Exception as e:
             logging.error(f"Error during recently viewed video retrieval: {str(e)}")
             return Response({'message': 'Internal server error'},

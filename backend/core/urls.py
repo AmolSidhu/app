@@ -9,6 +9,8 @@ import management.views
 import analytics.views
 import youtube.views
 import music.views
+import articles.views
+import files.views
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -55,6 +57,7 @@ urlpatterns = [
     # Video Routes
     path('upload/video/', videos.views.upload_video, name='upload_video'),
     path('upload/batch_video/', videos.views.batch_video_upload, name='batch_video_upload'),
+    path('get/series_serials/', videos.views.get_series_serials, name='get_series_serials'),
     path('get/videos/', videos.views.get_videos, name='get_videos'),
     path('get/video_thumbnail/<str:serial>/', videos.views.get_video_thumbnail, name='get_video_thumbnail'),
     path('get/video_data/<str:serial>/', videos.views.get_video_data, name='get_video_data'),
@@ -92,6 +95,7 @@ urlpatterns = [
     path('update/picture_record/<str:serial>/', management.views.update_picture_record, name='update_picture_record'),
     path('update/video_record/<str:serial>/', management.views.update_video_record, name='update_video_record'),
     path('update/video_episode/<str:serial>/', management.views.update_video_episode, name='update_video_episodes'),
+    path('get/server/metadata/', management.views.get_server_metadata, name='get_server_metadata'),
 
     # Youtube Routes
     path('create/youtube_playlist/', youtube.views.create_youtube_playlist, name='create_youtube_playlist'),
@@ -103,16 +107,39 @@ urlpatterns = [
     path('watch/youtube_video/<str:serial>/<str:token>/', youtube.views.watch_youtube_video, name='watch_youtube_video'),
     path('update/youtube_playback_time/<str:serial>/', youtube.views.update_youtube_playback_time, name='update_youtube_playback_time'),
     path('delete/youtube_video_from_playlist/<str:video_serial>/<str:playlist_serial>/', youtube.views.delete_youtube_video_from_playlist, name='delete_video_from_youtube_playlist'),
+    path('get/youtube_video_stream/<str:serial>/<str:permission>/', youtube.views.get_youtube_video_stream, name='get_youtube_video_stream'),
+    path('update/youtube_playback_time/<str:serial>/', youtube.views.update_youtube_playback_time, name='update_youtube_playback_time'),
 
     # Analytics Routes
     path('upload/data_source/', analytics.views.upload_data_source, name='upload_data_source'),
+    path('update/data_source/<str:serial>/', analytics.views.update_data_source, name='update_data_source'),
+    path('update/data_source_lines/<str:serial>/', analytics.views.update_data_source_lines, name='update_data_source_lines'),
+    path('reset/data_source_lines/<str:serial>/', analytics.views.reset_data_source_lines, name='reset_data_source_lines'),
+    path('get/data_source_cleaning_methods/<str:serial>/', analytics.views.get_data_source_cleaning_methods, name='get_data_source_cleaning_methods'),
+    path('update/data_source_cleaning_methods/<str:serial>/', analytics.views.update_data_source_cleaning_methods, name='update_data_source_cleaning_methods'),
+    path('get/data_source_lines/<str:serial>/', analytics.views.get_data_source_lines, name='get_data_source_lines'),
     path('create/dashboard/', analytics.views.create_dashboard, name='create_dashboard'),
+    path('create/dashboard_item/<str:serial>/', analytics.views.create_dashboard_item, name='create_dashboard_item'),
+    path('create/dashboard_item_data/<str:dashboard_serial>/<str:dashboard_item_serial>/', analytics.views.create_dashboard_item_data, name='create_dashboard_item_data'),
+    path('get/dashboard_item_serials/<str:dashboard_serial>/', analytics.views.get_dashboard_item_serials, name='get_dashboard_item_serials'),
+    path('get/dashboard_item/<str:dashboard_serial>/<str:dashboard_item_serial>/', analytics.views.get_dashboard_item, name='get_dashboard_item'),
+    path('get/dashboard_item_data/<str:dashboard_serial>/<str:dashboard_item_serial>/', analytics.views.get_dashboard_item, name='get_dashboard_item_data'),
+    path('update/dashboard_item/<str:dashboard_serial>/<str:dashboard_item_serial>/', analytics.views.update_dashboard_item, name='update_dashboard_item'),
+    path('delete/dashboard_item/<str:dashboard_serial>/<str:dashboard_item_serial>/', analytics.views.delete_dashboard_item, name='delete_dashboard_item'),
+    path('delete/dashboard/<str:serial>/', analytics.views.delete_dashboard, name='delete_dashboard'),
     path('get/data_sources/', analytics.views.get_data_sources, name='get_data_sources'),
-    path('get/data_source_details/<str:serial>/', analytics.views.get_data_source_details, name='get_data_source_details'),
-    path('create/dashboard_item/<str:serial>', analytics.views.create_dashboard_item, name='create_dashboard_item'),
-    path('get/dashboard/', analytics.views.get_dashboard, name='get_dashboard'),
-    path('get/dashboard_item/<str:serial>/', analytics.views.get_dashboard_item, name='get_dashboard_item'),
-    
+    path('get/cleaned_data_sources/', analytics.views.get_cleaned_data_sources, name='get_cleaned_data_sources'),
+    path('get/data_source_detials/<str:serial>/', analytics.views.get_data_source_details, name='get_data_source_details'),
+    path('get/dashboards/', analytics.views.get_dashboards, name='get_dashboards'),
+    path('get/dashboard/<str:serial>', analytics.views.get_dashboard, name='get_dashboard'),
+    path('get/dashboard_items/<str:serial>/', analytics.views.get_dashboard_items, name='get_dashboard_item'),
+    path('get/dashboard_item_output/<str:serial>/<int:item_order>/', analytics.views.get_dashboard_item_output, name='get_dashboard_item_output'),
+    path('setup/report/', analytics.views.setup_report, name='setup_report'),
+    path('create/report_settings/<str:serial>/', analytics.views.create_report_settings, name='create_report_settings'),
+    path('get/report_settings/<str:serial>/', analytics.views.get_report_settings, name='get_report_settings'),
+    path('update/report_settings/<str:serial>/', analytics.views.update_report_settings, name='update_report_settings'),
+    path('delete/report_settings/<str:serial>/', analytics.views.delete_report_settings, name='delete_report_settings'),
+
     # Music Routes
     path('upload/music_links/', music.views.upload_music_links, name='upload_music_links'),
     path('get/music_albums/', music.views.get_music_albums, name='get_music_albums'),
@@ -122,4 +149,23 @@ urlpatterns = [
     path('get/album_thumbnail/<str:serial>/', music.views.get_album_thumbnail, name='get_album_thumbnail'),
     path('get/track_data/<str:serial>/', music.views.get_track_data, name='get_track_data'),
     path('get/track_preview/<str:serial>/', music.views.get_track_preview, name='get_track_preview'),
+    path('get/artist_data/', music.views.get_artist_data, name='get_artist_data'),
+    
+    # Article Routes
+    path('create/single_article/', articles.views.create_single_article, name='create_single_article'),
+    path('create/multiple_articles/', articles.views.create_multiple_articles, name='create_multiple_articles'),
+    path('upload/article_files/', articles.views.upload_article_files, name='upload_article_files'),
+    path('search/articles/', articles.views.search_articles, name='search_articles'),
+    path('create?articles_list/', articles.views.create_articles_list, name='create_articles_list'),
+    path('add/articles_to_my_list/<str:serial>/', articles.views.add_article_to_my_list, name='add_articles_to_my_list'),
+    
+    # File Routes
+    path('create/upload_folder/', files.views.create_upload_folder, name='create_upload_folder'),
+    path('upload/file/', files.views.upload_file, name='upload_file'),
+    path('update/share_status/file/<str:serial>/', files.views.update_file_share_status, name='update_file_share_status'),
+    path('update/share_status/folder/<str:folder_serial>/', files.views.update_folder_share_status, name='update_folder_share_status'),
+    path('get/my_shared_files/', files.views.get_my_shared_files, name='get_my_shared_files'),
+    path('generate/fetch_download_link/<str:serial>/<>/', files.views.generate_or_fetch_download_link, name='generate_or_fetch_download_link'),
+    path('view/file/<str:file_id>/', files.views.view_file, name='view_file'),
+    path('view/folder/<str:folder_serial>/', files.views.view_folder, name='view_folder'),
 ]

@@ -3,35 +3,9 @@ def get_video_list_query():
     return """
 SELECT 
     v.title,
-    STRING_AGG(DISTINCT vt.tag, ', ') AS tags,
-    STRING_AGG(DISTINCT vd.director, ', ') AS directors,
-    STRING_AGG(DISTINCT vs.star, ', ') AS stars,
-    STRING_AGG(DISTINCT vw.writer, ', ') AS writers,
-    STRING_AGG(DISTINCT vc.creator, ', ') AS creators,
-    v.serial,
-    u.username AS uploader_username,
-    v.imdb_rating,
-    v.description,
-    CASE
-        WHEN v.total_ratings = 0 THEN 0
-        ELSE v.total_rating_score / v.total_ratings
-    END AS rating_with_tiebreaker,
-    CASE
-        WHEN v.uploaded_by_id = %s THEN 1
-        ELSE 0
-    END AS user_match
+    v.serial
 FROM
     video v
-LEFT JOIN
-    video_tags vt ON vt.video_id = v.serial
-LEFT JOIN
-    video_directors vd ON vd.video_id = v.serial
-LEFT JOIN
-    video_stars vs ON vs.video_id = v.serial
-LEFT JOIN
-    video_writers vw ON vw.video_id = v.serial
-LEFT JOIN
-    video_creators vc ON vc.video_id = v.serial
 INNER JOIN
     credentials u ON v.uploaded_by_id = u.username
 WHERE
@@ -40,10 +14,9 @@ AND
     v.private = FALSE
 AND
     u.permission <= %s
-GROUP BY
-    v.serial, v.title, u.username, v.imdb_rating, v.description, v.total_ratings, v.total_rating_score, v.uploaded_by_id
 ORDER BY 
-    rating_with_tiebreaker DESC, v.total_ratings DESC
+    v.total_rating_score / NULLIF(v.total_ratings, 0) DESC,
+    v.total_ratings DESC
 LIMIT %s
 OFFSET %s;
 """
@@ -52,35 +25,13 @@ def get_video_by_genre_query():
     return """
 SELECT 
     v.title, 
-    STRING_AGG(DISTINCT vt.tag, ', ') AS tags,
-    STRING_AGG(DISTINCT vd.director, ', ') AS directors,
-    STRING_AGG(DISTINCT vs.star, ', ') AS stars,
-    STRING_AGG(DISTINCT vw.writer, ', ') AS writers,
-    STRING_AGG(DISTINCT vc.creator, ', ') AS creators,
     v.serial,
-    u.username AS uploader_username,
-    v.imdb_rating,
     v.description,
-    CASE
-        WHEN v.total_ratings = 0 THEN 0
-        ELSE v.total_rating_score / v.total_ratings
-    END AS rating_with_tiebreaker,
-    CASE
-        WHEN v.uploaded_by_id = %s THEN 1
-        ELSE 0
-    END AS user_match
+    v.imdb_rating
 FROM 
     video v
-LEFT JOIN 
+INNER JOIN 
     video_tags vt ON vt.video_id = v.serial
-LEFT JOIN 
-    video_directors vd ON vd.video_id = v.serial
-LEFT JOIN 
-    video_stars vs ON vs.video_id = v.serial
-LEFT JOIN 
-    video_writers vw ON vw.video_id = v.serial
-LEFT JOIN 
-    video_creators vc ON vc.video_id = v.serial
 INNER JOIN 
     credentials u ON v.uploaded_by_id = u.username
 WHERE 
@@ -90,75 +41,44 @@ AND
 AND 
     u.permission <= %s
 AND 
-    EXISTS (
-        SELECT 1 
-        FROM video_tags sub_vt 
-        WHERE sub_vt.video_id = v.serial 
-        AND sub_vt.tag = %s
-    )
-GROUP BY 
-    v.serial, v.title, u.username, v.imdb_rating, v.description, v.total_ratings, v.total_rating_score, v.uploaded_by_id
+    vt.tag = %s
 ORDER BY 
-    rating_with_tiebreaker DESC, v.total_ratings DESC
+    v.uploaded_date DESC
 LIMIT %s OFFSET %s;
 """
 
 def get_recently_viewed_query():
     return """
-WITH latest_history AS (
-    SELECT DISTINCT ON (vh.master_record_id)
-        vh.master_record_id,
-        vh.video_stop_time,
-        vh.serial_id,
-        vh.last_updated AS timestamp
-    FROM main.video_history vh
-    WHERE vh.user_id = %s
-    ORDER BY vh.master_record_id, vh.last_updated DESC
-)
-SELECT 
-    v.title, 
-    STRING_AGG(DISTINCT vt.tag, ', ') AS tags,
-    STRING_AGG(DISTINCT vd.director, ', ') AS directors,
-    STRING_AGG(DISTINCT vs.star, ', ') AS stars,
-    STRING_AGG(DISTINCT vw.writer, ', ') AS writers,
-    STRING_AGG(DISTINCT vc.creator, ', ') AS creators,
-    v.serial,
-    lh.timestamp,
-    u.username AS uploader_username,
-    v.imdb_rating,
-    v.description,
-    CASE
-        WHEN v.uploaded_by_id = %s THEN 1
-        ELSE 0
-    END AS user_match
-FROM 
-    latest_history lh
-JOIN 
-    main.video v ON v.serial = lh.master_record_id
-LEFT JOIN 
-    main.video_tags vt ON vt.video_id = v.serial
-LEFT JOIN 
-    main.video_directors vd ON vd.video_id = v.serial
-LEFT JOIN 
-    main.video_stars vs ON vs.video_id = v.serial
-LEFT JOIN 
-    main.video_writers vw ON vw.video_id = v.serial
-LEFT JOIN 
-    main.video_creators vc ON vc.video_id = v.serial
-JOIN 
-    main.credentials u ON v.uploaded_by_id = u.username
-WHERE 
-    v.current_status = 'P'
-AND 
-    v.private = FALSE
-AND 
-    u.permission <= %s
-GROUP BY 
-    v.serial, v.title, u.username, v.imdb_rating, v.description, lh.timestamp, v.uploaded_by_id
-ORDER BY 
-    lh.timestamp DESC
-LIMIT %s OFFSET %s;
-"""
+    WITH latest_history AS (
+        SELECT DISTINCT ON (vh.master_record_id)
+            vh.master_record_id,
+            vh.video_stop_time,
+            vh.serial_id,
+            vh.last_updated AS timestamp
+        FROM main.video_history vh
+        WHERE vh.user_id = %s
+        ORDER BY vh.master_record_id, vh.last_updated DESC
+    )
+    SELECT 
+        v.title,
+        v.serial,
+        lh.timestamp
+    FROM 
+        latest_history lh
+    JOIN 
+        main.video v ON v.serial = lh.master_record_id
+    JOIN 
+        main.credentials u ON v.uploaded_by_id = u.username
+    WHERE 
+        v.current_status = 'P'
+    AND 
+        v.private = FALSE
+    AND 
+        u.permission <= %s
+    ORDER BY 
+        lh.timestamp DESC
+    LIMIT %s OFFSET %s;
+    """
 
 def get_video_search_query():
     return """

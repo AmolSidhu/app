@@ -8,95 +8,90 @@ const YoutubePlaylistsRequest = () => {
     const VIDEOS_PER_PAGE = 5;
 
     useEffect(() => {
-        const token = localStorage.getItem("token");
-        if (!token) {
-            window.location.href = "/login/";
-            return;
-        }
-
-        fetch(`${server}/get/youtube_playlists/`, {
-            method: "GET",
-            headers: { Authorization: token }
-        })
-        .then(res => res.json().then(data => ({ ok: res.ok, data })))
-        .then(result => {
-            if (!result.ok) {
-                setErrorMessage(result.data.message || "Failed to fetch playlists.");
+        const fetchPlaylists = async () => {
+            const token = localStorage.getItem("token");
+            if (!token) {
+                window.location.href = "/login/";
                 return;
             }
 
-            const loadedPlaylists = result.data.data.map(playlist => ({
-                ...playlist,
-                videos: [],
-                currentPage: 0,
-                total: 0
-            }));
+            try {
+                const res = await fetch(`${server}/get/youtube_playlists/`, {
+                    headers: { Authorization: token }
+                });
+                const data = await res.json();
 
-            setPlaylists(loadedPlaylists);
+                if (!res.ok) {
+                    setErrorMessage(data.message || "Failed to fetch playlists.");
+                    return;
+                }
 
-            loadedPlaylists.forEach(playlist => {
-                fetchVideosForPlaylist(playlist.serial, 0);
-            });
-        })
-        .catch(err => {
-            console.error("Top-level fetch error:", err);
-            setErrorMessage("An error occurred while fetching playlists.");
-        });
+                const loadedPlaylists = data.data.map(playlist => ({
+                    ...playlist,
+                    videos: [],
+                    currentPage: 0,
+                    total: 0
+                }));
+
+                setPlaylists(loadedPlaylists);
+
+                for (const playlist of loadedPlaylists) {
+                    await fetchVideosForPlaylist(playlist.serial, 0);
+                }
+            } catch (err) {
+                console.error("Top-level fetch error:", err);
+                setErrorMessage("An error occurred while fetching playlists.");
+            }
+        };
+
+        fetchPlaylists();
     }, []);
 
-    const fetchVideosForPlaylist = (serial, page) => {
+    const fetchVideosForPlaylist = async (serial, page) => {
         const token = localStorage.getItem("token");
         const offset = page * VIDEOS_PER_PAGE;
 
-        fetch(`${server}/get/playlist_videos/${serial}/?offset=${offset}&limit=${VIDEOS_PER_PAGE}`, {
-            method: "GET",
-            headers: { Authorization: token }
-        })
-        .then(res => res.json().then(data => ({ ok: res.ok, data })))
-        .then(result => {
-            if (!result.ok || !result.data.data) return;
+        try {
+            const res = await fetch(
+                `${server}/get/playlist_videos/${serial}/?offset=${offset}&limit=${VIDEOS_PER_PAGE}`,
+                { headers: { Authorization: token } }
+            );
+            const result = await res.json();
 
-            const videos = result.data.data;
-            const total = result.data.total;
+            if (!res.ok || !result.data) return;
 
-            const fetchThumbnails = async () => {
-                const videosWithThumbnails = await Promise.all(
-                    videos.map(async (video) => {
-                        try {
-                            const thumbRes = await fetch(`${server}/get/youtube_thumbnail/${video.serial}/`, {
-                                method: "GET",
-                                headers: { Authorization: token }
-                            });
+            const { data: videos, total } = result;
 
-                            if (!thumbRes.ok) {
-                                return { ...video, thumbnailUrl: null };
-                            }
+            const videosWithThumbnails = [];
 
-                            const blob = await thumbRes.blob();
-                            const url = URL.createObjectURL(blob);
-                            return { ...video, thumbnailUrl: url };
-                        } catch {
-                            return { ...video, thumbnailUrl: null };
-                        }
-                    })
-                );
+            for (const video of videos) {
+                let thumbnailUrl = null;
+                try {
+                    const thumbRes = await fetch(`${server}/get/youtube_thumbnail/${video.serial}/`, {
+                        headers: { Authorization: token }
+                    });
 
-                setPlaylists(prev => prev.map(p => {
-                    if (p.serial !== serial) return p;
-                    return {
-                        ...p,
-                        videos: videosWithThumbnails,
-                        total,
-                        currentPage: page
-                    };
-                }));
-            };
+                    if (thumbRes.ok) {
+                        const blob = await thumbRes.blob();
+                        thumbnailUrl = URL.createObjectURL(blob);
+                    }
+                } catch (err) {
+                    console.error(`Error fetching thumbnail for video ${video.serial}`, err);
+                }
 
-            fetchThumbnails();
-        })
-        .catch(err => {
+                videosWithThumbnails.push({ ...video, thumbnailUrl });
+            }
+
+            setPlaylists(prev =>
+                prev.map(p =>
+                    p.serial === serial
+                        ? { ...p, videos: videosWithThumbnails, total, currentPage: page }
+                        : p
+                )
+            );
+        } catch (err) {
             console.error("Fetch videos error:", err);
-        });
+        }
     };
 
     const handlePageChange = (serial, direction) => {
@@ -112,54 +107,61 @@ const YoutubePlaylistsRequest = () => {
     };
 
     return (
-        <div className="playlists-container">
-            <h2>YouTube Playlists</h2>
+        <div className="video-list-container">
+            <h1>YouTube Playlists</h1>
             {errorMessage && <p className="error-message">{errorMessage}</p>}
-            {playlists.map((playlist) => (
-                <div key={playlist.serial} className="playlist-item">
-                    <h3>{playlist.name}</h3>
+            {playlists.map(playlist => (
+                <div key={playlist.serial} className="genre-section">
+                    <h2 className="genre-title">{playlist.name}</h2>
                     <p>{playlist.description}</p>
-                    <div className="videos-list">
+                    <div className="video-grid-container">
                         {playlist.videos.length > 0 ? (
-                            <>
-                                {playlist.videos.map((video) => (
-                                    <div key={video.serial} className="video-item" style={{ display: "flex", alignItems: "center", marginBottom: "1rem" }}>
+                            playlist.videos.map(video => (
+                                <div key={video.serial} className="video-grid-item">
+                                    <a href={`/youtube/stream/?serial=${video.serial}`}>
                                         {video.thumbnailUrl ? (
-                                            <img
-                                                src={video.thumbnailUrl}
-                                                alt={video.title}
-                                                style={{ width: "120px", height: "auto", marginRight: "1rem" }}
-                                            />
+                                            <img src={video.thumbnailUrl} alt={video.title} />
                                         ) : (
-                                            <div style={{ width: "120px", height: "90px", backgroundColor: "#ccc", marginRight: "1rem" }} />
+                                            <div style={{ width: "100%", height: "90px", backgroundColor: "#ccc" }} />
                                         )}
-                                        <div>
-                                            <h4>{video.title}</h4>
-                                        </div>
-                                    </div>
-                                ))}
-                                <div className="pagination-controls" style={{ marginTop: "1rem" }}>
-                                    <button
-                                        onClick={() => handlePageChange(playlist.serial, -1)}
-                                        disabled={playlist.currentPage === 0}
-                                    >
-                                        Previous
-                                    </button>
-                                    <span style={{ margin: "0 1rem" }}>
-                                        Page {playlist.currentPage + 1} of {Math.ceil(playlist.total / VIDEOS_PER_PAGE)}
-                                    </span>
-                                    <button
-                                        onClick={() => handlePageChange(playlist.serial, 1)}
-                                        disabled={(playlist.currentPage + 1) * VIDEOS_PER_PAGE >= playlist.total}
-                                    >
-                                        Next
-                                    </button>
+                                    </a>
+                                    <h4>
+                                        <a
+                                            href={`/youtube/stream/?serial=${video.serial}`}
+                                            style={{ textDecoration: "none", color: "inherit" }}
+                                        >
+                                            {video.title}
+                                        </a>
+                                    </h4>
                                 </div>
-                            </>
+                            ))
                         ) : (
                             <p>No videos in this playlist.</p>
                         )}
                     </div>
+
+                    {playlist.total > VIDEOS_PER_PAGE && (
+                        <div className="video-navigation" style={{ marginTop: "1rem" }}>
+                            <button
+                                className="nav-arrow"
+                                onClick={() => handlePageChange(playlist.serial, -1)}
+                                disabled={playlist.currentPage === 0}
+                            >
+                                &larr;
+                            </button>
+                            <span>
+                                Page {playlist.currentPage + 1} of{" "}
+                                {Math.ceil(playlist.total / VIDEOS_PER_PAGE)}
+                            </span>
+                            <button
+                                className="nav-arrow"
+                                onClick={() => handlePageChange(playlist.serial, 1)}
+                                disabled={(playlist.currentPage + 1) * VIDEOS_PER_PAGE >= playlist.total}
+                            >
+                                &rarr;
+                            </button>
+                        </div>
+                    )}
                 </div>
             ))}
         </div>

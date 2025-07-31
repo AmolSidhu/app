@@ -220,3 +220,20 @@ def get_track_preview(request, serial):
             logging.error(f"Error during fetching track mp3: {str(e)}")
             return Response({'message': 'Internal server error'},
                             status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+@api_view(['GET'])
+def get_artist_data(request):
+    if request.method == 'GET':
+        try:
+            token = request.headers.get('Authorization')
+            auth_response = auth_check(token)
+            if 'error' in auth_response:
+                return Response({'message': f'{auth_response["error"]}'},
+                                status=status.HTTP_401_UNAUTHORIZED)
+            user = auth_response['user']
+            return Response({"message": "Artist data fetched successfully"},
+                            status=status.HTTP_200_OK)
+        except Exception as e:
+            logging.error(f"Error during fetching artist data: {str(e)}")
+            return Response({'message': 'Internal server error'},
+                            status=status.HTTP_500_INTERNAL_SERVER_ERROR)

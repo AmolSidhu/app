@@ -34,7 +34,7 @@ def upload_picture(request):
                                 status=status.HTTP_403_FORBIDDEN)
             user = auth_response['user']
             image = request.FILES.get('image')
-            with open('directory.json', 'r') as f:
+            with open('json/directory.json', 'r') as f:
                 directory = json.load(f)
             current_album = DefaultAlbums.objects.filter(album_serial=request.data['album']).first()
             if not current_album:
@@ -357,7 +357,7 @@ def create_album(request):
                     continue
                 else:
                     continue
-            with open('directory.json', 'r') as f:
+            with open('json/directory.json', 'r') as f:
                 directory = json.load(f)
             album_dir = directory['album_backup_dir']
             os.makedirs(album_dir, exist_ok=True)
@@ -465,7 +465,7 @@ def create_custom_image_album(request):
                                 status=status.HTTP_403_FORBIDDEN)
             user = auth_response['user']
             unique_token = False
-            with open('directory.json', 'r') as f:
+            with open('json/directory.json', 'r') as f:
                 directory = json.load(f)
             album_dir = directory['custom_album_backup_dir']
             os.makedirs(album_dir, exist_ok=True)

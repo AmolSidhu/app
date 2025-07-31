@@ -1,0 +1,76 @@
+.analytics-popup {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: sans-serif;
+}
+
+.analytics-popup-inner {
+    background-color: #fff;
+    padding: 2rem;
+    border-radius: 12px;
+    max-height: 90vh;
+    overflow-y: auto;
+    width: 600px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+}
+
+.analytics-popup-inner h3 {
+    margin-top: 0;
+}
+
+.analytics-popup-inner label {
+    display: block;
+    margin-top: 1rem;
+    font-weight: bold;
+}
+
+.analytics-popup-inner input,
+.analytics-popup-inner select,
+.analytics-popup-inner textarea {
+    width: 100%;
+    padding: 8px;
+    margin-top: 4px;
+    box-sizing: border-box;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+}
+
+.analytics-popup-buttons {
+    margin-top: 1.5rem;
+    display: flex;
+    gap: 1rem;
+}
+
+.analytics-popup-buttons button {
+    padding: 0.5rem 1.2rem;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    background-color: #007bff;
+    color: #fff;
+    font-weight: bold;
+}
+
+.analytics-popup-buttons button:hover {
+    background-color: #0056b3;
+}
+
+.analytics-popup-error {
+    color: red;
+    margin-top: 0.5rem;
+}
+
+.analytics-popup-line {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+}

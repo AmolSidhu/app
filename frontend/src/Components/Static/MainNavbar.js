@@ -47,7 +47,7 @@ const MainNavbar = () => {
 
             <NavDropdown title="Analytics" id="analytics-dropdown" menuVariant="light">
             <NavDropdown.Item href="/analytics/upload/">Upload Data Source</NavDropdown.Item>
-              <NavDropdown.Item href="/analytics/create/">Create Dashboard</NavDropdown.Item>
+              <NavDropdown.Item href="/analytics/mydashboards/">My Dashboard</NavDropdown.Item>
               <NavDropdown.Item href="/analytics/view/">View Dashboard</NavDropdown.Item>
             </NavDropdown>
 
@@ -55,6 +55,14 @@ const MainNavbar = () => {
               <NavDropdown.Item href="/profile/">My Profile</NavDropdown.Item>
               <NavDropdown.Item href="/view/videouploads">My Video Uploads</NavDropdown.Item>
               <NavDropdown.Item href="/view/videorequests/">My Video Requests</NavDropdown.Item>
+            </NavDropdown>
+
+            <NavDropdown title="Articles" id="articles-dropdown" menuVariant="light">
+              <NavDropdown.Item href="/articles/search/">Search Articles</NavDropdown.Item>
+            </NavDropdown>
+
+            <NavDropdown title="Files" id="files-dropdown" menuVariant="light">
+              <NavDropdown.Item href="/files/uploadshare/">Upload Files</NavDropdown.Item>
             </NavDropdown>
 
             <Logout onLogout={LogoutRequest} />

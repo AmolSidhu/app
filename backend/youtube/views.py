@@ -1,16 +1,23 @@
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
+from django.http import StreamingHttpResponse
 from django.http import HttpResponse
+from django.http import JsonResponse
+from django.http import JsonResponse
+from wsgiref.util import FileWrapper
 from rest_framework import status
 from secrets import token_urlsafe
+from io import BytesIO
 
 import logging
 import json
 import os
+import mimetypes
+import re
 
 from functions.auth_functions import auth_check
 
-from .models import YoutubeTempRecord, YoutubeVideoRecord, YoutubeLists, YoutubeListRecord
+from .models import YoutubeTempRecord, YoutubeVideoRecord, YoutubeLists, YoutubeListRecord, YoutubeVideoHistory
 
 logger = logging.getLogger(__name__)
 
@@ -283,3 +290,88 @@ def delete_youtube_video_from_playlist(request, video_serial, playlist_serial):
             logger.error(f'Error in remove_video_from_playlist: {e}')
             return Response({'message': 'An error occurred while removing the video from the YouTube playlist.'},
                             status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+@api_view(['GET'])
+def get_youtube_video_stream(request, serial, permission):
+    if request.method == 'GET':
+        try:
+            token = permission
+            auth = auth_check(token)
+            if 'error' in auth:
+                return auth['error']
+            user = auth['user']
+            video = YoutubeVideoRecord.objects.filter(
+                serial=serial).first()
+            if not video:
+                return JsonResponse({'message': 'Video not found'},
+                                    status=status.HTTP_404_NOT_FOUND)
+            video_path = os.path.join(video.video_path, f'{video.serial}.mp4')
+            if not os.path.exists(video_path):
+                return JsonResponse({'message': 'Video file not found'},
+                                    status=status.HTTP_404_NOT_FOUND)
+            video_history = YoutubeVideoHistory.objects.filter(user=user,
+                                                               youtube_video=video).first()
+            resume_time = video_history.video_stop_time if video_history else 0
+
+            size = os.path.getsize(video_path)
+            content_type, _ = mimetypes.guess_type(video_path)
+            range_header = request.META.get('HTTP_RANGE', '').strip()
+            range_match = re.match(r'bytes=(\d+)-(\d+)?', range_header)
+            if range_match:
+                first_byte, last_byte = range_match.groups()
+                first_byte = int(first_byte) if first_byte else 0
+                last_byte = int(last_byte) if last_byte else size - 1
+                last_byte = min(last_byte, size - 1)
+                length = last_byte - first_byte + 1
+                with open(video_path, 'rb') as f:
+                    f.seek(first_byte)
+                    data = f.read(length)
+                response = StreamingHttpResponse(FileWrapper(BytesIO(data)),
+                                                 status=status.HTTP_206_PARTIAL_CONTENT,
+                                                 content_type=content_type)
+                response['Content-Length'] = str(length)
+                response['Content-Range'] = f'bytes {first_byte}-{last_byte}/{size}'
+            else:
+                response = StreamingHttpResponse(FileWrapper(open(video_path, 'rb')),
+                                                 content_type=content_type)
+                response['Content-Length'] = str(size)
+            response['Accept-Ranges'] = 'bytes'
+            response['Resume-Time'] = str(resume_time)
+            return response
+        except Exception as e:
+            logging.error(f"Error during video streaming: {str(e)}")
+            return JsonResponse({'message': 'Internal server error'},
+                                status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+@api_view(['POST'])
+def update_youtube_playback_time(request, serial):
+    if request.method == 'POST':
+        try:
+            token = request.headers.get('Authorization')
+            auth = auth_check(token)
+            if 'error' in auth:
+                return auth['error']
+            user = auth['user']
+            video_stop_time = request.data.get('currentTime')
+            video = YoutubeVideoRecord.objects.filter(
+                serial=serial).first()
+            if not video:
+                return JsonResponse({'message': 'Video not found'},
+                                    status=status.HTTP_404_NOT_FOUND)
+            history = YoutubeVideoHistory.objects.filter(
+                user=user, youtube_video=video).first()
+            if not history:
+                history = YoutubeVideoHistory.objects.create(
+                    user=user,
+                    youtube_video=video,
+                    video_stop_time=video_stop_time
+                )
+            else:
+                history.video_stop_time = video_stop_time
+                history.save()
+            return JsonResponse({'message': 'Playback time updated'},
+                                status=status.HTTP_200_OK)
+        except Exception as e:
+            logging.error(f"Error updating playback time: {str(e)}")
+            return JsonResponse({'message': 'Internal server error'},
+                                status=status.HTTP_500_INTERNAL_SERVER_ERROR)

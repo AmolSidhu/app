@@ -3,8 +3,10 @@ from django.utils import timezone
 from collections import defaultdict
 from secrets import token_urlsafe
 import numpy as np
+import pandas as pd
 import subprocess
 import logging
+import shutil
 import librosa
 import json
 import cv2
@@ -12,15 +14,24 @@ import os
 import re
 import av
 
-from core.serializer import VideoSerializer, IdentifierSerializer, VideoRecordSerializer, FailedVideoRecordsSerializer
-from videos.models import Video, TempVideo, VideoRecord, VideoGenre, VideoTags, VideoDirectors, VideoStars, VideoWriters, VideoCreators
+from core.serializer import (VideoSerializer, IdentifierSerializer,
+                             VideoRecordSerializer, FailedVideoRecordsSerializer)
+from videos.models import (Video, TempVideo, VideoRecord, VideoGenre, VideoTags,
+                           VideoDirectors, VideoStars, VideoWriters, VideoCreators,
+                           VideoQuery, VideoFavourites, MyVideoList, VideoRating,
+                           VideoHistory, VideoComments, CustomVideoListRecords,
+                           CustomVideoList)
 from management.models import Identifier, IdentifierTempTable, TempGenreTable
 from youtube.models import YoutubeTempRecord, YoutubeVideoRecord, YoutubeListRecord, YoutubeLists
 from music.models import MusicTempRecord, ArtistRecord, ArtistGenres, MusicAlbumRecord, MusicTrackRecord
+from analytics.models import DataSourceUpload, Dashboards, DashboardItem, DashboardTableDataLines, DashboardGraphData
+from pictures.models import PictureQuery
 from .scraper import imdb_scraper
 from .youtube_download_function import process_youtube_video
 from .json_formats import json_imdb_video_record, json_music_artist_record, json_music_album_record
 from .music_api import get_spotify_music_data, get_apple_music_data
+from .create_graphs import generate_basic_graph
+from .create_table import create_table
 
 logger = logging.getLogger(__name__)
 
@@ -56,9 +67,8 @@ def check_corruption_temp():
             video.save()
 
 def convert_video():
-    with open('directory.json', 'r') as f:
+    with open('json/directory.json', 'r') as f:
         directory = json.load(f)
-    
     video_location = directory['video_dir']
     os.makedirs(video_location, exist_ok=True)
     
@@ -218,7 +228,7 @@ def identifier_check():
     videos = TempVideo.objects.filter(imdb_added=True,
                                       current_status="J")
     
-    with open('directory.json', 'r') as f:
+    with open('json/directory.json', 'r') as f:
         directory = json.load(f)
     
     for video in videos:
@@ -273,7 +283,8 @@ def audio_profile():
                 'average_volume': average_volume
             }
             
-            audio_details = {key: float(value) if not isinstance(value, tuple) else value for key, value in audio_profile.items()}
+            audio_details = {key: float(value) if not isinstance(
+                value, tuple) else value for key, value in audio_profile.items()}
             
             video.audio_details = audio_details
             video.audio_data_added = True
@@ -309,7 +320,7 @@ def visual_profile():
                 logger.error(f"Failed to open video file {video_path}")
                 continue
             
-            with open('directory.json', 'r') as f:
+            with open('json/directory.json', 'r') as f:
                 directory = json.load(f)
             
             thumbnail_location = directory['video_thumbnail_dir']
@@ -348,7 +359,8 @@ def visual_profile():
             average_saturation = total_saturation / frame_count if frame_count > 0 else 0
             
             visual_profile_data = {
-                'duration': cap.get(cv2.CAP_PROP_FRAME_COUNT) / cap.get(cv2.CAP_PROP_FPS) if cap.get(cv2.CAP_PROP_FPS) != 0 else 0,
+                'duration': cap.get(cv2.CAP_PROP_FRAME_COUNT) / cap.get(
+                    cv2.CAP_PROP_FPS) if cap.get(cv2.CAP_PROP_FPS) != 0 else 0,
                 'resolution': (int(cap.get(cv2.CAP_PROP_FRAME_WIDTH)), int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))),
                 'frame_rate': cap.get(cv2.CAP_PROP_FPS),
                 'average_saturation': average_saturation
@@ -599,7 +611,7 @@ def failed_or_error_processing():
 def add_identifiers():
     temp_data = IdentifierTempTable.objects.all()
     
-    with open('directory.json', 'r') as f:
+    with open('json/directory.json', 'r') as f:
         directory = json.load(f)
     
     for data in temp_data:
@@ -654,10 +666,10 @@ def create_json_record():
                 writers=identifier_record['all_writers']
             )
             
-            with open('directory.json', 'r') as f:
+            with open('json/directory.json', 'r') as f:
                 directory = json.load(f)
                 
-            json_records_dir = directory['json_records_dir']
+            json_records_dir = directory['json_imdb_records_dir']
             os.makedirs(json_records_dir, exist_ok=True)
             
             with open (f'{json_records_dir}{identifier.identifier}.json',
@@ -751,12 +763,40 @@ def check_series_data():
         video_record.save()
 
 def video_marked_for_deletion():
+    finished = False
+    
+    while not finished:
+        try:
+            video_to_delete = Video.objects.filter(current_status='D').first()
+            if video_to_delete is None:
+                finished = True
+                break
+            VideoFavourites.objects.filter(video=video_to_delete).delete()
+            VideoRating.objects.filter(master_record=video_to_delete).delete()
+            VideoHistory.objects.filter(master_record=video_to_delete).delete()
+            VideoComments.objects.filter(master_record=video_to_delete).delete()
+            VideoCreators.objects.filter(video=video_to_delete).delete()
+            VideoWriters.objects.filter(video=video_to_delete).delete()
+            VideoStars.objects.filter(video=video_to_delete).delete()
+            VideoDirectors.objects.filter(video=video_to_delete).delete()
+            VideoTags.objects.filter(video=video_to_delete).delete()
+            CustomVideoListRecords.objects.filter(video_serial=video_to_delete).delete()
+            VideoRecord.objects.filter(master_record=video_to_delete).delete()
+            video_to_delete.delete()
+        except:
+            pass
     return None
 
 def delete_video_search_records():
+    current_time = timezone.now()
+    VideoQuery.objects.filter(query_date__lt=current_time - timezone.timedelta(
+        days=30)).delete()
     return None
 
 def delete_picture_search_records():
+    current_time = timezone.now()
+    PictureQuery.objects.filter(query_date__lt=current_time - timezone.timedelta(
+        days=30)).delete()
     return None
 
 def convert_temp_youtube_record():
@@ -839,7 +879,7 @@ def create_music_record():
 
         track_ids = [track['track_id'] for track in album_info['tracks']]
 
-        with open('directory.json', 'r') as f:
+        with open('json/directory.json', 'r') as f:
             directory = json.load(f)
         apple_music_path = directory['music_track_preview_dir']
 
@@ -951,3 +991,242 @@ def create_music_record():
             logger.error(f"Error during music record creation for {music_record.serial}: {str(e)}")
             music_record.failed_status = True
             music_record.save()
+
+def data_source_cleaning():
+    finished = False
+    while not finished:
+        data_source = DataSourceUpload.objects.filter(
+            data_cleaning_status='pending').first()
+        
+        if data_source is None:
+            finished = True
+            break
+        
+        try:
+            print(f'attempting to clean data source {data_source.serial}')
+            column_cleaning_methods = data_source.data_cleaning_method_for_columns
+            print('1')
+            row_cleaning_method = data_source.data_cleaning_method_for_rows
+            print('2')
+            override_column_cleaning = data_source.override_column_cleaning
+            print('3')
+            
+            file = None
+            
+            try:
+                file = data_source.edited_file_location + data_source.serial + '.csv'
+            except Exception as e:
+                pass
+            
+            if not data_source.edited_file_location:
+                with open('json/directory.json', 'r') as f:
+                    directory = json.load(f)
+                data_source.edited_file_location = directory['data_source_cleaned_dir']
+                data_source.save()
+                
+                print(f'{data_source.edited_file_location}')
+                print('3 - 2')
+                
+                file = data_source.file_location + data_source.serial + '.csv'
+                
+                raw_file = data_source.raw_file_location + data_source.serial + '.csv'
+                os.makedirs(data_source.edited_file_location, exist_ok=True)
+                shutil.copy(raw_file, file)
+                
+                print('3 - 3')
+                 
+            print(f'File exists for data source {data_source.serial}: {file}')
+            
+            df = pd.read_csv(file)
+            print('4')
+            
+            total_cleaning_methods = len(column_cleaning_methods)
+            print('5')
+            total_columns = len(data_source.column_names)
+            print('6')
+            
+            if total_cleaning_methods != total_columns:
+                data_source.override_column_cleaning = True
+                data_source.data_cleaning_method_for_rows = 'dropna'
+                data_source.save()
+                
+            print('7')
+                
+            if override_column_cleaning is True:
+                if row_cleaning_method == 'dropna':
+                    df = df.dropna()
+                if row_cleaning_method == 'dropna_with_threshold':
+                    threshold = data_source.data_cleaning_row_cleaning_value
+                    if threshold is None or threshold < 0:
+                        logger.error(f"Invalid threshold value for data source {data_source.serial}: {threshold}")
+                        data_source.data_cleaning_status = 'failed'
+                        data_source.save()
+                        continue
+                    df = df.dropna(thresh=threshold)
+                if row_cleaning_method == 'fillna_with_value':
+                    value = data_source.data_cleaning_row_cleaning_value
+                    if value is None:
+                        logger.error(f"Invalid fill value for data source {data_source.serial}: {value}")
+                        data_source.data_cleaning_status = 'failed'
+                        data_source.save()
+                        continue
+                    df = df.fillna(value)
+                if row_cleaning_method == 'interpolate':
+                    df = df.interpolate()
+            
+            print('8')
+
+            if override_column_cleaning is False:
+                for column in column_cleaning_methods:
+                    method = column_cleaning_methods[column]
+                    if method == 'drop_duplicates':
+                        df = df.drop_duplicates(subset=column)
+                    if method == 'fillna_with_mean':
+                        mean_value = df[column].mean()
+                        df[column] = df[column].fillna(mean_value)
+                    if method == 'fillna_with_median':
+                        median_value = df[column].median()
+                        df[column] = df[column].fillna(median_value)
+                    if method == 'fillna_with_mode':
+                        mode_value = df[column].mode()
+                        if not mode_value.empty:
+                            df[column] = df[column].fillna(mode_value[0])
+
+            df.to_csv(file, index=True)
+            data_source.data_cleaning_status = 'cleaned'
+            data_source.save()
+
+        except Exception as e:
+            logger.error(f"Error during data source cleaning for {data_source.serial}: {str(e)}")
+            data_source.data_cleaning_status = 'failed'
+            data_source.save()
+
+def create_graph_and_table_dashboard_items():
+    finished = False
+    while not finished:
+        
+        table_record = DashboardItem.objects.filter(
+            data_item_created=False,
+            data_item_failed_creation=False
+        ).first()
+        
+        print ('1')
+        
+        if table_record is None:
+            finished = True
+            break
+
+        try:
+            dashboard = Dashboards.objects.filter(
+                dashboard_serial=table_record.dashboard.dashboard_serial,
+                user=table_record.user
+            ).first()
+            
+            print ('2')
+            
+            if dashboard is None:
+                print(f"Dashboard not found for serial: {table_record.dashboard.dashboard_serial}")
+            
+            data_source = DataSourceUpload.objects.filter(
+                serial=dashboard.data_source.serial,
+                user=table_record.user
+            ).first()
+            
+            if data_source is None:
+                print(f"Data source not found for serial: {dashboard.data_source.serial}")
+                
+            
+            if table_record.data_item_type == 'Graph':
+                
+                graph_settings = DashboardGraphData.objects.filter(
+                    dashboard_item_serial=table_record.dashboard_item_serial,
+                    user=table_record.user
+                ).first()
+                
+                if graph_settings is None:
+                    print(f"Graph settings not found for dashboard item: {table_record.dashboard_item_serial}")
+                    
+                
+                graph = generate_basic_graph(
+                    data_location=data_source.file_location,
+                    serial=table_record.dashboard_item_serial,
+                    graph_type=graph_settings.graph_type,
+                    column_1=graph_settings.x_column,
+                    column_2=graph_settings.y_column,
+                    save_path=table_record.graph_location,
+                    graph_title=graph_settings.graph_title,
+                    x_label=graph_settings.x_axis_title,
+                    y_label=graph_settings.y_axis_title,
+                    columns=[graph_settings.x_column, graph_settings.y_column],
+                    cleaning_method=graph_settings.cleaning_method,
+                    data_source_serial=data_source.serial
+                )
+                
+                if graph is True:
+                    table_record.data_item_created = True
+                    table_record.data_item_failed_creation = False
+                    table_record.save()
+                    continue
+                
+                else:
+                    table_record.data_item_created = False
+                    table_record.data_item_failed_creation = True
+                    table_record.save()
+                    continue
+            
+            if table_record.data_item_type == 'Table':
+                
+                print ('3')
+
+                table_items = DashboardTableDataLines.objects.filter(
+                    dashboard_item_serial=table_record.dashboard_item_serial,
+                    user=table_record.user
+                )
+                
+                if table_items is None:
+                    print(f"Table items not found for dashboard item: {table_record.dashboard_item_serial}")
+                    
+                print ('4')
+                
+                column_1 = []
+                column_2 = []
+                operation = []
+                column_names = []
+                if table_items.exists():
+                    for item in table_items:
+                        column_1.append(item.source_1)
+                        column_2.append(item.source_2)
+                        operation.append(item.operation)
+                        column_names.append(item.column_name)
+                table = create_table(
+                    data_location=data_source.file_location,
+                    serial=table_record.dashboard_item_serial,
+                    data_source_serial=data_source.serial,
+                    source_1_columns=column_1,
+                    source_2_columns=column_2,
+                    operations=operation,
+                    save_path=table_record.table_location,
+                    column_names=column_names,
+                    data_sample_path=table_record.table_truncated_location
+                )
+                
+                print ('5')
+                
+                if table is True:
+                    table_record.data_item_created = True
+                    table_record.data_item_failed_creation = False
+                    table_record.save()
+                    continue
+
+            else:
+                table_record.data_item_created = False
+                table_record.data_item_failed_creation = True
+                table_record.save()
+                continue
+
+        except Exception as e:
+            logger.error(f"Error during dashboard graph and table creation for {table_record.dashboard_item_serial}: {str(e)}")
+            table_record.data_item_failed_creation = True
+            table_record.save()
+            continue
+        

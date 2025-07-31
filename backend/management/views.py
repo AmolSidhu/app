@@ -24,7 +24,7 @@ def import_identifier_api(request):
         try:
             data = json.loads(request.body)
             data = data['data']
-            with open('directory.json', 'r') as f:
+            with open('json/directory.json', 'r') as f:
                 directory = json.load(f)                
             temp_file = token_hex(8)
             with open(f'{directory["temp_json_dir"]}/{temp_file}.json', 'w') as f:
@@ -47,9 +47,11 @@ def update_episode_record(request, season, episode):
             user = auth['user']
             master_serial = request.data['master_serial']
             video_record = Video.objects.filter(serial=master_serial).first()
-            if not video_record or video_record.uploaded_by_id != user.id:
+            if not video_record or video_record.uploaded_by != user.username:
                 return Response({'message': 'Video not found'},
                                     status=status.HTTP_404_NOT_FOUND)
+            video_record.update_series = False
+            video_record.save()
             video_serial = request.data['episode_serial']
             episode_record = VideoRecord.objects.filter(batch_instance=video_record.id,
                                                         episode=episode,
@@ -62,8 +64,6 @@ def update_episode_record(request, season, episode):
             episode_record.episode = data['new_episode']
             episode_record.season = data['new_season']
             episode_record.save()
-            video_record.update_series = False
-            video_record.save()
             return Response({'message': 'Episode record updated successfully'},
                                 status=status.HTTP_200_OK)
         except Exception as e:
@@ -562,13 +562,15 @@ def update_video_episode(request, serial):
                                                     episode=data['current_episode'],
                                                     video_serial=data['video_serial']).first()
             if not video_record:
-                print(request.data)
                 return Response({'message': 'Episode not found'},
                                 status=status.HTTP_404_NOT_FOUND)
             video_record.episode = data['new_episode']
             video_record.season = data['new_season']
             video_record.last_updated = datetime.now()
             video_record.save()
+            video.update_series = False
+            video.last_updated = datetime.now()
+            video.save()
             return Response({'message': 'Episode record updated successfully'},
                             status=status.HTTP_200_OK)
         except Exception as e:
@@ -576,3 +578,21 @@ def update_video_episode(request, serial):
             return Response({'message': 'Internal server error'},
                             status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
+@api_view(['GET'])
+def get_server_metadata(request):
+    if request.method == 'GET':
+        try:
+            token = request.headers.get('Authorization')
+            auth = auth_check(token)
+            if 'error' in auth:
+                return auth['error']
+            user = auth['user']
+            with open('json/meta.json', 'r') as f:
+                directory = json.load(f)
+            data = {}
+            return Response({'data': data},
+                            status=status.HTTP_200_OK)
+        except Exception as e:
+            logging.error(f"Error during server metadata retrieval: {str(e)}")
+            return Response({'message': 'Internal server error'},
+                            status=status.HTTP_500_INTERNAL_SERVER_ERROR)

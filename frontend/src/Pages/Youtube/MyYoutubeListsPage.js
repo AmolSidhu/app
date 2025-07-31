@@ -33,8 +33,7 @@ const MyYoutubeListsPage = () => {
             {showUploadPopup && (
                 <UploadYoutubeVideoPopup onClose={() => setShowUploadPopup(false)} />
             )}
-
-            <h1>My Youtube Lists</h1>
+            
             <YoutubePlaylistsRequest />
         </div>
     );

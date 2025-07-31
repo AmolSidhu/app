@@ -2,90 +2,112 @@ import pandas as pd
 import os
 import json
 import seaborn as sns
+
+import matplotlib
+matplotlib.use('Agg')
+import matplotlib.pyplot as plt
+import os
+import pandas as pd
+import seaborn as sns
 import matplotlib.pyplot as plt
 
-def create_graph(graph_type, data_location, dashboard_serial, dashboard_data_serial,
-                 graph_settings_serial, user, cleaning_method, columns, graph_complexity):
-    dataframe = create_dataframe(data_location, columns)
-    data = dataframe['data']
-    cleaned_data = clean_data(data, cleaning_method, columns)
-    if graph_complexity == 'basic':
-        graph = create_basic_graph(graph_type, cleaned_data)
-    elif graph_complexity == 'advanced':
-        graph = create_advanced_graph(graph_type, cleaned_data)
-    else:
-        return None
-    save_graph(graph, dashboard_serial, dashboard_data_serial, graph_settings_serial, user)
+def generate_basic_graph(graph_type, data_location, cleaning_method, columns,
+                         column_1=None, column_2=None, graph_title=None,
+                         save_path=None, serial=None, x_label=None,
+                         y_label=None, data_source_serial=None):
     
-    return 'Graph created successfully'
+    try:
+        data_file = os.path.join(data_location, f"{data_source_serial}.csv")
+        data = pd.read_csv(data_file, usecols=columns)
 
-def clean_data(data, cleaning_method, columns):
-    if cleaning_method == 'drop_duplicates':
-        cleaned_data = data.drop_duplicates()
-    elif cleaning_method == 'dropna':
-        cleaned_data = data.dropna()
-    elif cleaning_method == 'fillna':
-        cleaned_data = data.fillna(0)
-    elif cleaning_method == 'replace':
-        cleaned_data = data.replace('?', 0)
-    elif cleaning_method == 'drop_columns':
-        cleaned_data = data.drop(columns, axis=1)
-    return {'data': cleaned_data}
+        if cleaning_method == 'drop_duplicates':
+            data = data.drop_duplicates()
+        elif cleaning_method == 'dropna':
+            data = data.dropna()
+        elif cleaning_method == 'fillna':
+            data = data.fillna(0)
+        elif cleaning_method == 'replace':
+            data = data.replace('?', 0)
+        elif cleaning_method == 'drop_columns':
+            data = data.drop(columns, axis=1)
+        elif cleaning_method == 'drop_rows':
+            data = data.drop(data.index[0:5])
 
-def create_dataframe(data_location, columns):
-    data = pd.read_csv(data_location, usecols=columns)
-    return {'data': data}
+        plt.figure(figsize=(10, 6))
+        plt.title(graph_title if graph_title else f'{graph_type.capitalize()} Graph')
 
-def get_graph_settings(graph_settings_serial):
-    return None
+        if column_1:
+            plt.xlabel(x_label)
+        if column_2:
+            plt.ylabel(y_label)
 
-def save_graph():
-    return None
+        if graph_type == 'pie':
+            data[column_1].value_counts().plot.pie(autopct='%1.1f%%')
+            plt.ylabel('')
 
-def create_basic_graph():
-    return None
+        elif graph_type == 'bar':
+            if column_2:
+                sns.barplot(x=column_1, y=column_2, data=data)
+            else:
+                data[column_1].value_counts().plot(kind='bar')
 
-def create_advanced_graph():
-    return None
+        elif graph_type == 'line':
+            if column_2:
+                plt.plot(data[column_1], data[column_2])
+            else:
+                plt.plot(data[column_1])
 
-def create_basic_pie_chart():
-    return None
+        elif graph_type == 'scatter':
+            if column_2:
+                plt.scatter(data[column_1], data[column_2])
+            else:
+                print("Error: Scatter plot requires two columns.")
+                return
 
-def create_advanced_pie_chart():
-    return None
+        elif graph_type == 'heatmap':
+            sns.heatmap(data.corr(), annot=True, cmap='coolwarm')
 
-def create_basic_bar_chart():
-    return None
+        elif graph_type == 'boxplot':
+            if column_2:
+                sns.boxplot(x=column_1, y=column_2, data=data)
+            else:
+                sns.boxplot(y=data[column_1])
 
-def create_advanced_bar_chart():
-    return None
+        elif graph_type == 'violin':
+            if column_2:
+                sns.violinplot(x=column_1, y=column_2, data=data)
+            else:
+                sns.violinplot(y=data[column_1])
 
-def create_basic_line_chart():
-    return None
+        else:
+            print("Error: Unsupported graph type.")
+            return
 
-def create_advanced_line_chart():
-    return None
+        plt.tight_layout()
+        os.makedirs(os.path.dirname(save_path), exist_ok=True)
+        file_path = os.path.join(os.path.dirname(save_path), f"{serial}.png")
+        plt.savefig(file_path, format='png')
+        plt.close()
+        print(f"Graph saved to {save_path}")
+        
+        return True
+    except Exception as e:
+        print(f"Error generating graph: {e}")
+        return False
 
-def create_basic_scatter_plot():
-    return None
 
-def create_advanced_scatter_plot():
-    return None
-
-def create_basic_heatmap():
-    return None
-
-def create_advanced_heatmap():
-    return None
-
-def create_basic_box_plot():
-    return None
-
-def create_advanced_box_plot():
-    return None
-
-def create_basic_violin_plot():
-    return None
-
-def create_advanced_violin_plot():
-    return None
+def create_advanced_graph(graph_type):
+    if graph_type == 'pie':
+        pass
+    if graph_type == 'bar':
+        pass
+    if graph_type == 'line':
+        pass
+    if graph_type == 'scatter':
+        pass
+    if graph_type == 'heatmap':
+        pass
+    if graph_type == 'box':
+        pass
+    if graph_type == 'violin':
+        pass

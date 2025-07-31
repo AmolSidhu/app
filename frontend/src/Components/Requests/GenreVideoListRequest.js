@@ -26,10 +26,15 @@ function GenreVideoListRequest() {
         }
 
         const data = await response.json();
-        setGenres(data.genres.map((genre) => genre.genre));
-        data.genres.forEach((genre) => {
-          fetchVideosByGenre(genre.genre, 1);
+        const genreNames = data.genres.map((genre) => genre.genre);
+        setGenres(genreNames);
+
+        const initialPages = {};
+        genreNames.forEach((genre) => {
+          initialPages[genre] = 1;
+          fetchVideosByGenre(genre, 1);
         });
+        setCurrentPages(initialPages);
       } catch (error) {
         setError(error.message);
       }
@@ -84,8 +89,12 @@ function GenreVideoListRequest() {
 
       setVideosByGenre((prevVideosByGenre) => ({
         ...prevVideosByGenre,
-        [genre]: { videos: fetchedVideos, hasMore: data.data.has_more },
+        [genre]: {
+          videos: fetchedVideos,
+          hasMore: data.data.has_more,
+        },
       }));
+
       setCurrentPages((prevPages) => ({
         ...prevPages,
         [genre]: page,
@@ -110,7 +119,7 @@ function GenreVideoListRequest() {
   };
 
   const handleNextPage = (genre) => {
-    if (videosByGenre[genre].hasMore) {
+    if (videosByGenre[genre]?.hasMore) {
       fetchVideosByGenre(genre, currentPages[genre] + 1);
     }
   };
@@ -125,11 +134,15 @@ function GenreVideoListRequest() {
         <div key={index} className="genre-section">
           <h2 className="genre-title">{genre}</h2>
           <div className="video-navigation">
-            <button onClick={() => handlePrevPage(genre)} disabled={currentPages[genre] === 1} className="nav-arrow">
+            <button
+              onClick={() => handlePrevPage(genre)}
+              disabled={currentPages[genre] === 1}
+              className="nav-arrow"
+            >
               &#9665;
             </button>
             <div className="video-list">
-              {videosByGenre[genre] &&
+              {videosByGenre[genre]?.videos.length > 0 ? (
                 videosByGenre[genre].videos.map((video, index) => (
                   <div
                     key={index}
@@ -138,14 +151,22 @@ function GenreVideoListRequest() {
                   >
                     <img src={video.image_url} alt={video.title} />
                   </div>
-                ))}
+                ))
+              ) : (
+                <p>No videos found for this genre.</p>
+              )}
             </div>
-            <button onClick={() => handleNextPage(genre)} disabled={!videosByGenre[genre]?.hasMore} className="nav-arrow">
+            <button
+              onClick={() => handleNextPage(genre)}
+              disabled={!videosByGenre[genre]?.hasMore}
+              className="nav-arrow"
+            >
               &#9655;
             </button>
           </div>
         </div>
       ))}
+
       {selectedSerial && (
         <div className="popup">
           <div className="popup-inner">

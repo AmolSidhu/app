@@ -77,8 +77,11 @@ def login(request):
             if not user.is_verified:
                 return JsonResponse({'msg': 'User not verified'},
                                     status=status.HTTP_401_UNAUTHORIZED)
-                
-            correct_password = hashlib.sha256(request.data['password'].encode()).hexdigest() == user.password
+            if not user.is_active:
+                return JsonResponse({'msg': 'User is inactive'},
+                                    status=status.HTTP_403_FORBIDDEN)
+            correct_password = hashlib.sha256(request.data['password'].encode(
+                )).hexdigest() == user.password
             if not correct_password:
                 return JsonResponse({'msg': 'Incorrect password'},
                                     status=status.HTTP_401_UNAUTHORIZED)

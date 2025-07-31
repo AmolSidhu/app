@@ -13,9 +13,14 @@ import bs4
 
 def imdb_scraper(imdb_link, serial, identifier=False):
     options = Options()
-    options.add_argument('user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3')
-    options.add_argument('--headless')
+    options.add_argument('--headless=new')
     options.add_argument('--disable-gpu')
+    options.add_argument('--window-size=1920,1080')
+    options.add_argument('--disable-extensions')
+    options.add_argument('--enable-unsafe-swiftshader')
+    options.add_argument('--disable-dev-shm-usage')
+    options.add_argument('--no-sandbox')
+    options.add_argument('user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3')
     service = Service(EdgeChromiumDriverManager().install())
     driver = webdriver.Edge(service=service, options=options)
 
@@ -28,7 +33,7 @@ def imdb_scraper(imdb_link, serial, identifier=False):
         directory = json.load(f)
     full_image_dir = directory['video_full_image_dir']
     os.makedirs(full_image_dir, exist_ok=True)
-    thumbnail_dir = directory['thumbnail_dir']
+    thumbnail_dir = directory['video_thumbnail_dir']
     os.makedirs(thumbnail_dir, exist_ok=True)
         
     try:
@@ -174,6 +179,7 @@ def imdb_scraper(imdb_link, serial, identifier=False):
             print(f"Error extracting names and URLs: {e}")
             result = []
         return result
+    print('28')
 
     all_directors = extract_names_and_urls(driver.find_elements(By.XPATH, "//*[contains(text(), 'Director') or contains(text(), 'Directors')]"), breakers)
     all_writers = extract_names_and_urls(driver.find_elements(By.XPATH, "//*[contains(text(), 'Writer') or contains(text(), 'Writers')]"), breakers)
@@ -230,7 +236,7 @@ def imdb_scraper(imdb_link, serial, identifier=False):
         'all_creators_limited': [c['name'] for c in all_creators],
         'thumbnail_added': thumbnail_added,
         'full_image_added': full_image_added,
-        'thumbnail_location': directory['thumbnail_dir'],
+        'thumbnail_location': directory['video_thumbnail_dir'],
         'full_image_location': full_image_dir,
         'popularity': popularity
     }

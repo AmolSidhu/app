@@ -13,7 +13,13 @@
   "custom_album_backup_dir": "D:/bucket/main/image/custom_album_backup/",
   "favourites_backup_dir": "D:/bucket/main/image/favourites_backup/",
   "data_source_upload_dir": "D:/bucket/main/analytics/data_source/",
+  "data_source_raw_dir": "D:/bucket/main/analytics/data_source/raw/",
+  "data_source_cleaned_dir": "D:/bucket/main/analytics/data_source/cleaned/",
   "data_source_item_dir": "D:/bucket/main/analytics/data_source/item/",
+  "data_item_graph_dir": "D:/bucket/main/analytics/graph/",
+  "data_item_table_dir": "D:/bucket/main/analytics/table/",
+  "data_item_truncate_dir": "D:/bucket/main/analytics/truncate_table/",
+  "report_dir": "D:/bucket/main/analytics/report/",
   "youtube_video_dir": "D:/bucket/main/youtube/video/",
   "youtube_thumbnail_dir": "D:/bucket/main/youtube/thumbnail/",
   "music_artist_thumbnail_dir": "D:/bucket/main/music/artist_thumbnail/",
@@ -21,5 +27,6 @@
   "music_track_preview_dir": "D:/bucket/main/music/preview/",
   "music_track_dir": "D:/bucket/main/music/track/",
   "music_artist_json_dir": "D:/bucket/main/music/artist_json/",
-  "music_album_json_dir": "D:/bucket/main/music/album_json/"
+  "music_album_json_dir": "D:/bucket/main/music/album_json/",
+  "article_file_upload_dir": "D:/bucket/main/article/uploads/"
 }

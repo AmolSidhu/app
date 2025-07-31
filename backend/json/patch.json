@@ -1,0 +1,14 @@
+{
+    "2024-11-16": [
+        "Beta Release"
+    ],
+    "2025-02-16": [
+        "Initial Release"
+    ],
+    "2025-03-17": [
+        "Added Image and Video Edit Fields",
+        "Added Video Suggestions and Streaming Episode Navigation",
+        "API Development for Analytics and Youtube",
+        "Bug Fixes"
+    ]
+}

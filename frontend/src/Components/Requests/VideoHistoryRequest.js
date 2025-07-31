@@ -28,10 +28,10 @@ function VideoHistoryRequest() {
         throw new Error(`HTTP error! Status: ${response.status}`);
       }
 
-      const data = await response.json();
+      const { data } = await response.json();
       const fetchedVideos = [];
 
-      for (let video of data.data) {  
+      for (let video of data.videos) {
         try {
           const thumbnailResponse = await fetch(`${server}/get/video_thumbnail/${video.serial}`, {
             method: "GET",

@@ -15,6 +15,9 @@ class Command(BaseCommand):
             'management',
             'analytics',
             'youtube',
+            'music',
+            'articles',
+            'files',
             ]
 
         for app in apps:

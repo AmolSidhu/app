@@ -4,7 +4,7 @@ import "video.js/dist/video-js.css";
 import server from "../Static/Constants";
 import { useLocation } from "react-router-dom";
 
-const YoutibeVideoStreamRequest = () => {
+const YoutubeVideoStreamRequest = () => {
   const videoRef = useRef(null);
   const location = useLocation();
   const search = location.search;
@@ -16,7 +16,7 @@ const YoutibeVideoStreamRequest = () => {
       const params = new URLSearchParams(search);
       const serial = params.get("serial");
       const token = localStorage.getItem("token");
-      const src = `${server}/watch/youtube_video/${serial}/${token}/`;
+      const src = `${server}/get/youtube_video_stream/${serial}/${token}/`;
 
       const vjsPlayer = videojs(videoElement, {
         controls: true,
@@ -65,15 +65,9 @@ const YoutibeVideoStreamRequest = () => {
               serial: serial,
               currentTime: currentTime,
             }),
-          })
-            .then((response) => {
-              if (!response.ok) {
-                throw new Error("Failed to update playback time");
-              }
-            })
-            .catch((error) => {
-              console.error("Error updating playback time:", error.message);
-            });
+          }).catch((error) => {
+            console.error("Error updating playback time:", error.message);
+          });
         };
 
         const timerId = setInterval(updatePlaybackTime, 5000);
@@ -97,4 +91,4 @@ const YoutibeVideoStreamRequest = () => {
   );
 };
 
-export default YoutibeVideoStreamRequest;
+export default YoutubeVideoStreamRequest;

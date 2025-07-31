@@ -1,0 +1,29 @@
+{
+    "cleaning_methods_columns": [
+        "drop_duplicates",
+        "fillna_with_mean",
+        "fillna_with_median",
+        "fillna_with_mode"
+    ],
+    "cleaning_methods_rows": [
+        "dropna",
+        "dropna_with_threshold",
+        "fillna_with_value",
+        "interpolate"
+    ],
+    "graph_types": [
+        "Pie",
+        "Bar",
+        "Line",
+        "Scatter",
+        "Heatmap",
+        "Boxplot",
+        "Violon"
+    ],
+    "basic_operations": [
+        "Addition",
+        "Subtraction",
+        "Multiplication",
+        "Division"
+    ]
+}

@@ -96,3 +96,13 @@ def start_create_music_record():
     scheduler = BackgroundScheduler()
     scheduler.add_job(job.create_music_record, 'interval', minutes=1)
     scheduler.start()
+    
+def start_data_source_cleaning():
+    scheduler = BackgroundScheduler()
+    scheduler.add_job(job.data_source_cleaning, 'interval', minutes=1)
+    scheduler.start()
+    
+def start_create_graph_and_table_dashboard_items():
+    scheduler = BackgroundScheduler()
+    scheduler.add_job(job.create_graph_and_table_dashboard_items, 'interval', minutes=1)
+    scheduler.start()

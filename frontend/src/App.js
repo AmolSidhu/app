@@ -37,14 +37,21 @@ import ViewMyVideoRequestsPage from "./Pages/Management/ViewMyVideoRequestsPage"
 //Analytics Pages
 import CreateDashboardPage from "./Pages/Analytics/CreateDashboardPage";
 import ViewDashboardPage from "./Pages/Analytics/ViewDashboardPage";
+import UploadDataSourcePage from "./Pages/Analytics/UploadDataSourcePage";
+import MyDashboardsPage from "./Pages/Analytics/MyDashboardsPage";
 
 //Youtube Pages
 import MyYoutubeListsPage from "./Pages/Youtube/MyYoutubeListsPage";
-import UploadDataSourcePage from "./Pages/Analytics/UploadDataSourcePage";
 import YoutubeStreamPage from "./Pages/Youtube/YoutubeStreamPage";
 
 //Music Pages
 import ViewAllMusicAlbumsPage from "./Pages/Music/ViewAllMusicAlbumsPage";
+
+//Articles Pages
+import SearchArticlesPage from "./Pages/Articles/SearchArticlesPage";
+
+//Files Pages
+import UploadShareFilesPage from "./Pages/Files/UploadShareFilesPage";
 
 //Misc Pages
 import NotFound from "./Pages/Misc/NotFoundPage";
@@ -84,12 +91,17 @@ function App() {
 
         <Route path="/analytics/createdashboard/" element={<CreateDashboardPage />} />
         <Route path="/analytics/upload/" element={<UploadDataSourcePage />} />
-        <Route path="/analytics/viewdashboard/" element={<ViewDashboardPage />} />
+        <Route path="/analytics/view/" element={<ViewDashboardPage />} />
+        <Route path="/analytics/mydashboards/" element={<MyDashboardsPage />} />
 
         <Route path="/youtube/lists/" element={<MyYoutubeListsPage />} />
         <Route path="/youtube/stream/" element={<YoutubeStreamPage />} />
 
         <Route path="/music/albums/" element={<ViewAllMusicAlbumsPage />} />
+
+        <Route path="/articles/search/" element={<SearchArticlesPage />} />
+
+        <Route path="/files/uploadshare/" element={<UploadShareFilesPage />} />
 
         <Route path="*" element={<NotFound />} />
       </Routes>
