@@ -26,10 +26,10 @@ def create_single_article(request):
             if 'error' in auth:
                 return auth['error']
             serial = generate_serial_code(
-                config_section='',
-                serial_key='',
+                config_section='articles',
+                serial_key='main_article_serial_code',
                 model=MainArticle,
-                field_name=''
+                field_name='serial'
             )
             new_article = MainArticle(
                 serial=serial,
@@ -43,10 +43,10 @@ def create_single_article(request):
             tags = request.data.get('tags', [])
             for tag in tags:
                 serial = generate_serial_code(
-                    config_section='',
-                    serial_key='',
+                    config_section='articles',
+                    serial_key='article_tag_serial_code',
                     model=ArticleTags,
-                    field_name=''
+                    field_name='serial'
                 )
                 article_tag = ArticleTags(
                     serial=serial,
@@ -97,8 +97,8 @@ def upload_article_files(request):
             if not os.path.exists(article_directory):
                 os.makedirs(article_directory)
             serial = generate_serial_code(
-                config_section='',
-                serial_key='',
+                config_section='articles',
+                serial_key='file_serial_code',
                 model=MassUploadFiles,
                 field_name=''
             )
@@ -125,7 +125,13 @@ def search_articles(request):
             auth = auth_check(token)
             if 'error' in auth:
                 return auth['error']
-            query = request.GET.get('query', '')
+            title_query = request.GET.get('title', '')
+            query_tags = []
+            tags = request.GET.get('tags', '')
+            if tags:
+                query_tags_ = tags.split(',')
+                query_tags = [tag.strip() for tag in query_tags_ if tag.strip()]
+                
             if request.Get.get('query_type') == 'title':
                 pass
             elif request.GET.get('query_type') == 'tag':
@@ -148,10 +154,10 @@ def create_articles_list(request):
             if 'error' in auth:
                 return auth['error']
             serial = generate_serial_code(
-                config_section='',
-                serial_key='',
+                config_section='articles',
+                serial_key='article_user_list_serial_code',
                 model=MyArticleList,
-                field_name=''
+                field_name='serial'
             )
             new_article_list = MyArticleList(
                 serial=serial,
@@ -187,10 +193,10 @@ def add_article_to_my_list(request, article_serial, list_serial):
                 return Response({"message": "My Article List not found"},
                                 status=status.HTTP_404_NOT_FOUND)
             serial = generate_serial_code(
-                config_section='',
-                serial_key='',
+                config_section='articles',
+                serial_key='articles_user_list_record_serial_code',
                 model=MyArticleListRecords,
-                field_name=''
+                field_name='serial'
             )
             new_list_record = MyArticleListRecords(
                 serial=serial,

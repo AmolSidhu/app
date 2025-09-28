@@ -1,24 +1,24 @@
 import React, { useEffect } from "react";
 import MainNavbar from "../../Components/Static/MainNavbar";
-import FileShareSwitch from "../../Components/Static/FileShareSwitch";
+import ViewAllShareFolderFilesRequest from "../../Components/Requests/ViewAllShareFolderFilesRequest";
 
-const UploadShareFilesPage = () => {
+const ViewFolderShareFilesPage = () => {
     useEffect(() => {
         const token = localStorage.getItem("token");
         if (!token) {
             window.location.href = "/login/";
         } else {
-            document.title = "Upload & Share Files";
+            document.title = "View Folder Shared Files";
         }
     }, []);
 
     return (
         <div>
             <MainNavbar />
-            <h1>Upload & Share Files</h1>
-            <FileShareSwitch />
+            <h1>View Folder Shared Files</h1>
+            <ViewAllShareFolderFilesRequest />
         </div>
     );
-};
+}
 
-export default UploadShareFilesPage;
+export default ViewFolderShareFilesPage;

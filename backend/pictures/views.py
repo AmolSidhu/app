@@ -17,6 +17,8 @@ from .queries import custom_album_data_query, favourite_pictures_query, picture_
 from core.serializer import DefaultAlbumsSerializer, MyAlbumsSerializer, PictureQuerySerializer
 from core.fetch_serializer import PictureFetchSerializer, DefaultAlbumFetchSerializer, MyAlbumsFetchSerializer
 
+from functions.serial_default_generator import generate_serial_code
+
 import logging
 import json
 import os
@@ -47,12 +49,12 @@ def upload_picture(request):
             current_time = timezone.now().strftime('%Y-%m-%d_%H-%M-%S')
             full_backup_path = os.path.join(f'{image_backup_dir}{current_time}')
             os.makedirs(full_backup_path, exist_ok=True)
-            unique_token = False
-            while not unique_token:
-                serial = token_urlsafe(10)
-                existing_image = Picture.objects.filter(picture_serial=serial).first()
-                if not existing_image:
-                    unique_token = True
+            serial = generate_serial_code(
+                config_section="pictures",
+                serial_key="picture_serial_code",
+                model=Picture,
+                field_name="picture_serial"
+            )
             exif_dict = extract_exif_data(image)
             user_editable_status = request.data['user_editable'].lower() == 'true'
             json_format = json_image_backup(
@@ -348,15 +350,12 @@ def create_album(request):
                 return Response({'message': f'{auth_response["error"]}'},
                                 status=status.HTTP_403_FORBIDDEN)
             user = auth_response['user']
-            unique_token = False
-            while unique_token == False:
-                serial = token_urlsafe(10)
-                existing_album = DefaultAlbums.objects.filter(album_serial=serial).first()
-                if not existing_album:
-                    unique_token = True
-                    continue
-                else:
-                    continue
+            serial = generate_serial_code(
+                config_section="pictures",
+                serial_key="default_album_serial_code",
+                model=DefaultAlbums,
+                field_name="album_serial"
+            )
             with open('json/directory.json', 'r') as f:
                 directory = json.load(f)
             album_dir = directory['album_backup_dir']
@@ -464,19 +463,16 @@ def create_custom_image_album(request):
                 return Response({'message': f'{auth_response["error"]}'},
                                 status=status.HTTP_403_FORBIDDEN)
             user = auth_response['user']
-            unique_token = False
             with open('json/directory.json', 'r') as f:
                 directory = json.load(f)
             album_dir = directory['custom_album_backup_dir']
             os.makedirs(album_dir, exist_ok=True)
-            while unique_token == False:
-                serial = token_urlsafe(10)
-                existing_album = MyAlbums.objects.filter(album_serial=serial).first()
-                if not existing_album:
-                    unique_token = True
-                    continue
-                else:
-                    continue
+            serial = generate_serial_code(
+                config_section="pictures",
+                serial_key="custom_album_serial_code",
+                model=MyAlbums,
+                field_name="album_serial"
+            )
             new_album = MyAlbums.objects.create(
                 user=user,
                 album_name=request.data['album_name'],

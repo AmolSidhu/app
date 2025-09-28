@@ -16,6 +16,7 @@ import mimetypes
 import re
 
 from functions.auth_functions import auth_check
+from functions.serial_default_generator import generate_serial_code
 
 from .models import YoutubeTempRecord, YoutubeVideoRecord, YoutubeLists, YoutubeListRecord, YoutubeVideoHistory
 
@@ -30,13 +31,12 @@ def upload_youtube_video(request):
             if 'error' in auth_response:
                 return Response(auth_response['error'])
             user = auth_response['user']
-            serial = None
-            while serial is None:
-                serial = token_urlsafe(16)
-                if YoutubeTempRecord.objects.filter(serial=serial).exists():
-                    serial = None
-                if YoutubeVideoRecord.objects.filter(serial=serial).exists():
-                    serial = None
+            serial = generate_serial_code(
+                config_section="youtube",
+                serial_key="youtube_temp_record_serial_code",
+                model=YoutubeTempRecord,
+                field_name="serial"
+            )
             with open('directory.json', 'r') as f:
                 directory = json.load(f)
             video_dir = directory['youtube_video_dir']
@@ -70,11 +70,12 @@ def create_youtube_playlist(request):
             if 'error' in auth_response:
                 return Response(auth_response['error'])
             user = auth_response['user']
-            serial = None
-            while serial is None:
-                serial = token_urlsafe(16)
-                if YoutubeLists.objects.filter(serial=serial).exists():
-                    serial = None
+            serial = generate_serial_code(
+                config_section="youtube",
+                serial_key="youtube_lists_serial_code",
+                model=YoutubeLists,
+                field_name="serial"
+            )
             playlist_record = YoutubeLists.objects.create(
                 serial=serial,
                 user=user,
@@ -107,11 +108,12 @@ def add_video_to_youtube_playlist(request, video_serial, playlist_serial):
             if not youtube_playlist_record:
                 return Response({'message': 'Playlist not found.'},
                                 status=status.HTTP_404_NOT_FOUND)
-            serial = None
-            while serial is None:
-                serial = token_urlsafe(16)
-                if YoutubeListRecord.objects.filter(serial=serial).exists():
-                    serial = None
+            serial = generate_serial_code(
+                config_section="youtube",
+                serial_key="youtube_list_record_serial_code",
+                model=YoutubeListRecord,
+                field_name="serial"
+            )
             new_playlist_record = YoutubeListRecord.objects.create(
                 serial=serial,
                 youtube_list=youtube_playlist_record,
@@ -206,7 +208,6 @@ def get_youtube_thumbnail(request, serial):
             if 'error' in auth_response:
                 return Response(auth_response['error'],
                                 status=status.HTTP_401_UNAUTHORIZED)
-            user = auth_response['user']
             youtube_video = YoutubeVideoRecord.objects.filter(serial=serial).first()
             if not youtube_video:
                 return Response({'message': 'Video not found.'},
@@ -229,7 +230,6 @@ def watch_youtube_video(request, serial, token):
             auth_response = auth_check(token)
             if 'error' in auth_response:
                 return Response(auth_response['error'])
-            user = auth_response['user']
         except Exception as e:
             logger.error(f'Error in watch_youtube_video: {e}')
             return Response({'message': 'An error occurred while updating the YouTube video.'},
@@ -244,7 +244,6 @@ def update_youtube_playback_time(request, serial):
             if 'error' in auth_response:
                 return Response(auth_response['error'],
                                 status=status.HTTP_401_UNAUTHORIZED)
-            user = auth_response['user']
             youtube_video = YoutubeVideoRecord.objects.filter(serial=serial).first()
             if not youtube_video:
                 return Response({'message': 'Video not found.'},

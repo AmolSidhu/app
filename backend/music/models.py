@@ -72,4 +72,16 @@ class MusicTrackRecord(models.Model):
         verbose_name_plural = 'Music Track Records'
     
     
+class AddedFullTrack(models.Model):
+    serial = models.CharField(max_length=100, primary_key=True, unique=True, null=False)
+    user = models.ForeignKey('user.Credentials', on_delete=models.CASCADE)
+    file = models.BooleanField(default=False, null=False)
+    file_path = models.CharField(max_length=300, null=False)
+    youtube_link = models.CharField(max_length=300, null=True)
+    track = models.ForeignKey(MusicTrackRecord, on_delete=models.CASCADE, null=True)
+    status = models.CharField(max_length=100, default='pending', null=False)
     
+    class Meta:
+        db_table = 'added_full_track'
+        verbose_name = 'Added Full Track'
+        verbose_name_plural = 'Added Full Tracks'

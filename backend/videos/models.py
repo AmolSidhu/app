@@ -3,6 +3,8 @@ from django.utils import timezone
 from datetime import timedelta
 
 class TempVideo(models.Model):
+    master_serial = models.CharField(max_length=100, null=False, unique=False, primary_key=True)
+    existing_series_serial = models.CharField(max_length=100, null=True, unique=False)
     video_name = models.CharField(max_length=100, null=False)
     title = models.CharField(max_length=100, default="", null=True)
     video_location = models.CharField(max_length=300, null=False)
@@ -37,7 +39,6 @@ class TempVideo(models.Model):
     description = models.TextField(default="", null=True)
     genre_updated = models.BooleanField(default=True)
     serial = models.CharField(max_length=100, unique=True, null=False)
-    master_serial = models.CharField(max_length=100, null=False, unique=False)
     season = models.IntegerField(default=0, null=False)
     episode = models.IntegerField(default=0, null=False)
     existing_series = models.BooleanField(default=False, null=False)

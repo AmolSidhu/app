@@ -1,23 +1,25 @@
-import React, { useEffect } from "react";
+import rEACT, {useEffect} from "react";
 import MainNavbar from "../../Components/Static/MainNavbar";
+import DownloadFolderRequest from "../../Components/Requests/DownloadFolderRequest";
 
-const MyUploadedFilesPage = () => {
+const DownloadFolderPage = () => {
     useEffect(() => {
         const token = localStorage.getItem("token");
         if (!token) {
             window.location.href = "/login/";
         }
         else {
-            document.title = "My Uploaded Files";
+            document.title = "My Downloadable Folders";
         }
     }, []);
 
     return (
         <div>
             <MainNavbar />
-            <h1>My Uploaded Files</h1>
+            <h1>Download Folder</h1>
+            <DownloadFolderRequest />
         </div>
     );
 }
 
-export default MyUploadedFilesPage;
+export default DownloadFolderPage;

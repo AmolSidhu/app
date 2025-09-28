@@ -2,7 +2,6 @@ from selenium import webdriver
 from selenium.webdriver.edge.service import Service
 from selenium.webdriver.common.by import By
 from selenium.webdriver.edge.options import Options
-from webdriver_manager.microsoft import EdgeChromiumDriverManager
 import unicodedata
 import time
 import requests
@@ -12,6 +11,7 @@ import json
 import bs4
 
 def imdb_scraper(imdb_link, serial, identifier=False):
+    print('Starting IMDb scraper...')
     options = Options()
     options.add_argument('--headless=new')
     options.add_argument('--disable-gpu')
@@ -21,7 +21,9 @@ def imdb_scraper(imdb_link, serial, identifier=False):
     options.add_argument('--disable-dev-shm-usage')
     options.add_argument('--no-sandbox')
     options.add_argument('user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3')
-    service = Service(EdgeChromiumDriverManager().install())
+
+    driver_path = 'driver\msedgedriver.exe'
+    service = Service(executable_path=driver_path)
     driver = webdriver.Edge(service=service, options=options)
 
     driver.get(imdb_link)
@@ -29,11 +31,11 @@ def imdb_scraper(imdb_link, serial, identifier=False):
 
     title = driver.find_element(By.TAG_NAME, 'h1').text
     
-    with open('directory.json', 'r') as f:
+    with open('json/directory.json', 'r') as f:
         directory = json.load(f)
     full_image_dir = directory['video_full_image_dir']
     os.makedirs(full_image_dir, exist_ok=True)
-    thumbnail_dir = directory['video_thumbnail_dir']
+    thumbnail_dir = directory['video_thumbnail_transition_dir']
     os.makedirs(thumbnail_dir, exist_ok=True)
         
     try:
@@ -110,14 +112,13 @@ def imdb_scraper(imdb_link, serial, identifier=False):
     try:
         thumbnail_url = driver.find_element(By.CSS_SELECTOR, '[data-testid="hero-media__poster"]').find_element(By.TAG_NAME, 'img').get_attribute('src')
         thumbnail_response = requests.get(thumbnail_url, headers={'User-Agent': options.arguments[0]})
-        if identifier == True:
-            pass
-        else:
+        if not identifier:
             with open(f'{thumbnail_dir}{thumbnail_filename}.jpg', 'wb') as f:
                 f.write(thumbnail_response.content)
     except Exception as e:
         print(f"Error downloading thumbnail: {e}")
-        
+        thumbnail_url = None
+
     json_ld = None
     try:
         script_tag = driver.find_element(By.XPATH, "//script[@type='application/ld+json']")
@@ -129,26 +130,17 @@ def imdb_scraper(imdb_link, serial, identifier=False):
     try:
         full_image_url = json_ld.get('image', '')
         full_image_response = requests.get(full_image_url, headers={'User-Agent': options.arguments[0]})
-        if identifier == True:
-            pass
-        else:
+        if not identifier:
             with open(f'{full_image_dir}{full_image_file}.jpg', 'wb') as f:
                 f.write(full_image_response.content)
     except Exception as e:
         full_image_file = None
-        print(f"Error downloading thumbnail: {e}")
+        print(f"Error downloading full image: {e}")
+        full_image_url = None
 
     breakers = [
-        'Director',
-        'Directors',
-        'Stars',
-        'Star',
-        'Cast',
-        'Casts',
-        'Writer',
-        'Writers',
-        'Creator',
-        'Creators'
+        'Director', 'Directors', 'Stars', 'Star', 'Cast', 'Casts',
+        'Writer', 'Writers', 'Creator', 'Creators'
     ]
 
     def extract_names_and_urls(primary_tags, breakers):
@@ -157,61 +149,46 @@ def imdb_scraper(imdb_link, serial, identifier=False):
             for primary_tag in primary_tags:
                 if primary_tag.is_displayed():
                     sibling_tags = primary_tag.find_elements(By.XPATH, "following-sibling::*")
-
                     for sibling in sibling_tags:
                         text = sibling.text.strip()
-
                         if text in breakers:
                             break
-                        
                         link_elements = sibling.find_elements(By.TAG_NAME, 'a')
-                        
                         for link_element in link_elements:
                             name = link_element.text.strip()
                             url = link_element.get_attribute('href')
-
                             if name and url:
                                 result.append({"name": name, "url": url})
-                    
                     if result:
                         break
         except Exception as e:
             print(f"Error extracting names and URLs: {e}")
-            result = []
         return result
-    print('28')
 
     all_directors = extract_names_and_urls(driver.find_elements(By.XPATH, "//*[contains(text(), 'Director') or contains(text(), 'Directors')]"), breakers)
     all_writers = extract_names_and_urls(driver.find_elements(By.XPATH, "//*[contains(text(), 'Writer') or contains(text(), 'Writers')]"), breakers)
     all_stars = extract_names_and_urls(driver.find_elements(By.XPATH, "//*[contains(text(), 'Star') or contains(text(), 'Stars')]"), breakers)
     all_creators = extract_names_and_urls(driver.find_elements(By.XPATH, "//*[contains(text(), 'Creator') or contains(text(), 'Creators')]"), breakers)
-    
-    thumbnail_added = True if thumbnail_filename is not None else False
-    full_image_added = True if full_image_file is not None else False
-    
+
+    thumbnail_added = thumbnail_filename is not None
+    full_image_added = full_image_file is not None
+
     popularity = 'N/A'
-    if identifier == True:
+    if identifier:
         headers = {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3'
         }
-
-
         response = requests.get(imdb_link, headers=headers)
         response.encoding = 'utf-8'
-        html_content = response.text
-        soup = bs4.BeautifulSoup(html_content, 'lxml')
-
+        soup = bs4.BeautifulSoup(response.text, 'lxml')
         try:
             popularity_element = soup.find(attrs={'data-testid': 'hero-rating-bar__popularity__score'})
             if popularity_element:
                 text = popularity_element.text.strip().replace(',', '')
                 popularity = unicodedata.normalize('NFKD', text)
-            else:
-                popularity = 'N/A'
         except AttributeError:
             popularity = 'N/A'
-            
-    
+
     data = {
         'title': title,
         'description': description,
@@ -236,13 +213,10 @@ def imdb_scraper(imdb_link, serial, identifier=False):
         'all_creators_limited': [c['name'] for c in all_creators],
         'thumbnail_added': thumbnail_added,
         'full_image_added': full_image_added,
-        'thumbnail_location': directory['video_thumbnail_dir'],
+        'thumbnail_location': thumbnail_dir,
         'full_image_location': full_image_dir,
         'popularity': popularity
     }
 
     driver.quit()
-
     return data
-    
-

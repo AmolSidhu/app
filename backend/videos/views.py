@@ -19,6 +19,7 @@ from .queries import (get_video_list_query, get_video_by_genre_query, get_recent
 
 from functions.auth_functions import auth_check
 from functions.search_parameters import build_video_query_parameters
+from functions.serial_default_generator import generate_serial_code
 from core.serializer import TempVideoSerializer, VideoQuerySerializer, CustomVideoListSerializer
 
 logger = logging.getLogger(__name__)
@@ -36,24 +37,22 @@ def upload_video(request):
                 directory = json.load(f)
             temp_videos_dir = directory['temp_videos_dir']
             os.makedirs(temp_videos_dir, exist_ok=True)
-            thumbnail_dir = directory['video_thumbnail_dir']
+            thumbnail_dir = directory['video_thumbnail_transition_dir']
             os.makedirs(thumbnail_dir, exist_ok=True)
-            video_dir = directory['video_dir']
+            video_dir = directory['video_transition_dir']
             os.makedirs(video_dir, exist_ok=True)
-            serial = None
-            while serial is None:
-                serial = token_urlsafe(8)
-                if TempVideo.objects.filter(serial=serial).exists():
-                    serial = None
-                if VideoRecord.objects.filter(video_serial=serial).exists():
-                    serial = None
-            master_serial = None
-            while master_serial is None:
-                master_serial = token_urlsafe(8)
-                if Video.objects.filter(serial=master_serial).exists():
-                    master_serial = None
-                if TempVideo.objects.filter(master_serial=master_serial).exists():
-                    master_serial = None
+            serial = generate_serial_code(
+                config_section="videos",
+                serial_key="temp_video_serial_code",
+                model=TempVideo,
+                field_name="serial"
+            )
+            master_serial = generate_serial_code(
+                config_section="videos",
+                serial_key="temp_video_master_serial_code",
+                model=TempVideo,
+                field_name="master_serial"
+            )
             video = request.FILES['video']
             video_path = os.path.join(temp_videos_dir, f'{serial}.{video.name.split(".")[-1]}')
             with open(video_path, 'wb+') as f:
@@ -124,8 +123,8 @@ def batch_video_upload(request):
             with open('json/directory.json', 'r') as f:
                 directory = json.load(f)
             temp_videos_dir = directory['temp_videos_dir']
-            thumbnail_dir = directory['video_thumbnail_dir']
-            video_dir = directory['video_dir']
+            thumbnail_dir = directory['video_thumbnail_transition_dir']
+            video_dir = directory['video_transition_dir']
             os.makedirs(temp_videos_dir, exist_ok=True)
             os.makedirs(thumbnail_dir, exist_ok=True)
             os.makedirs(video_dir, exist_ok=True)
@@ -146,11 +145,12 @@ def batch_video_upload(request):
                     return Response({'message': 'Master serial is required for existing series.'},
                                     status=status.HTTP_400_BAD_REQUEST)
             else:
-                while master_serial is None:
-                    master_serial = token_urlsafe(8)
-                    if TempVideo.objects.filter(master_serial=master_serial).exists() or \
-                            Video.objects.filter(serial=master_serial).exists():
-                        master_serial = None
+                master_serial = generate_serial_code(
+                    config_section="videos",
+                    serial_key="temp_video_master_serial_code",
+                    model=TempVideo,
+                    field_name="master_serial"
+                )
             thumbnail_path = None
             image_added = False
             if thumbnail_file:
@@ -174,12 +174,12 @@ def batch_video_upload(request):
             responses = []
             for i, video in enumerate(videos):
                 try:
-                    serial = None
-                    while serial is None:
-                        serial = token_urlsafe(8)
-                        if TempVideo.objects.filter(serial=serial).exists() or \
-                                Video.objects.filter(serial=serial).exists():
-                            serial = None
+                    serial = generate_serial_code(
+                        config_section="videos",
+                        serial_key="temp_video_serial_code",
+                        model=TempVideo,
+                        field_name="serial"
+                    )
                     video_extension = video.name.split('.')[-1]
                     video_path = os.path.join(temp_videos_dir, f'{serial}.{video_extension}')
                     with open(video_path, 'wb+') as f:
@@ -610,16 +610,13 @@ def create_custom_video_list(request):
                 return Response({'message': f'{auth_response["error"]}'},
                                 status=status.HTTP_401_UNAUTHORIZED)
             user = auth_response['user']
-            user_id = user.username
             list_name = request.data.get('list_name')
-            list_serial = None
-            while list_serial is None:
-                serial = token_urlsafe(8)
-                if CustomVideoList.objects.filter(
-                    list_serial=serial).exists():
-                    list_serial = None
-                else:
-                    list_serial = serial
+            list_serial = generate_serial_code(
+                config_section="videos",
+                serial_key="custom_video_list_serial_code",
+                model=CustomVideoList,
+                field_name="list_serial"
+            )
             new_record = CustomVideoList.objects.create(
                 list_name=list_name,
                 list_serial=list_serial,
@@ -643,7 +640,6 @@ def add_video_to_custom_list(request, video_serial, list_serial):
                 return Response({'message': f'{auth_response["error"]}'},
                                 status=status.HTTP_401_UNAUTHORIZED)
             user = auth_response['user']
-            user_id = user.username
             list_record = CustomVideoList.objects.filter(
                 list_serial=list_serial, user=user).first()
             if not list_record:
@@ -762,7 +758,6 @@ def update_video_favourites(request, serial):
                 return Response({'message': f'{auth_response["error"]}'},
                                 status=status.HTTP_401_UNAUTHORIZED)
             user = auth_response['user']
-            user_id = user.username
             video = Video.objects.filter(serial=serial).first()
             if not video:
                 return Response({'message': 'Video not found'},

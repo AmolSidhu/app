@@ -67,7 +67,7 @@ def update_episode_record(request, season, episode):
             return Response({'message': 'Episode record updated successfully'},
                                 status=status.HTTP_200_OK)
         except Exception as e:
-            logging.error(f"Error during video upload: {str(e)}")
+            logger.error(f"Error during video upload: {str(e)}")
             return Response({'message': 'Internal server error'},
                                 status=status.HTTP_500_INTERNAL_SERVER_ERROR)
             
@@ -89,7 +89,7 @@ def delete_video_record(request, serial):
             return Response({'message': 'Video deleted'},
                                 status=status.HTTP_200_OK)
         except Exception as e:
-            logging.error(f"Error during video upload: {str(e)}")
+            logger.error(f"Error during video upload: {str(e)}")
             return Response({'message': 'Internal server error'},
                                 status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 

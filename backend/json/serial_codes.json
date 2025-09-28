@@ -10,7 +10,9 @@
     "articles": {
         "main_article_serial_code": "AMA-XXXXXX",
         "file_serial_code": "AFS-XXXXXX",
-        "article_tag_serial_code": "AAT-XXXXXX"
+        "article_tag_serial_code": "AAT-XXXXXX",
+        "article_user_list_serial_code": "AUL-XXXXXX",
+        "articles_user_list_record_serial_code": "AUR-XXXXXX"
     },
     "files": {
         "folder_serial_code": "FFL-XXXXXX",
@@ -23,7 +25,8 @@
         "temp_record_serial_code": "MTR-XXXXXX",
         "artist_serial_code": "MAR-XXXXXX",
         "album_serial_code": "MAL-XXXXXX",
-        "track_serial_code": "MTA-XXXXXX"
+        "track_serial_code": "MTA-XXXXXX",
+        "full_uploaded_track_serial_code": "MFU-XXXXXX"
     },
     "pictures": {
         "picture_serial_code": "PPS-XXXXXX",
@@ -44,6 +47,7 @@
     },
     "videos": {
         "temp_video_serial_code": "VTV-XXXXXX",
+        "temp_video_master_serial_code": "VTM-XXXXXX",
         "video_serial_code": "VVS-XXXXXX",
         "custom_video_list_serial_code": "VCV-XXXXXX",
         "custom_video_list_record_serial_code": "VCL-XXXXXX",
@@ -63,11 +67,5 @@
         "youtube_lists_serial_code": "YYL-XXXXXX",
         "youtube_list_record_serial_code": "YYR-XXXXXX",
         "youtube_video_record_serial_code": "YYV-XXXXXX"
-    },
-    "default_codes": [
-        "00001",
-        "000001",
-        "0000001",
-        "00000001"
-    ]
+    }
 }

@@ -2,8 +2,10 @@
   "temp_videos_dir": "D:/bucket/main/video/temp/",
   "temp_json_dir": "D:/bucket/main/temp/json/",
   "video_thumbnail_dir": "D:/bucket/main/video/thumbnails/",
+  "video_thumbnail_transition_dir": "D:/bucket/main/video/thumbnail_transition/",
   "video_full_image_dir": "D:/bucket/main/video/full_image/",
   "video_dir": "D:/bucket/main/video/data/",
+  "video_transition_dir": "D:/bucket/main/video/transition/",
   "json_imdb_records_dir": "D:/bucket/main/video/records/json/",
   "json_imdb_thumbnail_dir": "D:/bucket/main/video/thumbnail/",
   "image_dir": "D:/bucket/main/image/data/",
@@ -28,5 +30,7 @@
   "music_track_dir": "D:/bucket/main/music/track/",
   "music_artist_json_dir": "D:/bucket/main/music/artist_json/",
   "music_album_json_dir": "D:/bucket/main/music/album_json/",
-  "article_file_upload_dir": "D:/bucket/main/article/uploads/"
+  "music_upload_track_match_dir": "D:/bucket/main/music/upload_track_match/",
+  "article_file_upload_dir": "D:/bucket/main/article/uploads/",
+  "share_file_upload_dir": "D:/bucket/main/share_file/uploads/"
 }

@@ -10,5 +10,21 @@
         "Added Video Suggestions and Streaming Episode Navigation",
         "API Development for Analytics and Youtube",
         "Bug Fixes"
+    ],
+    "2025-05-20": [
+        "Initial Analytics Integration",
+        "Analytics Dashboard Initial Creation",
+        "Resolved Web Driver Issue with Video Feature",
+        "Finished Initial Youtube Integration",
+        "Bug Fixes"
+    ],
+    "2025-07-12": [
+        "Initial Creation for File Sharing Feature",
+        "Initial Creation for Articles Feature",
+        "Bug Fixes"
+    ],
+    "2025-09-19": [
+        "File Sharing Feature Initial Creation",
+        "Bug Fixes"
     ]
 }

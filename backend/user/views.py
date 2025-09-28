@@ -30,6 +30,7 @@ def register(request):
             if request.data['password'] != request.data['confirmPassword']:
                 return JsonResponse({'msg': 'Passwords do not match'},
                                     status=status.HTTP_400_BAD_REQUEST)
+            verification_code = token_urlsafe(6)
             password = hashlib.sha256(request.data['password'].encode()).hexdigest()
             new_user = Credentials.objects.create(
                 username=request.data['username'],

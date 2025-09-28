@@ -52,6 +52,9 @@ import SearchArticlesPage from "./Pages/Articles/SearchArticlesPage";
 
 //Files Pages
 import UploadShareFilesPage from "./Pages/Files/UploadShareFilesPage";
+import ViewFolderShareFilesPage from "./Pages/Files/ViewFolderShareFilesPage";
+import DownloadFilePage from "./Pages/Files/DownloadFilePage";
+import DownloadFolderPage from "./Pages/Files/DownloadFolderPage";
 
 //Misc Pages
 import NotFound from "./Pages/Misc/NotFoundPage";
@@ -102,6 +105,9 @@ function App() {
         <Route path="/articles/search/" element={<SearchArticlesPage />} />
 
         <Route path="/files/uploadshare/" element={<UploadShareFilesPage />} />
+        <Route path="/files/viewfolder/" element={<ViewFolderShareFilesPage />} />
+        <Route path="/files/share_file/" element={<DownloadFilePage />} />
+        <Route path="/files/share_folder/" element={<DownloadFolderPage />} />
 
         <Route path="*" element={<NotFound />} />
       </Routes>

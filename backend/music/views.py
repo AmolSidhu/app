@@ -10,8 +10,9 @@ import json
 import os
 
 from functions.auth_functions import auth_check
+from functions.serial_default_generator import generate_serial_code
 
-from .models import MusicTempRecord, ArtistRecord, ArtistGenres, MusicAlbumRecord, MusicTrackRecord
+from .models import MusicTempRecord, ArtistRecord, ArtistGenres, MusicAlbumRecord, MusicTrackRecord, AddedFullTrack
 
 logger = logging.getLogger(__name__)
 
@@ -25,11 +26,12 @@ def upload_music_links(request):
                 return Response({'message': f'{auth_response["error"]}'},
                                 status=status.HTTP_401_UNAUTHORIZED)
             user = auth_response['user']
-            serial = None
-            while serial is None:
-                serial = token_urlsafe(16)
-                if MusicTempRecord.objects.filter(serial=serial).exists():
-                    serial = None
+            serial = generate_serial_code(
+                config_section='music',
+                serial_key='temp_record_serial_code',
+                model=MusicTempRecord,
+                field_name='serial'
+            )
             new_music_record = MusicTempRecord.objects.create(
                 user=user,
                 serial=serial,
@@ -41,7 +43,7 @@ def upload_music_links(request):
             return Response({"message": "Music links processed successfully"},
                             status=status.HTTP_200_OK)
         except Exception as e:
-            logging.error(f"Error during video upload: {str(e)}")
+            logger.error(f"Error during video upload: {str(e)}")
             return Response({'message': 'Internal server error'},
                             status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
@@ -79,7 +81,7 @@ def get_music_albums(request):
             return Response({"data":data, "message": "Music albums fetched successfully"},
                             status=status.HTTP_200_OK)
         except Exception as e:
-            logging.error(f"Error during fetching music albums: {str(e)}")
+            logger.error(f"Error during fetching music albums: {str(e)}")
             return Response({'message': 'Internal server error'},
                             status=status.HTTP_500_INTERNAL_SERVER_ERROR)
             
@@ -96,7 +98,7 @@ def get_music_album_data(request, serial):
             return Response({"message": "Music album data fetched successfully"},
                             status=status.HTTP_200_OK)
         except Exception as e:
-            logging.error(f"Error during fetching music album data: {str(e)}")
+            logger.error(f"Error during fetching music album data: {str(e)}")
             return Response({'message': 'Internal server error'},
                             status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
@@ -113,7 +115,7 @@ def get_music_tracks(request, serial):
             return Response({"message": "Music tracks fetched successfully"},
                             status=status.HTTP_200_OK)
         except Exception as e:
-            logging.error(f"Error during fetching music tracks: {str(e)}")
+            logger.error(f"Error during fetching music tracks: {str(e)}")
             return Response({'message': 'Internal server error'},
                             status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
@@ -130,7 +132,7 @@ def get_artist_thumbnail(request, serial):
             return Response({"message": "Artist thumbnail fetched successfully"},
                             status=status.HTTP_200_OK)
         except Exception as e:
-            logging.error(f"Error during fetching artist thumbnail: {str(e)}")
+            logger.error(f"Error during fetching artist thumbnail: {str(e)}")
             return Response({'message': 'Internal server error'},
                             status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
@@ -159,7 +161,7 @@ def get_album_thumbnail(request, serial):
             return Response({"message": "Album thumbnail fetched successfully"},
                             status=status.HTTP_200_OK)
         except Exception as e:
-            logging.error(f"Error during fetching album thumbnail: {str(e)}")
+            logger.error(f"Error during fetching album thumbnail: {str(e)}")
             return Response({'message': 'Internal server error'},
                             status=status.HTTP_500_INTERNAL_SERVER_ERROR)
             
@@ -188,7 +190,7 @@ def get_track_data (request, serial):
             return Response({"data": data, "message": "Track data fetched successfully"},
                             status=status.HTTP_200_OK)
         except Exception as e:
-            logging.error(f"Error during fetching track data: {str(e)}")
+            logger.error(f"Error during fetching track data: {str(e)}")
             return Response({'message': 'Internal server error'},
                             status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
@@ -217,7 +219,7 @@ def get_track_preview(request, serial):
             return Response({"message": "Track mp3 fetched successfully"},
                             status=status.HTTP_200_OK)
         except Exception as e:
-            logging.error(f"Error during fetching track mp3: {str(e)}")
+            logger.error(f"Error during fetching track mp3: {str(e)}")
             return Response({'message': 'Internal server error'},
                             status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
@@ -234,6 +236,60 @@ def get_artist_data(request):
             return Response({"message": "Artist data fetched successfully"},
                             status=status.HTTP_200_OK)
         except Exception as e:
-            logging.error(f"Error during fetching artist data: {str(e)}")
+            logger.error(f"Error during fetching artist data: {str(e)}")
+            return Response({'message': 'Internal server error'},
+                            status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+@api_view(['POST'])
+def add_full_track(request):
+    if request.method == 'POST':
+        try:
+            token = request.headers.get('Authorization')
+            auth_response = auth_check(token)
+            if 'error' in auth_response:
+                return Response({'message': f'{auth_response["error"]}'},
+                                status=status.HTTP_401_UNAUTHORIZED)
+            user = auth_response['user']
+            track = MusicTrackRecord.objects.filter(
+                serial=request.data.get('track_serial')).first()
+            if not track:
+                return Response({'message': 'Track not found'},
+                                status=status.HTTP_404_NOT_FOUND)
+            with open('json/directory.json', 'r') as f:
+                directory = json.load(f)
+            mp3_directory = directory['music_upload_track_match_dir']
+            serial = generate_serial_code(
+                config_section='music',
+                serial_key='full_uploaded_track_serial_code',
+                model=AddedFullTrack,
+                field_name='serial'
+            )
+            if request.data.get('file', None):
+                file = request.data['file']
+                if not file.name.endswith('.mp3'):
+                    return Response({'message': 'File must be an mp3'},
+                                    status=status.HTTP_400_BAD_REQUEST)
+                file_path = os.path.join(mp3_directory, f"{serial}.mp3")
+                with open(file_path, 'wb+') as location:
+                    for chunk in file.chunks():
+                        location.write(chunk)
+            file = False
+            if request.data.get('file'):
+                file = True
+            else:
+                return Response({'message': 'File is required'},
+                                status=status.HTTP_400_BAD_REQUEST)
+            new_full_track = AddedFullTrack.objects.create(
+                serial=serial,
+                file=file,
+                file_path=mp3_directory,
+                user=user,
+                track=track,
+            )
+            new_full_track.save()
+            return Response({"message": "Full song added successfully"},
+                            status=status.HTTP_201_CREATED)  
+        except Exception as e:
+            logger.error(f"Error during adding full song: {str(e)}")
             return Response({'message': 'Internal server error'},
                             status=status.HTTP_500_INTERNAL_SERVER_ERROR)

@@ -11,6 +11,7 @@ import logging
 import pandas as pd
 
 from functions.auth_functions import auth_check
+from functions.serial_default_generator import generate_serial_code
 
 from .models import (
     DataSourceUpload, Dashboards, DashboardItem, DashboardTableDataLines,
@@ -37,11 +38,12 @@ def upload_data_source(request):
             if file.name.split('.')[-1] != 'csv':
                 return Response({'message': 'Invalid file type. Please upload a CSV file'},
                                 status=status.HTTP_400_BAD_REQUEST)
-            unique_token = False
-            while not unique_token:
-                serial = token_urlsafe(8)
-                if not DataSourceUpload.objects.filter(serial=serial).exists():
-                    unique_token = True
+            serial = generate_serial_code(
+                config_section='analytics',
+                serial_key='data_source_serial_code',
+                model=DataSourceUpload,
+                field_name='serial'
+            )
             data = pd.read_csv(file)
             column_names = {
                 str(i + 1): [col, str(dtype)]
@@ -92,7 +94,6 @@ def update_data_source(request, serial):
 def update_data_source_lines(request, serial):
     if request.method == 'PATCH':
         print('Updating data source lines')
-        print(request.data.get('data'))
         try:
             token = request.headers.get('Authorization')
             auth_response = auth_check(token)
@@ -110,8 +111,7 @@ def update_data_source_lines(request, serial):
                 data_source.edited_file_location = directory['data_source_cleaned_dir']
                 os.makedirs(data_source.edited_file_location, exist_ok=True)
                 data_source.save()
-            else:
-                path = data_source.edited_file_location + data_source.serial + '.csv'
+            path = data_source.edited_file_location + data_source.serial + '.csv'
             print(f'Path: {path}')
             data = pd.DataFrame(request.data.get('data'))
             if data.empty:
@@ -292,11 +292,12 @@ def create_dashboard(request):
             if 'error' in auth_response:
                 return Response({'message': f'{auth_response["error"]}'},
                                 status=status.HTTP_403_FORBIDDEN)
-            serial = None
-            while serial is None:
-                serial = token_urlsafe(8)
-                if Dashboards.objects.filter(dashboard_serial=serial).exists():
-                    serial = None
+            serial = generate_serial_code(
+                config_section='analytics',
+                serial_key='dashboard_serial_code',
+                model=Dashboards,
+                field_name='dashboard_serial'
+            )
             new_dashboard = Dashboards(
                 user=auth_response['user'],
                 data_source=DataSourceUpload.objects.get(serial=request.data['data_source_serial']),
@@ -327,11 +328,12 @@ def create_dashboard_item(request, serial):
             if not current_dashboard:
                 return Response({'message': 'Dashboard not found'},
                                 status=status.HTTP_404_NOT_FOUND)
-            serial = None
-            while serial is None:
-                serial = token_urlsafe(8)
-                if DashboardItem.objects.filter(dashboard_item_serial=serial).exists():
-                    serial = None
+            serial = generate_serial_code(
+                config_section='analytics',
+                serial_key='dashboard_item_serial_code',
+                model=DashboardItem,
+                field_name='dashboard_item_serial'
+            )
             new_dashboard_item = DashboardItem(
                 user=auth_response['user'],
                 dashboard=current_dashboard,
@@ -395,11 +397,12 @@ def create_dashboard_item_data(request, dashboard_serial, dashboard_item_serial)
             current_dashboard_item.data_item_failed_creation = False
             current_dashboard_item.save()
             if request.data['data_item_type'] == 'Graph':
-                serial = None
-                while serial is None:
-                    serial = token_urlsafe(8)
-                    if DashboardGraphData.objects.filter(serial=serial).exists():
-                        serial = None
+                serial = generate_serial_code(
+                    config_section='analytics',
+                    serial_key='graph_serial_code',
+                    model=DashboardGraphData,
+                    field_name='serial'
+                )
                 new_graph_data = DashboardGraphData(
                         graph_type=request.data['graph_type'],
                         user=auth_response['user'],
@@ -417,11 +420,12 @@ def create_dashboard_item_data(request, dashboard_serial, dashboard_item_serial)
                 new_graph_data.save()
             elif request.data['data_item_type'] == 'Table':
                 for data_line in request.data['data_lines']:
-                    serial = None
-                    while serial is None:
-                        serial = token_urlsafe(8)
-                        if DashboardTableDataLines.objects.filter(serial=serial).exists():
-                            serial = None
+                    serial = generate_serial_code(
+                        config_section='analytics',
+                        serial_key='table_line_serial_code',
+                        model=DashboardTableDataLines,
+                        field_name='serial'
+                    )
                     new_table_data_line = DashboardTableDataLines(
                         user=auth_response['user'],
                         dashboard_serial=current_dashboard,
@@ -435,11 +439,12 @@ def create_dashboard_item_data(request, dashboard_serial, dashboard_item_serial)
                     )
                     new_table_data_line.save()
             elif request.data['data_item_type'] == 'Text':
-                serial = None
-                while serial is None:
-                    serial = token_urlsafe(8)
-                    if DashboardTextData.objects.filter(serial=serial).exists():
-                        serial = None
+                serial = generate_serial_code(
+                    config_section='analytics',
+                    serial_key='text_serial_code',
+                    model=DashboardTextData,
+                    field_name='serial'
+                )
                 new_text_data = DashboardTextData(
                     user=auth_response['user'],
                     dashboard_item_serial=current_dashboard_item,
@@ -687,6 +692,22 @@ def delete_dashboard_item(request, dashboard_serial, dashboard_item_serial):
                 return Response({'message': f'{auth_response["error"]}'},
                                 status=status.HTTP_403_FORBIDDEN)
             user = auth_response['user']
+            dashboard = Dashboards.objects.filter(
+                dashboard_serial=dashboard_serial,
+                user=user
+            ).first()
+            if not dashboard:
+                return Response({'message': 'Dashboard not found'},
+                                status=status.HTTP_404_NOT_FOUND)
+            dashboard_item = DashboardItem.objects.filter(
+                dashboard_item_serial=dashboard_item_serial,
+                dashboard=dashboard,
+                user=user
+            ).first()
+            if not dashboard_item:
+                return Response({'message': 'Dashboard item not found'},
+                                status=status.HTTP_404_NOT_FOUND)
+            dashboard_item.delete()
             return Response({'message': 'Delete Dashboard Item'},
                             status=status.HTTP_200_OK)
         except Exception as e:
@@ -913,6 +934,8 @@ def create_report_settings(request, serial):
                 return Response({'message': f'{auth_response["error"]}'},
                                 status=status.HTTP_403_FORBIDDEN)
             user = auth_response['user']
+            with open('json/directory.json', 'r') as f:
+                directory = json.load(f)
             return Response({'message': 'Create Report Settings'},
                             status=status.HTTP_200_OK)
         except Exception as e:
