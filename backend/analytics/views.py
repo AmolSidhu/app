@@ -3,7 +3,6 @@ from rest_framework.response import Response
 from rest_framework import status
 from django.utils import timezone
 from secrets import token_urlsafe
-from django.db import connection
 
 import os
 import json
@@ -16,7 +15,6 @@ from functions.serial_default_generator import generate_serial_code
 from .models import (
     DataSourceUpload, Dashboards, DashboardItem, DashboardTableDataLines,
     DashboardTableDataLines, DashboardGraphData, DashboardTextData)
-from .queries import get_all_dashbaord_items
 
 logger = logging.getLogger(__name__)
 

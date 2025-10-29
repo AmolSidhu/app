@@ -32,5 +32,7 @@
   "music_album_json_dir": "D:/bucket/main/music/album_json/",
   "music_upload_track_match_dir": "D:/bucket/main/music/upload_track_match/",
   "article_file_upload_dir": "D:/bucket/main/article/uploads/",
-  "share_file_upload_dir": "D:/bucket/main/share_file/uploads/"
+  "share_file_upload_dir": "D:/bucket/main/share_file/uploads/",
+  "mtg_upload_dir": "D:/bucket/main/mtg/uploads/",
+  "mtg_scraper_output_dir": "D:/bucket/main/mtg/scraper_output/"
 }

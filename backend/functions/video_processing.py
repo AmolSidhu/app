@@ -1,7 +1,5 @@
-
 from moviepy.editor import VideoFileClip
 import numpy as np
-import bs4 as bs
 import subprocess
 import librosa
 import cv2

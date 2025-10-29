@@ -105,7 +105,7 @@ const ViewAllShareFolderFilesRequest = () => {
                 throw new Error(data.message || "Error fetching folder share link");
             }
 
-            const link = `${window.location.origin}/files/share_folder/?serial=${data.data.serial}&share_code=${data.data.share_code}`;
+            const link = `${window.location.origin}/files/sharefolder/?serial=${data.data.serial}&share_code=${data.data.share_code}`;
             await navigator.clipboard.writeText(link);
             alert("Folder share link copied to clipboard!");
         } catch (err) {
@@ -150,7 +150,7 @@ const ViewAllShareFolderFilesRequest = () => {
                 throw new Error(data.message || "Error fetching file share link");
             }
 
-            const link = `${window.location.origin}/files/share_file/?serial=${data.data.serial}&share_code=${data.data.share_code}`;
+            const link = `${window.location.origin}/files/sharefile/?serial=${data.data.serial}&share_code=${data.data.share_code}`;
             await navigator.clipboard.writeText(link);
             alert("File share link copied to clipboard!");
         } catch (err) {

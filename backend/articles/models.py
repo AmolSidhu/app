@@ -19,11 +19,26 @@ class MassUploadFiles(models.Model):
     file_location = models.CharField(max_length=300, null=False)
     file_extension = models.CharField(max_length=50, null=False, default='missing file type')
     file_status = models.CharField(max_length=50, null=False, default='uploaded')
+    upload_date = models.DateTimeField(auto_now_add=True, null=False)
+    update_date = models.DateTimeField(auto_now=True, null=False)
     
     class Meta:
         db_table = 'mass_upload_files'
         verbose_name = 'Mass Upload File'
         verbose_name_plural = 'Mass Upload Files'
+        
+class JSONFileUploads(models.Model):
+    serial = models.CharField(max_length=100, primary_key=True, unique=True, null=False)
+    user = models.ForeignKey('user.Credentials', on_delete=models.CASCADE)
+    file_location = models.CharField(max_length=300, null=False)
+    file_status = models.CharField(max_length=50, null=False, default='uploaded')
+    upload_date = models.DateTimeField(auto_now_add=True, null=False)
+    update_date = models.DateTimeField(auto_now=True, null=False)
+    
+    class Meta:
+        db_table = 'json_file_uploads'
+        verbose_name = 'JSON File Upload'
+        verbose_name_plural = 'JSON File Uploads'
 
 class ArticleTags(models.Model):
     serial = models.CharField(max_length=100, primary_key=True, unique=True, null=False)

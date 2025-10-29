@@ -18,6 +18,7 @@ class Command(BaseCommand):
             'music',
             'articles',
             'files',
+            'mtg',
             ]
 
         for app in apps:

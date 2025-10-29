@@ -3,7 +3,6 @@ from rest_framework.response import Response
 from django.http import HttpResponse
 from django.utils import timezone
 from rest_framework import status
-from secrets import token_urlsafe
 
 import logging
 import json
@@ -129,8 +128,18 @@ def get_artist_thumbnail(request, serial):
                 return Response({'message': f'{auth_response["error"]}'},
                                 status=status.HTTP_401_UNAUTHORIZED)
             user = auth_response['user']
-            return Response({"message": "Artist thumbnail fetched successfully"},
-                            status=status.HTTP_200_OK)
+            artist_record = ArtistRecord.objects.filter(serial=serial).first()
+            if not artist_record:
+                return Response({'message': 'Artist not found'},
+                                status=status.HTTP_404_NOT_FOUND)
+            file_path = artist_record.artist_image_location + artist_record.serial + '.jpg'
+            if not os.path.exists(file_path):
+                return Response({'message': 'File not found'},
+                                status=status.HTTP_404_NOT_FOUND)
+            with open(file_path, 'rb') as file:
+                response = HttpResponse(file.read(), content_type='image/jpeg', status=status.HTTP_200_OK)
+                response['Content-Disposition'] = f'attachment; filename="{os.path.basename(file_path)}"'
+                return response
         except Exception as e:
             logger.error(f"Error during fetching artist thumbnail: {str(e)}")
             return Response({'message': 'Internal server error'},

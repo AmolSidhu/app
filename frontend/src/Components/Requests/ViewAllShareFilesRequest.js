@@ -67,7 +67,7 @@ const ViewAllShareFilesRequest = () => {
                 throw new Error(data.message || "Error fetching share link");
             }
 
-            const link = `${window.location.origin}/files/share_file/?serial=${data.data.serial}&share_code=${data.data.share_code}`;
+            const link = `${window.location.origin}/files/sharefile/?serial=${data.data.serial}&share_code=${data.data.share_code}`;
             await navigator.clipboard.writeText(link);
             alert("Share link copied to clipboard!");
         } catch (err) {

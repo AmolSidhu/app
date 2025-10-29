@@ -1,4 +1,4 @@
-import rEACT, {useEffect} from "react";
+import React, {useEffect} from "react";
 import MainNavbar from "../../Components/Static/MainNavbar";
 import DownloadFolderRequest from "../../Components/Requests/DownloadFolderRequest";
 

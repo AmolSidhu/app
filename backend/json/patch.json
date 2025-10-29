@@ -26,5 +26,11 @@
     "2025-09-19": [
         "File Sharing Feature Initial Creation",
         "Bug Fixes"
+    ],
+    "2025-10-29": [
+        "Initial Creation for MTG Card Collection Feature",
+        "MTG Card Collection Scraper Initial Creation",
+        "removed Unnecessary Imports From Backend",
+        "Bug Fixes"
     ]
 }

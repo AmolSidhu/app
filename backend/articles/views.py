@@ -3,7 +3,6 @@ from rest_framework.response import Response
 from django.http import HttpResponse
 from django.utils import timezone
 from rest_framework import status
-from secrets import token_urlsafe
 
 import logging
 import json

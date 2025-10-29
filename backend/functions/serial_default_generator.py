@@ -1,7 +1,6 @@
 import logging
 import json
 import re
-from django.db.models import Max
 
 logger = logging.getLogger(__name__)
 

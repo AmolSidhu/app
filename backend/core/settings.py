@@ -92,6 +92,7 @@ INSTALLED_APPS = [
     'music',
     'articles',
     'files',
+    'mtg',
     'rest_framework',
     'django.contrib.admin',
     'django.contrib.auth',

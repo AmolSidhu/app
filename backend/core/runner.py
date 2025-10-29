@@ -106,3 +106,23 @@ def start_create_graph_and_table_dashboard_items():
     scheduler = BackgroundScheduler()
     scheduler.add_job(job.create_graph_and_table_dashboard_items, 'interval', minutes=1)
     scheduler.start()
+
+def start_check_music_full_track():
+    scheduler = BackgroundScheduler()
+    scheduler.add_job(job.check_music_full_track, 'interval', minutes=1)
+    scheduler.start()
+    
+def start_parse_article_json_file():
+    scheduler = BackgroundScheduler()
+    scheduler.add_job(job.parse_article_json_file, 'interval', minutes=1)
+    scheduler.start()
+    
+def start_validate_scraper_links():
+    scheduler = BackgroundScheduler()
+    scheduler.add_job(job.validate_scraper_links, 'interval', minutes=1)
+    scheduler.start()
+
+def start_run_scraper_jobs():
+    scheduler = BackgroundScheduler()
+    scheduler.add_job(job.run_scraper_jobs, 'interval', minutes=1)
+    scheduler.start()

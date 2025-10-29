@@ -11,6 +11,7 @@ import youtube.views
 import music.views
 import articles.views
 import files.views
+import mtg.views
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -177,4 +178,12 @@ urlpatterns = [
     path('get/folder_share_link/<str:folder_serial>/', files.views.get_folder_share_link, name='get_folder_share_link'),
     path('delete/file/<str:file_id>/', files.views.delete_file, name='delete_file'),
     path('delete/folder/<str:folder_serial>/', files.views.delete_folder, name='delete_folder'),
+    
+    # MTG Routes
+    path('create/scraper/', mtg.views.create_new_scraper, name='create_new_scraper'),
+    path('get/default_template/', mtg.views.get_default_template, name='get_default_template'),
+    path('download/scraper_output/<str:serial_scraper>/<str:serial_output>/', mtg.views.get_download_scraper_output, name='get_download_scraper_output'),
+    path('get/scraper_status/<str:serial>/', mtg.views.get_scraper_status, name='get_scraper_status'),
+    path('get/all_scraper_statuses/', mtg.views.get_all_scraper_statues, name='get_all_scraper_statuses'),
+    path('trigger/mtg_f2f_scraper/<str:serial>/', mtg.views.trigger_mtg_f2f_scraper, name='trigger_mtg_f2f_scraper'),
 ]

@@ -65,6 +65,12 @@ const MainNavbar = () => {
               <NavDropdown.Item href="/files/uploadshare/">Upload Files</NavDropdown.Item>
             </NavDropdown>
 
+            <NavDropdown title="MTG Scraper" id="mtg-dropdown" menuVariant="light">
+              <NavDropdown.Item href="/mtg/uploadscraper/">Upload Scraper</NavDropdown.Item>
+              <NavDropdown.Item href="/mtg/viewscrapers/">View Scrapers</NavDropdown.Item>
+              <NavDropdown.Item href="/mtg/viewscraperhistory/">View Scraper History</NavDropdown.Item>
+            </NavDropdown>
+
             <Logout onLogout={LogoutRequest} />
           </Nav>
         </Navbar.Collapse>

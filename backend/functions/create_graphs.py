@@ -1,6 +1,5 @@
 import pandas as pd
 import os
-import json
 import seaborn as sns
 
 import matplotlib

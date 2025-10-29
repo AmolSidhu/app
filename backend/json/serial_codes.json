@@ -67,5 +67,10 @@
         "youtube_lists_serial_code": "YYL-XXXXXX",
         "youtube_list_record_serial_code": "YYR-XXXXXX",
         "youtube_video_record_serial_code": "YYV-XXXXXX"
+    },
+    "mtg": {
+        "mtg_csv_upload_serial_code": "MMC-XXXXXX",
+        "mtg_scraper_file_serial_code": "MMS-XXXXXX",
+        "mtg_scraper_record_serial_code": "MMR-XXXXXX"
     }
 }

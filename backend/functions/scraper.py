@@ -5,7 +5,6 @@ from selenium.webdriver.edge.options import Options
 import unicodedata
 import time
 import requests
-import re
 import os
 import json
 import bs4

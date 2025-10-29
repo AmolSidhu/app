@@ -56,6 +56,11 @@ import ViewFolderShareFilesPage from "./Pages/Files/ViewFolderShareFilesPage";
 import DownloadFilePage from "./Pages/Files/DownloadFilePage";
 import DownloadFolderPage from "./Pages/Files/DownloadFolderPage";
 
+//MTG Pages
+import UploadScraperPage from "./Pages/MTG/UploadScraperPage";
+import ViewScrapersPage from "./Pages/MTG/ViewScrapersPage";
+import ViewScraperHistoryPage from "./Pages/MTG/ViewScraperHistoryPage";
+
 //Misc Pages
 import NotFound from "./Pages/Misc/NotFoundPage";
 
@@ -106,8 +111,12 @@ function App() {
 
         <Route path="/files/uploadshare/" element={<UploadShareFilesPage />} />
         <Route path="/files/viewfolder/" element={<ViewFolderShareFilesPage />} />
-        <Route path="/files/share_file/" element={<DownloadFilePage />} />
-        <Route path="/files/share_folder/" element={<DownloadFolderPage />} />
+        <Route path="/files/sharefile/" element={<DownloadFilePage />} />
+        <Route path="/files/sharefolder/" element={<DownloadFolderPage />} />
+
+        <Route path="/mtg/uploadscraper/" element={<UploadScraperPage />} />
+        <Route path="/mtg/viewscrapers/" element={<ViewScrapersPage />} />
+        <Route path="/mtg/viewscraperhistory/" element={<ViewScraperHistoryPage />} />
 
         <Route path="*" element={<NotFound />} />
       </Routes>

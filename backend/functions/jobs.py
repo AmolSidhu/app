@@ -14,17 +14,17 @@ import os
 import re
 import av
 
-from core.serializer import (VideoSerializer, IdentifierSerializer,
+from core.serializer import (IdentifierSerializer,
                              VideoRecordSerializer, FailedVideoRecordsSerializer)
 from videos.models import (Video, TempVideo, VideoRecord, VideoGenre, VideoTags,
                            VideoDirectors, VideoStars, VideoWriters, VideoCreators,
-                           VideoQuery, VideoFavourites, MyVideoList, VideoRating,
-                           VideoHistory, VideoComments, CustomVideoListRecords,
-                           CustomVideoList)
+                           VideoQuery, VideoFavourites, VideoRating,
+                           VideoHistory, VideoComments, CustomVideoListRecords)
 from management.models import Identifier, IdentifierTempTable, TempGenreTable
 from youtube.models import YoutubeTempRecord, YoutubeVideoRecord, YoutubeListRecord, YoutubeLists
 from music.models import MusicTempRecord, ArtistRecord, ArtistGenres, MusicAlbumRecord, MusicTrackRecord, AddedFullTrack
 from analytics.models import DataSourceUpload, Dashboards, DashboardItem, DashboardTableDataLines, DashboardGraphData
+from mtg.models import ScraperUploadFile, ScraperOutputFile
 from pictures.models import PictureQuery
 from .scraper import imdb_scraper
 from .youtube_download_function import process_youtube_video
@@ -33,6 +33,7 @@ from .music_api import get_spotify_music_data, get_apple_music_data
 from .create_graphs import generate_basic_graph
 from .create_table import create_table
 from .serial_default_generator import generate_serial_code
+from .mtg_f2f_scraper import mtg_f2f_scraper
 
 logger = logging.getLogger(__name__)
 
@@ -1254,6 +1255,66 @@ def check_music_full_track():
             
             track_location = track_record.track_location + track_record.serial + '.mp3'
             
-            
         except Exception as e:
             logger.error(f"Error checking full track status: {str(e)}")
+
+def parse_article_json_file():
+    finished = True
+    while not finished:
+        try:
+            pass
+        except Exception as e:
+            logger.error(f"Error parsing article JSON file: {str(e)}")
+            
+def validate_scraper_links():
+    finished = False
+    while not finished:
+        try:
+            scraper_record = ScraperUploadFile.objects.filter(
+                status='validating').first()
+            if scraper_record is None:
+                finished = True
+                break
+            path = scraper_record.file_location + scraper_record.serial + '.csv'
+            df = pd.read_csv(path)
+            for link in df['Links']:
+                if not link.startswith('https://www.face2facegames.com/'):
+                    scraper_record.status = 'failed validation'
+                    scraper_record.save()
+                    break
+                else:
+                    continue
+            scraper_record.status = 'validated'
+            scraper_record.save()
+        except Exception as e:
+            logger.error(f"Error validating scraper links: {str(e)}")
+
+def run_scraper_jobs():
+    finished = False
+    while not finished:
+        try:
+            scraper_record = ScraperOutputFile.objects.filter(
+                status='pending').first()
+            if scraper_record is None:
+                finished = True
+                break
+            scraper = ScraperUploadFile.objects.filter(
+                serial=scraper_record.scraper_file.serial,
+                user=scraper_record.user
+            ).first()
+            if scraper is None:
+                scraper_record.status = 'failed'
+                scraper_record.save()
+                continue
+            mtg_f2f_scraper(
+                file_path=scraper.file_location,
+                serial=scraper.serial,
+                output_serial=scraper_record.serial,
+                output_path=scraper_record.file_location
+            )
+            scraper_record.status = 'completed'
+            scraper_record.save()
+        except Exception as e:
+            scraper.status = 'failed'
+            scraper.save()
+            logger.error(f"Error running scraper jobs: {str(e)}")

@@ -137,7 +137,6 @@ const EditPictureForm = () => {
                             />
                         </label>
 
-                        {/* Tags Section */}
                         <div>
                             <h4>Tags</h4>
                             {formData.tags.map((tag, index) => (
@@ -157,7 +156,6 @@ const EditPictureForm = () => {
                             </button>
                         </div>
 
-                        {/* People Section */}
                         <div>
                             <h4>People</h4>
                             {formData.people.map((person, index) => (
