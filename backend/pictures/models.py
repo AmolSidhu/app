@@ -19,7 +19,7 @@ class Picture(models.Model):
     album_pathway = models.CharField(max_length=100, null=False)
     album = models.ForeignKey('DefaultAlbums', on_delete=models.CASCADE, null=False)
     picture_editable = models.BooleanField(default=False, null=False)
-    
+
     class Meta:
         db_table = 'pictures'
         verbose_name = 'Picture'
@@ -35,23 +35,23 @@ class MyAlbums(models.Model):
     date_created = models.DateTimeField(auto_now_add=True, null=False)
     last_updated = models.DateTimeField(auto_now=True, null=False)
     album_pathway = models.CharField(max_length=100, null=False)
-    
+
     class Meta:
         db_table = 'my_albums'
         verbose_name = 'My Album'
         verbose_name_plural = 'My Albums'
-        
+
 class MyAlbumPictures(models.Model):
     album = models.ForeignKey('MyAlbums', on_delete=models.CASCADE, null=False)
     picture = models.ForeignKey('Picture', on_delete=models.CASCADE, null=False)
     last_updated = models.DateTimeField(auto_now=True, null=False)
     date_added = models.DateTimeField(auto_now_add=True, null=False)
-    
+
     class Meta:
         db_table = 'my_album_pictures'
         verbose_name = 'My Album Picture'
         verbose_name_plural = 'My Album Pictures'
-    
+
 class DefaultAlbums(models.Model):
     album_name = models.CharField(max_length=100, null=False)
     album_serial = models.CharField(max_length=100, unique=True, primary_key=True, null=False)
@@ -78,7 +78,7 @@ class FavouritePictures(models.Model):
         db_table = 'favourite_images'
         verbose_name = 'Favourite Image'
         verbose_name_plural = 'Favourite Images'
-        
+
 class ImageQueryTable(models.Model):
     user = models.ForeignKey('user.Credentials', on_delete=models.CASCADE, null=False)
     current_album = models.ForeignKey('DefaultAlbums', on_delete=models.CASCADE, null=False)
@@ -90,7 +90,7 @@ class ImageQueryTable(models.Model):
     exact_tags = models.JSONField(default=dict, null=False)
     exact_people = models.JSONField(default=dict, null=False)
     date_created = models.DateTimeField(auto_now_add=True, null=False)
-    date_to_be_deleted = models.DateTimeField(default=(datetime.now() + timedelta(days=1)), null=False)
+    date_to_be_deleted = models.DateTimeField(null=False)
     
     class Meta:
         db_table = 'image_query_table'
@@ -102,23 +102,23 @@ class ImageTags(models.Model):
     album = models.ForeignKey('DefaultAlbums', on_delete=models.CASCADE, null=False)
     tag = models.CharField(max_length=100, null=False)
     date_added = models.DateTimeField(auto_now_add=True, null=False)
-    
+
     class Meta:
         db_table = 'image_tags'
         verbose_name = 'Image Tag'
         verbose_name_plural = 'Image Tags'
-        
+
 class ImagePeopleTags(models.Model):
     picture = models.ForeignKey('Picture', on_delete=models.CASCADE, null=False, to_field='picture_serial')
     album = models.ForeignKey('DefaultAlbums', on_delete=models.CASCADE, null=False)
     person = models.CharField(max_length=100, null=False)
     date_added = models.DateTimeField(auto_now_add=True, null=False)
-    
+
     class Meta:
         db_table = 'image_people_tags'
         verbose_name = 'Image People Tag'
         verbose_name_plural = 'Image People Tags'
-        
+
 class PictureQuery(models.Model):
     query_id = models.CharField(max_length=100, unique=True, primary_key=True, null=False)
     user = models.ForeignKey('user.Credentials', on_delete=models.CASCADE, null=False)
@@ -127,8 +127,8 @@ class PictureQuery(models.Model):
     picture_exact_people = models.JSONField(default=dict, null=False)
     picture_similar_tags = models.JSONField(default=dict, null=False)
     picture_similar_people = models.JSONField(default=dict, null=False)
-    delete_date = models.DateTimeField(default=(datetime.now() + timedelta(days=1)), null=False)
-    
+    delete_date = models.DateTimeField(null=False)
+
     class Meta:
         db_table = 'picture_query'
         verbose_name = 'Picture Query'

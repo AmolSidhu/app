@@ -31,7 +31,8 @@ def upload_video(request):
             token = request.headers.get('Authorization')
             auth_response = auth_check(token)
             if 'error' in auth_response:
-                return Response({'message': f'{auth_response["error"]}'}, status=status.HTTP_401_UNAUTHORIZED)
+                return Response({'message': f'{auth_response["error"]}'},
+                                status=status.HTTP_401_UNAUTHORIZED)
             user = auth_response['user']
             with open('json/directory.json', 'r') as f:
                 directory = json.load(f)
@@ -105,10 +106,12 @@ def upload_video(request):
                 temp_video_extension=video.name.split('.')[-1]
             )
             serializer = TempVideoSerializer(new_temp_video)
-            return Response({'message': 'Video uploaded successfully'}, status=status.HTTP_201_CREATED)
+            return Response({'message': 'Video uploaded successfully'},
+                            status=status.HTTP_201_CREATED)
         except Exception as e:
             logger.error(f"Error during video upload: {str(e)}")
-            return Response({'message': 'Internal server error'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            return Response({'message': 'Internal server error'},
+                            status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         
 @api_view(['POST'])
 def batch_video_upload(request):
@@ -559,6 +562,7 @@ def generate_video_search(request):
                     video_similar_writers=similar_writer,
                     video_exact_creators=exact_creator,
                     video_similar_creators=similar_creator,
+                    delete_date=timezone.now() + timezone.timedelta(days=1),
                     user=user,
                 )
                 serializer = VideoQuerySerializer(new_video_search)
@@ -818,8 +822,15 @@ def create_video_request(request):
                 return Response({'message': f'{auth_response["error"]}'},
                                 status=status.HTTP_401_UNAUTHORIZED)
             user = auth_response['user']
+            serial = generate_serial_code(
+                config_section="videos",
+                serial_key="video_request_serial_code",
+                model=VideoRequest,
+                field_name="serial"
+            )
             new_request = VideoRequest.objects.create(
                 user=user,
+                serial=serial,
                 request_title=request.data.get('request_title'),
                 request_description=request.data.get('request_description')
             )
@@ -833,7 +844,6 @@ def create_video_request(request):
 
 @api_view(['GET'])
 def get_video_requests(request):
-    print('get_video_requests')
     if request.method == 'GET':
         try:
             token = request.headers.get('Authorization')
@@ -853,5 +863,26 @@ def get_video_requests(request):
                             status=status.HTTP_200_OK)
         except Exception as e:
             logging.error(f"Error during video request retrieval: {str(e)}")
+            return Response({'message': 'Internal server error'},
+                            status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+@api_view(['GET'])
+def get_series_serials(request):
+    if request.method == 'GET':
+        try:
+            token = request.headers.get('Authorization')
+            auth_response = auth_check(token)
+            if 'error' in auth_response:
+                return Response({'message': f'{auth_response["error"]}'},
+                                status=status.HTTP_401_UNAUTHORIZED)
+            user = auth_response['user']
+            master_serials = Video.objects.filter(series=True, uploaded_by=user).values_list(
+                'serial', 'title')
+            data = [{'serial': serial, 'title': title} for serial, title in master_serials]
+            return Response({'message': 'Series serials retrieved successfully',
+                            'data': data},
+                            status=status.HTTP_200_OK)
+        except Exception as e:
+            logging.error(f"Error during series serial retrieval: {str(e)}")
             return Response({'message': 'Internal server error'},
                             status=status.HTTP_500_INTERNAL_SERVER_ERROR)

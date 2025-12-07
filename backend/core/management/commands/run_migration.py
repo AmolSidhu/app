@@ -7,7 +7,7 @@ class Command(BaseCommand):
             'user',
             'auth',
             'contenttypes',
-            'sessions',
+            'sessions',\
             'admin',
             'pictures',
             'videos',
@@ -19,6 +19,7 @@ class Command(BaseCommand):
             'articles',
             'files',
             'mtg',
+            'admins',
             ]
 
         for app in apps:

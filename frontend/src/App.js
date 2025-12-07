@@ -6,9 +6,11 @@ import { BrowserRouter, Route, Routes } from "react-router-dom";
 import LoginPage from "./Pages/Auth/LoginPage";
 import VerificationPage from "./Pages/Auth/VerificationPage";
 import RegistrationPage from "./Pages/Auth/RegisterationPage";
+import ForgotPasswordPage from "./Pages/Auth/ForgotPasswordPage";
 
 //General Pages
 import HomePage from "./Pages/General/HomePage";
+import ProfilePage from "./Pages/General/ProfilePage";
 
 //Video Pages
 import VideoUploadPage from "./Pages/Videos/VideoUploadPage";
@@ -49,6 +51,7 @@ import ViewAllMusicAlbumsPage from "./Pages/Music/ViewAllMusicAlbumsPage";
 
 //Articles Pages
 import SearchArticlesPage from "./Pages/Articles/SearchArticlesPage";
+import UploadArticlesPage from "./Pages/Articles/UploadArticlesPage";
 
 //Files Pages
 import UploadShareFilesPage from "./Pages/Files/UploadShareFilesPage";
@@ -61,8 +64,14 @@ import UploadScraperPage from "./Pages/MTG/UploadScraperPage";
 import ViewScrapersPage from "./Pages/MTG/ViewScrapersPage";
 import ViewScraperHistoryPage from "./Pages/MTG/ViewScraperHistoryPage";
 
+//Admin Pages
+import AdminLoginPage from "./Pages/Admin/AdminLoginPage";
+import VideoRequestApprovalPage from "./Pages/Admin/VideoRequestApprovalPage";
+import AdminDataPage from "./Pages/Admin/AdminDataPage";
+
 //Misc Pages
 import NotFound from "./Pages/Misc/NotFoundPage";
+import AboutPage from "./Pages/Misc/AboutPage";
 
 function App() {
   return (
@@ -71,10 +80,13 @@ function App() {
         <Route path="/login/" element={<LoginPage />} />
         <Route path="/register/" element={<RegistrationPage />} />
         <Route path="/verification/" element={<VerificationPage />} />
+        <Route path="/forgotpassword/" element={<ForgotPasswordPage />} />
+
 
         <Route path="/home/" element={<HomePage/>} />
         <Route index element={<HomePage/>} />
-        <Route path="/about/" element={<h1>About</h1>} />
+        <Route path="/about/" element={<AboutPage />} />
+        <Route path="/profile/" element={<ProfilePage />} />
 
         <Route path="/video/upload/" element={<VideoUploadPage />} />
         <Route path="/video/list" element={<VideoPage />} />
@@ -108,6 +120,7 @@ function App() {
         <Route path="/music/albums/" element={<ViewAllMusicAlbumsPage />} />
 
         <Route path="/articles/search/" element={<SearchArticlesPage />} />
+        <Route path="/articles/upload/" element={<UploadArticlesPage />} />
 
         <Route path="/files/uploadshare/" element={<UploadShareFilesPage />} />
         <Route path="/files/viewfolder/" element={<ViewFolderShareFilesPage />} />
@@ -117,6 +130,10 @@ function App() {
         <Route path="/mtg/uploadscraper/" element={<UploadScraperPage />} />
         <Route path="/mtg/viewscrapers/" element={<ViewScrapersPage />} />
         <Route path="/mtg/viewscraperhistory/" element={<ViewScraperHistoryPage />} />
+
+        <Route path="/admin/login/" element={<AdminLoginPage />} />
+        <Route path="/admin/videorequests/" element={<VideoRequestApprovalPage />} />
+        <Route path="/admin/data/" element={<AdminDataPage />} />
 
         <Route path="*" element={<NotFound />} />
       </Routes>

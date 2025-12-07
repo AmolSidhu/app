@@ -16,7 +16,7 @@ from .queries import get_article_tag_search_query, get_article_title_search_quer
 
 logger = logging.getLogger(__name__)
 
-@api_view(['PSOT'])
+@api_view(['POST'])
 def create_single_article(request):
     if request.method == 'POST':
         try:
@@ -76,9 +76,9 @@ def create_multiple_articles(request):
             return Response({"message": "Failed to create articles"},
                             status=status.HTTP_500_INTERNAL_SERVER_ERROR)
             
-@api_view(['GET'])
+@api_view(['POST'])
 def upload_article_files(request):
-    if request.method == 'GET':
+    if request.method == 'POST':
         try:
             token = request.headers.get('Authorization')
             auth = auth_check(token)
@@ -87,7 +87,6 @@ def upload_article_files(request):
             file = request.FILES.get('file')
             file_extension = os.path.splitext(file.name)[-1].lower()
             if file_extension not in ['.txt', '.md', '.json', '.html', '.jsonl']:
-                logger.warning(f"Unsupported file type: {file_extension}")
                 return Response({"message": "Unsupported file type"},
                                 status=status.HTTP_400_BAD_REQUEST)
             with open('json/directory.json', 'r') as f:
@@ -109,6 +108,10 @@ def upload_article_files(request):
                 file_status='uploaded'
             )
             uploaded_file.save()
+            write_path = os.path.join(article_directory, serial + file_extension)
+            with open(write_path, 'wb+') as destination:
+                for chunk in file.chunks():
+                    destination.write(chunk)
             return Response({"message": "Article files uploaded successfully"},
                             status=status.HTTP_201_CREATED)
         except Exception as e:
@@ -209,4 +212,53 @@ def add_article_to_my_list(request, article_serial, list_serial):
         except Exception as e:
             logger.error(f"Error adding article to my list: {e}")
             return Response({"message": "Failed to add article to your list"},
+                            status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+@api_view(['PATCH'])
+def update_article(request, article_serial):
+    if request.method == 'PATCH':
+        try:
+            token = request.headers.get('Authorization')
+            auth = auth_check(token)
+            if 'error' in auth:
+                return auth['error']
+            article = MainArticle.objects.filter(serial=article_serial,
+                                                 user=auth['user']).first()
+            if not article:
+                return Response({"message": "Article not found"},
+                                status=status.HTTP_404_NOT_FOUND)
+            title = request.data.get('title')
+            content = request.data.get('content')
+            if title:
+                article.title = title
+            if content:
+                article.content = content
+            article.update_date = timezone.now()
+            article.save()
+            return Response({"message": "Article updated successfully"},
+                            status=status.HTTP_200_OK)
+        except Exception as e:
+            logger.error(f"Error updating article: {e}")
+            return Response({"message": "Failed to update article"},
+                            status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+@api_view(['DELETE'])
+def delete_article(request, article_serial):
+    if request.method == 'DELETE':
+        try:
+            token = request.headers.get('Authorization')
+            auth = auth_check(token)
+            if 'error' in auth:
+                return auth['error']
+            article = MainArticle.objects.filter(serial=article_serial,
+                                                 user=auth['user']).first()
+            if not article:
+                return Response({"message": "Article not found"},
+                                status=status.HTTP_404_NOT_FOUND)
+            article.delete()
+            return Response({"message": "Article deleted successfully"},
+                            status=status.HTTP_200_OK)
+        except Exception as e:
+            logger.error(f"Error deleting article: {e}")
+            return Response({"message": "Failed to delete article"},
                             status=status.HTTP_500_INTERNAL_SERVER_ERROR)

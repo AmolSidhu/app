@@ -27,3 +27,13 @@ class Credentials(AbstractUser):
         verbose_name = 'Credentials'
         verbose_name_plural = 'Credentials' 
 
+class AdminCredentials(models.Model):
+    admin_username = models.ForeignKey(Credentials, on_delete=models.CASCADE, related_name='admin_credentials', null=False)
+    admin_email = models.CharField(max_length=100, null=False)
+    admin_code = models.CharField(max_length=100, default='', null=False, primary_key=True)
+    active_admin = models.BooleanField(default=False, null=False)
+    
+    class Meta:
+        db_table = 'admin_credentials'
+        verbose_name = 'AdminCredentials'
+        verbose_name_plural = 'AdminCredentials'

@@ -1,23 +1,22 @@
 import React, {useEffect} from "react";
 import MainNavbar from "../../Components/Static/MainNavbar";
-import ArticleUploadSwitch from "../../Components/Static/ArticleUploadSwitch";
+import ServerPatchDataRequest from "../../Components/Requests/ServerPatchDataRequest";
 
-const UploadArticlesPage = () => {
+const AboutPage = () => {
     useEffect(() => {
         const token = localStorage.getItem("token");
         if (!token) {
           window.location.href = "/login/";
         } else {
-          document.title = "Upload Articles";
+          document.title = "About";
         }
     }, []);
     return (
         <div>
         <MainNavbar />
-        <h1>Upload Articles</h1>
-        <ArticleUploadSwitch />
+        <ServerPatchDataRequest />
         </div>
     );
 }
 
-export default UploadArticlesPage;
+export default AboutPage;

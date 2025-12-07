@@ -26,7 +26,8 @@
         "artist_serial_code": "MAR-XXXXXX",
         "album_serial_code": "MAL-XXXXXX",
         "track_serial_code": "MTA-XXXXXX",
-        "full_uploaded_track_serial_code": "MFU-XXXXXX"
+        "full_uploaded_track_serial_code": "MFU-XXXXXX",
+        "full_track_record_serial_code": "MFR-XXXXXX"
     },
     "pictures": {
         "picture_serial_code": "PPS-XXXXXX",
@@ -53,7 +54,7 @@
         "custom_video_list_record_serial_code": "VCL-XXXXXX",
         "video_tags_serial_code": "VVT-XXXXXX",
         "video_directors_serial_code": "VVD-XXXXXX",
-        "video_stars_serial_code": "VVS-XXXXXX",
+        "video_stars_serial_code": "VVA-XXXXXX",
         "video_writers_serial_code": "VVW-XXXXXX",
         "video_creators_serial_code": "VVC-XXXXXX",
         "video_record_serial_code": "VVR-XXXXXX",

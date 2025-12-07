@@ -149,6 +149,8 @@ def reset_data_source_lines(request, serial):
             data_source_location = data_source.edited_file_location + serial + '.csv'
             if os.path.exists(data_source_location):
                 os.remove(data_source_location)
+            data_source.edited_file_location = None
+            data_source.save()
             return Response({'message': 'Reset Data Source Lines'},
                             status=status.HTTP_200_OK)
         except Exception as e:
@@ -377,7 +379,7 @@ def create_dashboard_item_data(request, dashboard_serial, dashboard_item_serial)
             if request.data.get('data_item_type') not in item_types:
                 return Response({'message': 'Data Item Type does not match any existing item type'},
                                 status=status.HTTP_405_METHOD_NOT_ALLOWED)
-            with open('directory.json', 'r') as f:
+            with open('json/directory.json', 'r') as f:
                 directory = json.load(f)
             data_item_graph_dir = directory['data_item_graph_dir']
             os.makedirs(data_item_graph_dir, exist_ok=True)
@@ -547,7 +549,7 @@ def get_dashboard_item(request, dashboard_serial, dashboard_item_serial):
                 if not current_graph_settings:
                     return Response({'message': 'Graph settings not found'},
                                     status=status.HTTP_404_NOT_FOUND)
-                with open('options.json', 'r') as f:
+                with open('json/options.json', 'r') as f:
                     options = json.load(f)
                 
                 data['graph_type'] = options['graph_types']

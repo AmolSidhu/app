@@ -154,7 +154,34 @@ def delete_season_records(request, serial):
             logging.error(f"Error during season deletion: {str(e)}")
             return Response({'message': 'Internal server error'},
                                 status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
+            
+@api_view(['PATCH'])
+def change_password(request):
+    if request.method == 'PATCH':
+        try:
+            token = request.headers.get('Authorization')
+            auth = auth_check(token)
+            if 'error' in auth:
+                return auth['error']
+            user = auth['user']
+            data = request.data
+            current_password_hashed = hashlib.sha256(data['current_password'].encode()).hexdigest()
+            if current_password_hashed != user.password:
+                return Response({'message': 'Incorrect current password'},
+                                    status=status.HTTP_400_BAD_REQUEST)
+            if data['new_password'] != data['confirm_new_password']:
+                return Response({'message': 'New password and confirmation do not match'},
+                                    status=status.HTTP_400_BAD_REQUEST)
+            new_password_hashed = hashlib.sha256(data['new_password'].encode()).hexdigest()
+            user.password = new_password_hashed
+            user.save()
+            return Response({'message': 'Password changed successfully'},
+                                status=status.HTTP_200_OK)
+        except Exception as e:
+            logging.error(f"Error during password change: {str(e)}")
+            return Response({'message': 'Internal server error'},
+                                status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            
 @api_view(['PATCH'])
 def change_email(request):
     if request.method == 'PATCH':
@@ -589,10 +616,50 @@ def get_server_metadata(request):
             user = auth['user']
             with open('json/meta.json', 'r') as f:
                 directory = json.load(f)
-            data = {}
+            data = directory
             return Response({'data': data},
                             status=status.HTTP_200_OK)
         except Exception as e:
             logging.error(f"Error during server metadata retrieval: {str(e)}")
             return Response({'message': 'Internal server error'},
                             status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+@api_view(['GET'])
+def get_server_patch_data(request):
+    if request.method == 'GET':
+        try:
+            token = request.headers.get('Authorization')
+            auth = auth_check(token)
+            if 'error' in auth:
+                return auth['error']
+            user = auth['user']
+            with open('json/patch.json', 'r') as f:
+                directory = json.load(f)
+            data = directory
+            return Response({'data': data},
+                            status=status.HTTP_200_OK)
+        except Exception as e:
+            logging.error(f"Error during server patch data retrieval: {str(e)}")
+            return Response({'message': 'Internal server error'},
+                            status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+@api_view(['GET'])
+def get_homepage_video_data(request):
+    if request.method == 'GET':
+        try:
+            pass
+        except Exception as e:
+            logging.error(f"Error during homepage video data retrieval: {str(e)}")
+            return Response({'message': 'Internal server error'},
+                            status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            
+@api_view(['GET'])
+def get_homepage_picture_data(request):
+    if request.method == 'GET':
+        try:
+            pass
+        except Exception as e:
+            logging.error(f"Error during homepage picture data retrieval: {str(e)}")
+            return Response({'message': 'Internal server error'},
+                            status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+

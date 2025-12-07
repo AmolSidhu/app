@@ -11,7 +11,7 @@ import os
 from functions.auth_functions import auth_check
 from functions.serial_default_generator import generate_serial_code
 
-from .models import MusicTempRecord, ArtistRecord, ArtistGenres, MusicAlbumRecord, MusicTrackRecord, AddedFullTrack
+from .models import AddedFullTrackTemp, MusicTempRecord, ArtistRecord, ArtistGenres, MusicAlbumRecord, MusicTrackRecord, MusicFullTrackRecord
 
 logger = logging.getLogger(__name__)
 
@@ -175,7 +175,7 @@ def get_album_thumbnail(request, serial):
                             status=status.HTTP_500_INTERNAL_SERVER_ERROR)
             
 @api_view(['GET'])
-def get_track_data (request, serial):
+def get_track_data(request, serial):
     if request.method == 'GET':
         try:
             token = request.headers.get('Authorization')
@@ -218,6 +218,8 @@ def get_track_preview(request, serial):
                 return Response({'message': 'Track not found'},
                                 status=status.HTTP_404_NOT_FOUND)
             file_path = track.track_location + track.serial + '.mp3'
+            if track.full_track_added:
+                file_path = track.full_track_location + track.full_track_serial.serial + '.mp3'
             if not os.path.exists(file_path):
                 return Response({'message': 'File not found'},
                                 status=status.HTTP_404_NOT_FOUND)
@@ -250,7 +252,7 @@ def get_artist_data(request):
                             status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 @api_view(['POST'])
-def add_full_track(request):
+def add_full_track(request, track_serial):
     if request.method == 'POST':
         try:
             token = request.headers.get('Authorization')
@@ -267,33 +269,48 @@ def add_full_track(request):
             with open('json/directory.json', 'r') as f:
                 directory = json.load(f)
             mp3_directory = directory['music_upload_track_match_dir']
+            os.makedirs(mp3_directory, exist_ok=True)
+            track_record = MusicTrackRecord.objects.filter(serial=track_serial).first()
+            if not track_record:
+                return Response({'message': 'Track record not found'},
+                                status=status.HTTP_404_NOT_FOUND)
+            full_track_exists = AddedFullTrackTemp.objects.filter(
+                track=track_record).exists()
+            if full_track_exists:
+                return Response({'message': 'Full track already exists for this track'},
+                                status=status.HTTP_400_BAD_REQUEST)
             serial = generate_serial_code(
                 config_section='music',
                 serial_key='full_uploaded_track_serial_code',
-                model=AddedFullTrack,
+                model=AddedFullTrackTemp,
                 field_name='serial'
             )
-            if request.data.get('file', None):
-                file = request.data['file']
-                if not file.name.endswith('.mp3'):
-                    return Response({'message': 'File must be an mp3'},
-                                    status=status.HTTP_400_BAD_REQUEST)
-                file_path = os.path.join(mp3_directory, f"{serial}.mp3")
-                with open(file_path, 'wb+') as location:
-                    for chunk in file.chunks():
-                        location.write(chunk)
-            file = False
-            if request.data.get('file'):
-                file = True
-            else:
-                return Response({'message': 'File is required'},
+            file = request.FILES.get('track_file')
+            youtube_link = request.data.get('youtube_link')
+            if file and youtube_link is None:
+                return Response({'message': 'Either track file or youtube link must be provided'},
                                 status=status.HTTP_400_BAD_REQUEST)
-            new_full_track = AddedFullTrack.objects.create(
+            file = False
+            track = False
+            if file:
+                file_extension = os.path.splitext(file.name)[1]
+                file_path = os.path.join(mp3_directory, serial + file_extension)
+                with open(file_path, 'wb+') as destination:
+                    for chunk in file.chunks():
+                        destination.write(chunk)
+                file = True
+            if youtube_link:
+                track = True
+            new_full_track = AddedFullTrackTemp.objects.create(
                 serial=serial,
-                file=file,
-                file_path=mp3_directory,
+                track=track_record,
                 user=user,
-                track=track,
+                file_record=file,
+                link_record=track,
+                mp3_file_added=file,
+                file_path=mp3_directory,
+                youtube_link=youtube_link,
+                record_status='pending'
             )
             new_full_track.save()
             return Response({"message": "Full song added successfully"},

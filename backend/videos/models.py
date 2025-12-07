@@ -3,7 +3,8 @@ from django.utils import timezone
 from datetime import timedelta
 
 class TempVideo(models.Model):
-    master_serial = models.CharField(max_length=100, null=False, unique=False, primary_key=True)
+    serial = models.CharField(max_length=100, unique=True, null=False, primary_key=True)
+    master_serial = models.CharField(max_length=100, null=False, unique=False)
     existing_series_serial = models.CharField(max_length=100, null=True, unique=False)
     video_name = models.CharField(max_length=100, null=False)
     title = models.CharField(max_length=100, default="", null=True)
@@ -38,7 +39,6 @@ class TempVideo(models.Model):
     last_updated = models.DateTimeField(auto_now=True, null=False)
     description = models.TextField(default="", null=True)
     genre_updated = models.BooleanField(default=True)
-    serial = models.CharField(max_length=100, unique=True, null=False)
     season = models.IntegerField(default=0, null=False)
     episode = models.IntegerField(default=0, null=False)
     existing_series = models.BooleanField(default=False, null=False)
@@ -341,7 +341,7 @@ class VideoQuery(models.Model):
     video_similar_writers = models.JSONField(default=list)
     video_exact_creators = models.JSONField(default=list)
     video_similar_creators = models.JSONField(default=list)
-    delete_date = models.DateTimeField(default=(timezone.now() + timedelta(days=1)), null=False)
+    delete_date = models.DateTimeField(null=False)
     
     class Meta:
         db_table = 'video_query'
@@ -349,12 +349,14 @@ class VideoQuery(models.Model):
         verbose_name_plural = 'Video Queries'
         
 class VideoRequest(models.Model):
+    serial = models.CharField(max_length=100, unique=True, primary_key=True, null=False)
     user = models.ForeignKey('user.Credentials', on_delete=models.CASCADE, related_name='video_requests', null=False)
     request_date = models.DateTimeField(auto_now_add=True)
     request_title = models.CharField(max_length=100, null=False)
     request_description = models.TextField(null=False)
     request_status = models.CharField(max_length=100, default="Pending", null=False)
     request_last_updated = models.DateTimeField(auto_now=True, null=False)
+    reviewed_by = models.ForeignKey('user.AdminCredentials', on_delete=models.CASCADE, related_name='reviewed_video_requests', null=True, blank=True)
     
     class Meta:
         db_table = 'video_request'

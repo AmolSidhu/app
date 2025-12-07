@@ -25,5 +25,12 @@
         "Subtraction",
         "Multiplication",
         "Division"
+    ],
+    "admin_video_review_status": [
+        "Pending",
+        "In Review",
+        "Approved",
+        "Rejected",
+        "Added"
     ]
 }

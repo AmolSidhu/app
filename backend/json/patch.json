@@ -1,36 +1,44 @@
 {
-    "2024-11-16": [
+    "2025-01-13": [
         "Beta Release"
     ],
-    "2025-02-16": [
+    "2025-02-17": [
         "Initial Release"
     ],
-    "2025-03-17": [
+    "2025-03-16": [
         "Added Image and Video Edit Fields",
         "Added Video Suggestions and Streaming Episode Navigation",
         "API Development for Analytics and Youtube",
         "Bug Fixes"
     ],
-    "2025-05-20": [
+    "2025-05-11": [
         "Initial Analytics Integration",
         "Analytics Dashboard Initial Creation",
         "Resolved Web Driver Issue with Video Feature",
         "Finished Initial Youtube Integration",
         "Bug Fixes"
     ],
-    "2025-07-12": [
+    "2025-07-30": [
         "Initial Creation for File Sharing Feature",
         "Initial Creation for Articles Feature",
         "Bug Fixes"
     ],
-    "2025-09-19": [
+    "2025-09-28": [
         "File Sharing Feature Initial Creation",
         "Bug Fixes"
     ],
     "2025-10-29": [
         "Initial Creation for MTG Card Collection Feature",
         "MTG Card Collection Scraper Initial Creation",
-        "removed Unnecessary Imports From Backend",
+        "Removed Unnecessary Imports From Backend",
+        "Bug Fixes"
+    ],
+    "2025-12-07": [
+        "Added Admin Video Review Feature",
+        "Finished MTG Card Collection Feature",
+        "Added Initial Music Full Track Upload Feature",
+        "Created Admin Creation Command",
+        "Created Admin Frontend Views for Video Review",
         "Bug Fixes"
     ]
 }

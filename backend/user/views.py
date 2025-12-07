@@ -144,7 +144,7 @@ def forgot_password(request):
             if not user:
                 return JsonResponse({'message': 'User not found'},
                                     status=status.HTTP_404_NOT_FOUND)
-            new_password = token_urlsafe(8)  
+            new_password = token_urlsafe(12)  
             new_password_hash = hashlib.sha256(new_password.encode()).hexdigest()
             user.password = new_password_hash
             user.save()
@@ -157,6 +157,27 @@ def forgot_password(request):
                                 status=status.HTTP_200_OK)
         except Exception as e:
             logging.error(f"Error during video upload: {str(e)}")
+            return JsonResponse({'message': 'Internal server error'},
+                                status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+@api_view(['PATCH'])
+def resend_forgot_password(request):
+    if request.method == 'PATCH':
+        try:
+            user = Credentials.objects.filter(email=request.data['email']).first()
+            if not user:
+                return JsonResponse({'message': 'User not found'},
+                                    status=status.HTTP_404_NOT_FOUND)
+            password = user.password
+            subject = 'Password Reset'
+            message = f'Your password is: '
+            email_from = settings.EMAIL_HOST_USER
+            recipient_list = [user.email]
+            send_mail(subject, message, email_from, recipient_list)
+            return JsonResponse({'message': 'Password reset link sent successfully'},
+                                status=status.HTTP_200_OK)
+        except Exception as e:
+            logging.error(f"Error during password reset link resend: {str(e)}")
             return JsonResponse({'message': 'Internal server error'},
                                 status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 

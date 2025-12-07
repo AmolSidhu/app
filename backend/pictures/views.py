@@ -2,6 +2,7 @@ from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework import status
 from django.utils import timezone
+from datetime import timedelta
 from django.db import connection
 from django.http import FileResponse, JsonResponse
 from secrets import token_urlsafe
@@ -38,7 +39,8 @@ def upload_picture(request):
             image = request.FILES.get('image')
             with open('json/directory.json', 'r') as f:
                 directory = json.load(f)
-            current_album = DefaultAlbums.objects.filter(album_serial=request.data['album']).first()
+            current_album = DefaultAlbums.objects.filter(
+                album_serial=request.data['album']).first()
             if not current_album:
                 return Response({'message': 'Album does not exist'},
                                 status=status.HTTP_400_BAD_REQUEST)
@@ -47,7 +49,8 @@ def upload_picture(request):
             os.makedirs(image_dir, exist_ok=True)
             os.makedirs(image_backup_dir, exist_ok=True)
             current_time = timezone.now().strftime('%Y-%m-%d_%H-%M-%S')
-            full_backup_path = os.path.join(f'{image_backup_dir}{current_time}')
+            full_backup_path = os.path.join(
+                f'{image_backup_dir}{current_time}')
             os.makedirs(full_backup_path, exist_ok=True)
             serial = generate_serial_code(
                 config_section="pictures",
@@ -56,7 +59,8 @@ def upload_picture(request):
                 field_name="picture_serial"
             )
             exif_dict = extract_exif_data(image)
-            user_editable_status = request.data['user_editable'].lower() == 'true'
+            user_editable_status = request.data['user_editable'].lower(
+                ) == 'true'
             json_format = json_image_backup(
                 image_name=image.name,
                 image_path=image_dir,
@@ -75,7 +79,8 @@ def upload_picture(request):
             )
             with open(f'{full_backup_path}/{serial}.json', 'w') as f:
                 json.dump(json_format, f, indent=4, ensure_ascii=False)
-            image_pathway_backup = f'{full_backup_path}/{serial}.{image.name.split(".")[-1]}'
+            image_pathway_backup = f'{full_backup_path}/{
+                serial}.{image.name.split(".")[-1]}'
             with open(image_pathway_backup, 'wb') as f:
                 for chunk in image.chunks():
                     f.write(chunk)
@@ -88,11 +93,14 @@ def upload_picture(request):
                 exif = image_original._getexif()
                 if exif and orientation in exif:
                     if exif[orientation] == 3:
-                        image_original = image_original.rotate(180, expand=True)
+                        image_original = image_original.rotate(
+                            180, expand=True)
                     elif exif[orientation] == 6:
-                        image_original = image_original.rotate(270, expand=True)
+                        image_original = image_original.rotate(
+                            270, expand=True)
                     elif exif[orientation] == 8:
-                        image_original = image_original.rotate(90, expand=True)
+                        image_original = image_original.rotate(
+                            90, expand=True)
             except (AttributeError, KeyError, IndexError, TypeError):
                 pass
             image_original.save(image_pathway_dir, 'PNG', quality=100)
@@ -827,7 +835,8 @@ def generate_picture_query(request):
                 picture_exact_tags=exact_tags,
                 picture_similar_tags=similar_tags,
                 picture_exact_people=exact_people,
-                picture_similar_people=similar_people
+                picture_similar_people=similar_people,
+                delete_date=timezone.now() + timedelta(days=7)
             )
             serializer = PictureQuerySerializer(new_picture_search)
             return Response({'message': 'Image query generated successfully',

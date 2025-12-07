@@ -44,7 +44,8 @@ def json_image_backup(image_name, image_path, image_extension, image_serial, ima
         'Exif Data': exif_data
     }
     
-def json_revision_format_for_images(title=None, description=None, tags=None, people=None, status=None):
+def json_revision_format_for_images(title=None, description=None, tags=None,
+                                    people=None, status=None):
     if title is None or title == '':
         title = []
     if description is None or description == '':
@@ -63,7 +64,8 @@ def json_revision_format_for_images(title=None, description=None, tags=None, peo
         'Status': status
     }
 
-def json_album_backup(album_name, album_serial, album_description, album_status, album_tags, date_created):
+def json_album_backup(album_name, album_serial, album_description,
+                      album_status, album_tags, date_created):
     return {
         'Album Name': album_name,
         'Album Serial': album_serial,
@@ -93,7 +95,8 @@ def json_revision_format_for_albums(album_name=None, album_description=None,
         'Album Tags': album_tags
     }
 
-def custom_album_backup(album_name, album_serial, album_description, album_status, album_data, date_created, creator):
+def custom_album_backup(album_name, album_serial, album_description,
+                        album_status, album_data, date_created, creator):
     return {
         'Creator': creator,
         'Album Name': album_name,

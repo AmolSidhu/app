@@ -12,6 +12,7 @@ import music.views
 import articles.views
 import files.views
 import mtg.views
+import admins.views
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -23,6 +24,7 @@ urlpatterns = [
     path('logout/', user.views.logout, name='logout'),
     path('forgot/password/', user.views.forgot_password, name='forgot_password'),
     path('change/password/', user.views.change_password, name='change_password'),
+    path('resend/forgot_password/', user.views.resend_forgot_password, name='resend_forgot_password'),
     path('resend/verification/', user.views.resend_verification, name='resend_verification'),
 
     # Picture Routes
@@ -74,10 +76,11 @@ urlpatterns = [
     path('delete/video/custom_list/<str:video_serial>/<str:list_serial>/', videos.views.remove_video_from_custom_list, name='remove_video_from_custom_list'),
     path('get/custom_video_lists/', videos.views.get_custom_video_lists, name='get_custom_video_lists'),
     path('get/custom_list_videos/<str:list_serial>/', videos.views.get_custom_video_list_records, name='get_custom_video_list_records'),
-    path('update/favourite_videos/<str:serial>/', videos.views.update_video_favourites, name='update_video_favourites'),
+    path('update/favourite_videos/<str:serial>/', videos.views.update_video_favourites, name='update_video_favourites'), 
     path('get/favourite_videos/', videos.views.get_favourite_videos, name='get_favourite_videos'),
     path('create/video_request/', videos.views.create_video_request, name='create_video_request'),
     path('get/video_requests/', videos.views.get_video_requests, name='get_video_requests'),
+    path('get/series_serials/', videos.views.get_series_serials, name='get_series_serials'),
 
     # Management Routes
     path('import_identifier_api/', management.views.import_identifier_api, name='import_identifier_api'),
@@ -85,9 +88,10 @@ urlpatterns = [
     path('delete_video_record/<str:serial>/', management.views.delete_video_record, name='delete_video_record'),
     path('delete_episode_record/<str:serial>/<int:season>/<int:episode>/', management.views.delete_episode_record, name='delete_episode_record'),
     path('delete_season_records/<str:serial>', management.views.delete_season_records, name='delete_season_records'),
-    path('change_email/', management.views.change_email, name='change_email'),
-    path('change_username/', management.views.change_username, name='change_username'),
-    path('delete_account/', management.views.delete_account, name='delete_account'), 
+    path('change/password/', management.views.change_password, name='change_password'),
+    path('change/email/', management.views.change_email, name='change_email'),
+    path('change/username/', management.views.change_username, name='change_username'),
+    path('delete_account/', management.views.delete_account, name='delete_account'),
     path('get/editing_video_list/', management.views.get_editing_video_list, name='get_editing_video_list'),
     path('get/single_video_record/<str:serial>/', management.views.get_single_video_record, name='get_single_video_record'),
     path('get/full_video_record/<str:serial>/', management.views.get_full_video_record, name='get_full_video_record'),
@@ -97,6 +101,7 @@ urlpatterns = [
     path('update/video_record/<str:serial>/', management.views.update_video_record, name='update_video_record'),
     path('update/video_episode/<str:serial>/', management.views.update_video_episode, name='update_video_episodes'),
     path('get/server/metadata/', management.views.get_server_metadata, name='get_server_metadata'),
+    path('get/server/patch_data/', management.views.get_server_patch_data, name='get_server_patch_data'),
 
     # Youtube Routes
     path('create/youtube_playlist/', youtube.views.create_youtube_playlist, name='create_youtube_playlist'),
@@ -157,8 +162,10 @@ urlpatterns = [
     path('create/multiple_articles/', articles.views.create_multiple_articles, name='create_multiple_articles'),
     path('upload/article_files/', articles.views.upload_article_files, name='upload_article_files'),
     path('search/articles/', articles.views.search_articles, name='search_articles'),
-    path('create?articles_list/', articles.views.create_articles_list, name='create_articles_list'),
+    path('create/articles_list/', articles.views.create_articles_list, name='create_articles_list'),
     path('add/articles_to_my_list/<str:serial>/', articles.views.add_article_to_my_list, name='add_articles_to_my_list'),
+    path('update/article/<str:serial>/', articles.views.update_article, name='update_article'),
+    path('delete/article/<str:serial>/', articles.views.delete_article, name='delete_article'),
     
     # File Routes
     path('create/upload_folder/', files.views.create_upload_folder, name='create_upload_folder'),
@@ -186,4 +193,10 @@ urlpatterns = [
     path('get/scraper_status/<str:serial>/', mtg.views.get_scraper_status, name='get_scraper_status'),
     path('get/all_scraper_statuses/', mtg.views.get_all_scraper_statues, name='get_all_scraper_statuses'),
     path('trigger/mtg_f2f_scraper/<str:serial>/', mtg.views.trigger_mtg_f2f_scraper, name='trigger_mtg_f2f_scraper'),
+    
+    # Admins Routes
+    path('admins/login/', admins.views.admin_login, name='admin_login'),
+    path('admins/video_request_options/', admins.views.video_request_options, name='video_request_options'),
+    path('admins/video_requests/<str:status_filter>/', admins.views.video_requests, name='video_requests'),
+    path('admins/review_video_request/<str:serial>/', admins.views.review_video_request, name='review_video_request'),
 ]

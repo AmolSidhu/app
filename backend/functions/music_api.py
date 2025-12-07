@@ -102,7 +102,7 @@ def get_spotify_music_data(spotify_link):
         artist_info_list.append(artist_info)
 
     try:
-        with open('directory.json', 'r') as f:
+        with open('json/directory.json', 'r') as f:
             directory = json.load(f)
 
         music_artist_thumbnail_dir = directory['music_artist_thumbnail_dir']

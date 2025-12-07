@@ -31,6 +31,7 @@
   "music_artist_json_dir": "D:/bucket/main/music/artist_json/",
   "music_album_json_dir": "D:/bucket/main/music/album_json/",
   "music_upload_track_match_dir": "D:/bucket/main/music/upload_track_match/",
+  "music_full_track_dir": "D:/bucket/main/music/full_track/",
   "article_file_upload_dir": "D:/bucket/main/article/uploads/",
   "share_file_upload_dir": "D:/bucket/main/share_file/uploads/",
   "mtg_upload_dir": "D:/bucket/main/mtg/uploads/",

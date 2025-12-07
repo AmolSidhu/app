@@ -30,15 +30,48 @@ class BatchVideoUploadForm extends Component {
       creators: [],
       criticRating: 0,
       title: "",
+      seriesOptions: [],
+      loadingSeries: false,
     };
   }
 
   handleInputChange = (event) => {
     const { name, value, type, checked } = event.target;
-    this.setState({
-      [name]: type === "checkbox" ? checked : value,
-    });
+    this.setState(
+      {
+        [name]: type === "checkbox" ? checked : value,
+      },
+      () => {
+        if (name === "existingSeries" && checked) {
+          this.fetchSeriesOptions();
+        } else if (name === "existingSeries" && !checked) {
+          this.setState({ master_serial: "", seriesOptions: [] });
+        }
+      }
+    );
   };
+
+  async fetchSeriesOptions() {
+    const token = localStorage.getItem("token");
+    const url = `${server}/get/series_serials/`;
+
+    this.setState({ loadingSeries: true });
+
+    try {
+      const response = await fetch(url, {
+        headers: { Authorization: token },
+      });
+      if (!response.ok) {
+        throw new Error("Failed to fetch series list.");
+      }
+      const data = await response.json();
+      this.setState({ seriesOptions: data.data || [] });
+    } catch (error) {
+      this.setState({ errorMessage: error.message });
+    } finally {
+      this.setState({ loadingSeries: false });
+    }
+  }
 
   handleFilesChange = (event) => {
     const files = Array.from(event.target.files);
@@ -122,7 +155,6 @@ class BatchVideoUploadForm extends Component {
     });
 
     formData.append(`thumbnail`, this.state.thumbnailFiles[0]);
-
     formData.append(`tags`, JSON.stringify(this.state.tags));
     formData.append(`private`, this.state.private.toString());
     formData.append(`permission`, this.state.permission.toString());
@@ -169,10 +201,7 @@ class BatchVideoUploadForm extends Component {
 
   onDragEnd = (result) => {
     const { source, destination } = result;
-
-    if (!destination) {
-      return;
-    }
+    if (!destination) return;
 
     const reorderedVideoData = Array.from(this.state.videoData);
     const [movedVideo] = reorderedVideoData.splice(source.index, 1);
@@ -215,7 +244,7 @@ class BatchVideoUploadForm extends Component {
               className="form-control"
             />
           </Form.Group>
-    
+
           <DragDropContext onDragEnd={this.onDragEnd}>
             <Droppable droppableId="videoData">
               {(provided) => (
@@ -239,7 +268,10 @@ class BatchVideoUploadForm extends Component {
                         >
                           <h5>Video {index + 1}</h5>
                           <p>{data.name}</p>
-                          <Form.Group controlId={`episode${index}`} className="form-group">
+                          <Form.Group
+                            controlId={`episode${index}`}
+                            className="form-group"
+                          >
                             <Form.Label>Episode:</Form.Label>
                             <Form.Control
                               type="text"
@@ -254,7 +286,10 @@ class BatchVideoUploadForm extends Component {
                               className="form-control"
                             />
                           </Form.Group>
-                          <Form.Group controlId={`season${index}`} className="form-group">
+                          <Form.Group
+                            controlId={`season${index}`}
+                            className="form-group"
+                          >
                             <Form.Label>Season:</Form.Label>
                             <Form.Control
                               type="text"
@@ -278,7 +313,7 @@ class BatchVideoUploadForm extends Component {
               )}
             </Droppable>
           </DragDropContext>
-    
+
           <Form.Group controlId="thumbnail" className="form-group">
             <Form.Label>Thumbnails:</Form.Label>
             <Form.Control
@@ -287,7 +322,7 @@ class BatchVideoUploadForm extends Component {
               className="form-control"
             />
           </Form.Group>
-    
+
           <Form.Group controlId="tags" className="form-group">
             <Form.Label>Tags:</Form.Label>
             <div>
@@ -303,8 +338,11 @@ class BatchVideoUploadForm extends Component {
               ))}
             </div>
           </Form.Group>
-    
-          <Form.Group controlId="customTag" className="form-group custom-tag-container">
+
+          <Form.Group
+            controlId="customTag"
+            className="form-group custom-tag-container"
+          >
             <Form.Label>Add Custom Tag:</Form.Label>
             <Form.Control
               type="text"
@@ -320,7 +358,7 @@ class BatchVideoUploadForm extends Component {
               Add Tag
             </Button>
           </Form.Group>
-    
+
           <Form.Group controlId="description" className="form-group">
             <Form.Label>Description:</Form.Label>
             <Form.Control
@@ -332,7 +370,7 @@ class BatchVideoUploadForm extends Component {
               className="form-control"
             />
           </Form.Group>
-    
+
           <Form.Group controlId="imdbLink" className="form-group">
             <Form.Label>IMDB Link:</Form.Label>
             <Form.Control
@@ -343,7 +381,7 @@ class BatchVideoUploadForm extends Component {
               className="form-control"
             />
           </Form.Group>
-    
+
           <Form.Group controlId="directors" className="form-group">
             <Form.Label>Directors:</Form.Label>
             {directors.map((director, index) => (
@@ -372,7 +410,7 @@ class BatchVideoUploadForm extends Component {
               Add Director
             </Button>
           </Form.Group>
-    
+
           <Form.Group controlId="stars" className="form-group">
             <Form.Label>Stars:</Form.Label>
             {stars.map((star, index) => (
@@ -401,7 +439,7 @@ class BatchVideoUploadForm extends Component {
               Add Star
             </Button>
           </Form.Group>
-    
+
           <Form.Group controlId="writers" className="form-group">
             <Form.Label>Writers:</Form.Label>
             {writers.map((writer, index) => (
@@ -430,7 +468,7 @@ class BatchVideoUploadForm extends Component {
               Add Writer
             </Button>
           </Form.Group>
-    
+
           <Form.Group controlId="creators" className="form-group">
             <Form.Label>Creators:</Form.Label>
             {creators.map((creator, index) => (
@@ -459,7 +497,7 @@ class BatchVideoUploadForm extends Component {
               Add Creator
             </Button>
           </Form.Group>
-    
+
           <Form.Group controlId="criticRating" className="form-group">
             <Form.Label>Critic Rating:</Form.Label>
             <Form.Control
@@ -472,7 +510,7 @@ class BatchVideoUploadForm extends Component {
               className="form-control"
             />
           </Form.Group>
-    
+
           <Form.Group controlId="title" className="form-group">
             <Form.Label>Title:</Form.Label>
             <Form.Control
@@ -483,7 +521,7 @@ class BatchVideoUploadForm extends Component {
               className="form-control"
             />
           </Form.Group>
-    
+
           <Form.Group controlId="existingSeries" className="form-group">
             <Form.Check
               type="checkbox"
@@ -493,20 +531,30 @@ class BatchVideoUploadForm extends Component {
               name="existingSeries"
             />
           </Form.Group>
-    
+
           {this.state.existingSeries && (
             <Form.Group controlId="masterSerial" className="form-group">
               <Form.Label>Master Serial:</Form.Label>
-              <Form.Control
-                type="text"
-                value={this.state.master_serial}
-                onChange={this.handleInputChange}
-                name="master_serial"
-                className="form-control"
-              />
+              {this.state.loadingSeries ? (
+                <div>Loading available series...</div>
+              ) : (
+                <Form.Select
+                  value={this.state.master_serial}
+                  onChange={this.handleInputChange}
+                  name="master_serial"
+                  className="form-control"
+                >
+                  <option value="">-- Select a Series --</option>
+                  {this.state.seriesOptions.map((series) => (
+                    <option key={series.serial} value={series.serial}>
+                      {series.title} ({series.serial})
+                    </option>
+                  ))}
+                </Form.Select>
+              )}
             </Form.Group>
           )}
-    
+
           <Button variant="primary" type="submit">
             Upload
           </Button>
@@ -514,6 +562,6 @@ class BatchVideoUploadForm extends Component {
       </div>
     );
   }
-}    
+}
 
 export default BatchVideoUploadForm;

@@ -65,23 +65,42 @@ class MusicTrackRecord(models.Model):
     track_name = models.CharField(max_length=100, null=False)
     track_duration = models.IntegerField(default=0, null=False)
     track_location = models.CharField(max_length=300, null=False)
+    full_track_added = models.BooleanField(default=False, null=False)
+    full_track_location = models.CharField(max_length=300, null=True, default='')
+    full_track_serial = models.ForeignKey('MusicFullTrackRecord', on_delete=models.CASCADE, null=True)
+    create_date = models.DateTimeField(auto_now_add=True, null=False)
+    last_updated_date = models.DateTimeField(auto_now=True, null=False)
     
     class Meta:
         db_table = 'music_track_record'
         verbose_name = 'Music Track Record'
         verbose_name_plural = 'Music Track Records'
-    
-    
-class AddedFullTrack(models.Model):
+        
+class AddedFullTrackTemp(models.Model):
     serial = models.CharField(max_length=100, primary_key=True, unique=True, null=False)
-    user = models.ForeignKey('user.Credentials', on_delete=models.CASCADE)
-    file = models.BooleanField(default=False, null=False)
-    file_path = models.CharField(max_length=300, null=False)
-    youtube_link = models.CharField(max_length=300, null=True)
     track = models.ForeignKey(MusicTrackRecord, on_delete=models.CASCADE, null=True)
-    status = models.CharField(max_length=100, default='pending', null=False)
+    user = models.ForeignKey('user.Credentials', on_delete=models.CASCADE)
+    youtube_link = models.CharField(max_length=300, null=True)
+    file_record = models.BooleanField(default=False, null=False)
+    link_record = models.BooleanField(default=False, null=False)
+    file_path = models.CharField(max_length=300, null=False)
+    mp3_file_added = models.BooleanField(default=False, null=False)
+    create_date = models.DateTimeField(auto_now_add=True, null=False)
+    record_status = models.CharField(max_length=100, default='pending', null=False)
     
     class Meta:
-        db_table = 'added_full_track'
-        verbose_name = 'Added Full Track'
-        verbose_name_plural = 'Added Full Tracks'
+        db_table = 'added_full_track_temp'
+        verbose_name = 'Added Full Track Temp'
+        verbose_name_plural = 'Added Full Track Temps'
+        
+class MusicFullTrackRecord(models.Model):
+    serial = models.CharField(max_length=100, primary_key=True, unique=True, null=False)
+    album = models.ForeignKey(MusicAlbumRecord, on_delete=models.CASCADE, null=True)
+    track = models.ForeignKey(MusicTrackRecord, on_delete=models.CASCADE, null=True)
+    track_location = models.CharField(max_length=300, null=False)
+    create_date = models.DateTimeField(auto_now_add=True, null=False)
+    
+    class Meta:
+        db_table = 'music_full_track_record'
+        verbose_name = 'Music Full Track Record'
+        verbose_name_plural = 'Music Full Track Records'

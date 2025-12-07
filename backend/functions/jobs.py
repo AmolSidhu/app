@@ -2,6 +2,7 @@ from moviepy.editor import VideoFileClip
 from django.utils import timezone
 from collections import defaultdict
 from secrets import token_urlsafe
+
 import numpy as np
 import pandas as pd
 import subprocess
@@ -22,7 +23,8 @@ from videos.models import (Video, TempVideo, VideoRecord, VideoGenre, VideoTags,
                            VideoHistory, VideoComments, CustomVideoListRecords)
 from management.models import Identifier, IdentifierTempTable, TempGenreTable
 from youtube.models import YoutubeTempRecord, YoutubeVideoRecord, YoutubeListRecord, YoutubeLists
-from music.models import MusicTempRecord, ArtistRecord, ArtistGenres, MusicAlbumRecord, MusicTrackRecord, AddedFullTrack
+from music.models import (MusicTempRecord, ArtistRecord, ArtistGenres, MusicAlbumRecord, MusicTrackRecord,
+                          MusicFullTrackRecord, AddedFullTrackTemp)
 from analytics.models import DataSourceUpload, Dashboards, DashboardItem, DashboardTableDataLines, DashboardGraphData
 from mtg.models import ScraperUploadFile, ScraperOutputFile
 from pictures.models import PictureQuery
@@ -34,6 +36,8 @@ from .create_graphs import generate_basic_graph
 from .create_table import create_table
 from .serial_default_generator import generate_serial_code
 from .mtg_f2f_scraper import mtg_f2f_scraper
+from .youtube_mp3_downloader import youtube_mp3_downloader
+from .music_track_check import compare_tracks
 
 logger = logging.getLogger(__name__)
 
@@ -195,6 +199,8 @@ def imdb_data():
                     video.tags = previous_passed_record.tags
                 video.save()
                 continue
+            print(f"Processing IMDb data for video {video.serial}")
+            print(f"IMDb Link: {video.master_serial}")
 
             imdb_record = imdb_scraper(video.imdb_link, video.master_serial, identifier=False)
 
@@ -228,87 +234,87 @@ def imdb_data():
             video.save()
 
 def identifier_check():
-    videos = TempVideo.objects.filter(imdb_added=True,
-                                      current_status="J")
-    
+    videos = TempVideo.objects.filter(imdb_added=True, current_status="J")
+
     with open('json/directory.json', 'r') as f:
         directory = json.load(f)
-    
+
     for video in videos:
         try:
-            imdb_id_regex = r't{1}t\d+'
-            imdb_id = re.search(imdb_id_regex, video.imdb_link).group()
-            
-            existing_identifier = Identifier.objects.filter(identifier=imdb_id)
-            if not existing_identifier.exists():
-                identifier_record = Identifier.objects.create(
-                    identifier=imdb_id,
-                    current_status="N",
-                    json_location=directory['json_imdb_records_dir']
-                )
-                serializer = IdentifierSerializer(identifier_record)
-            
+            if not video.existing_series:
+                imdb_id_regex = r't{1}t\d+'
+                imdb_id = re.search(imdb_id_regex, video.imdb_link).group()
+
+                existing_identifier = Identifier.objects.filter(identifier=imdb_id)
+                if not existing_identifier.exists():
+                    identifier_record = Identifier.objects.create(
+                        identifier=imdb_id,
+                        current_status="N",
+                        json_location=directory['json_imdb_records_dir']
+                    )
+                    serializer = IdentifierSerializer(identifier_record)
+
             video.current_status = "M"
             video.last_updated = timezone.now()
             video.identifier_checked = True
             video.save()
+
         except Exception as e:
             logger.error(f"Error during identifier check for video {video.serial}: {str(e)}")
-            
+
+            video.failed_attempts += 1
+            video.last_updated = timezone.now()
             if video.failed_attempts >= 3:
                 video.current_status = "E"
-                video.last_updated = timezone.now()
-                video.failed_attempts += 1
-            else:
-                video.failed_attempts += 1
-                video.last_updated = timezone.now()
-            
+
             video.save()
+
      
 def audio_profile():   
-    videos = TempVideo.objects.filter(identifier_checked=True,
-                                       current_status="M")
+    videos = TempVideo.objects.filter(identifier_checked=True, current_status="M")
     
     for video in videos:
+        clip = None
         try:
-            clip = VideoFileClip(f'{video.video_location}{video.serial}.mp4')
-            audio_path = f'{video.video_location}{video.serial}.wav'
+            video_path = os.path.join(video.video_location, f"{video.serial}.mp4")
+            audio_path = os.path.join(video.video_location, f"{video.serial}.wav")
+
+            clip = VideoFileClip(video_path)
             clip.audio.write_audiofile(audio_path, codec='pcm_s16le')
-            
+
             y, sr = librosa.load(audio_path, sr=None, mono=True)
-            
-            average_volume = np.mean(librosa.feature.rms(y=y))
-            
+            average_volume = float(np.mean(librosa.feature.rms(y=y)))
+
             audio_profile = {
                 'duration': clip.duration,
                 'sample_rate': sr,
-                'channels': y.shape[0],
+                'channels': 1 if y.ndim == 1 else y.shape[0],
                 'average_volume': average_volume
             }
-            
-            audio_details = {key: float(value) if not isinstance(
-                value, tuple) else value for key, value in audio_profile.items()}
-            
-            video.audio_details = audio_details
+
+            video.audio_details = audio_profile
             video.audio_data_added = True
             video.current_status = "K"
             video.last_updated = timezone.now()
             video.save()
-            
-            os.remove(audio_path)
-            
+
         except Exception as e:
             logger.error(f"Error during audio profile calculation for video {video.serial}: {str(e)}")
-            
+            video.failed_attempts += 1
             if video.failed_attempts >= 3:
-                video.failed_attempts += 1
-                video.last_updated = timezone.now()
                 video.current_status = "E"
-            else:
-                video.last_updated = timezone.now()
-                video.failed_attempts += 1
-            
+            video.last_updated = timezone.now()
             video.save()
+
+        finally:
+            if clip:
+                clip.close()
+            if os.path.exists(audio_path):
+                try:
+                    os.remove(audio_path)
+                except PermissionError:
+                    logger.warning(f"Could not remove {audio_path}, file still in use.")
+
 
 def visual_profile():
     videos = TempVideo.objects.filter(visual_data_added=False, current_status="K")
@@ -386,6 +392,9 @@ def visual_profile():
             
             video.last_updated = timezone.now()
             video.save()
+            
+        finally:
+            cap.release()
 
 def completed_processing():
     videos = TempVideo.objects.filter(
@@ -403,17 +412,19 @@ def completed_processing():
     for video in videos:
         try:
             skip_video_creation_instance = False
-            existing_series_record = Video.objects.filter(serial=video.existing_series_serial).first()
+            existing_series_record = Video.objects.filter(serial=video.master_serial).first()
 
             with open('json/directory.json', 'r') as f:
                 directory = json.load(f)
+            
+            if not existing_series_record:
  
-            video_serial = generate_serial_code(
-                config_section="videos",
-                serial_key="video_serial_code",
-                model=Video,
-                field_name="serial"
-            )
+                video_serial = generate_serial_code(
+                    config_section="videos",
+                    serial_key="video_serial_code",
+                    model=Video,
+                    field_name="serial"
+                )
 
             video_record_serial = generate_serial_code(
                 config_section="videos",
@@ -426,6 +437,17 @@ def completed_processing():
                 existing_series_record.update_series = False
                 existing_series_record.save()
                 skip_video_creation_instance = True
+                
+            if not existing_series_record and video.series:
+                all_additional_series_records = TempVideo.objects.filter(
+                    master_serial=video.master_serial,
+                ).exclude(
+                    serial=video.serial
+                )
+                for additional_series in all_additional_series_records:
+                    additional_series.existing_series = True
+                    additional_series.existing_series_serial = video_serial
+                    additional_series.save()
 
             if not skip_video_creation_instance:
                 thumbnail_dir = directory['video_thumbnail_dir']
@@ -434,11 +456,12 @@ def completed_processing():
                 full_thumbnail_path = thumbnail_dir + video_serial + '.jpg'
                 original_thumbnail_path = video.thumbnail_location + video.master_serial + '.jpg'
 
-                logger.info(f"Moving thumbnail: {original_thumbnail_path} → {full_thumbnail_path}")
                 if os.path.exists(original_thumbnail_path):
                     shutil.move(original_thumbnail_path, full_thumbnail_path)
                 else:
-                    raise FileNotFoundError(f"Thumbnail file not found: {original_thumbnail_path}")
+                    existing_thumbnail_path = thumbnail_dir + video.existing_series_serial + '.jpg'
+                    if not os.path.exists(existing_thumbnail_path):
+                        raise FileNotFoundError(f"Thumbnail file not found: {existing_thumbnail_path}")
 
                 video_instance = Video.objects.create(
                     serial=video_serial,
@@ -467,7 +490,7 @@ def completed_processing():
             if video_instance is None:
                 raise Exception("Failed to create or retrieve video instance.")
 
-            master_serial = Video.objects.get(serial=video.existing_series_serial) if video.existing_series else video_instance
+            master_serial = Video.objects.get(serial=video.master_serial) if video.existing_series else video_instance
 
             video_dir = directory['video_dir']
             os.makedirs(video_dir, exist_ok=True)
@@ -530,9 +553,6 @@ def completed_processing():
                 video.current_status = "E"
 
             video.save()
-
-
-  
 
 def failed_or_error_processing():
     failed_processing = TempVideo.objects.filter(current_status="E")
@@ -797,7 +817,8 @@ def check_series_data():
         
         video_record.total_seasons = len(seasons)
         video_record.total_episodes = sum(seasons.values())
-        video_record.season_metadata = {str(season): count for season, count in seasons.items()}
+        video_record.season_metadata = {str(season): count for season,
+                                        count in seasons.items()}
         video_record.update_series = True
         video_record.save()
 
@@ -827,12 +848,14 @@ def video_marked_for_deletion():
     return None
 
 def delete_video_search_records():
+    pass
     current_time = timezone.now()
     VideoQuery.objects.filter(query_date__lt=current_time - timezone.timedelta(
         days=30)).delete()
     return None
 
 def delete_picture_search_records():
+    pass
     current_time = timezone.now()
     PictureQuery.objects.filter(query_date__lt=current_time - timezone.timedelta(
         days=30)).delete()
@@ -897,8 +920,10 @@ def convert_temp_youtube_record():
             temp_record.failed_status = True
             temp_record.save()
 
-            video_path = os.path.join(temp_record.youtube_video_location, f"{temp_record.serial}.mp4")
-            thumbnail_path = os.path.join(temp_record.youtube_thumbnail_location, f"{temp_record.serial}.jpg")
+            video_path = os.path.join(temp_record.youtube_video_location,
+                                      f"{temp_record.serial}.mp4")
+            thumbnail_path = os.path.join(temp_record.youtube_thumbnail_location,
+                                          f"{temp_record.serial}.jpg")
             if os.path.exists(video_path):
                 os.remove(video_path)
             if os.path.exists(thumbnail_path):
@@ -1124,8 +1149,10 @@ def data_source_cleaning():
                         mode_value = df[column].mode()
                         if not mode_value.empty:
                             df[column] = df[column].fillna(mode_value[0])
+                            
+            full_path = data_source.edited_file_location + data_source.serial + '.csv'
 
-            df.to_csv(file, index=True)
+            df.to_csv(full_path, index=True)
             data_source.data_cleaning_status = 'cleaned'
             data_source.save()
 
@@ -1239,10 +1266,123 @@ def create_graph_and_table_dashboard_items():
             table_record.save()
             continue
         
+def convert_youtube_to_mp3():
+    pass
+    finished = False
+    while not finished:
+        temp_record = AddedFullTrackTemp.objects.filter(mp3_file_added=False,
+                                                        record_status='pending').first()
+        if temp_record is None:
+            finished = True
+            break
+        try:
+            run_conversion = youtube_mp3_downloader(
+                url=temp_record.youtube_link,
+                output_folder=temp_record.file_path,
+                serial=temp_record.serial,
+            )
+            
+            temp_record.mp3_file_added = True
+            temp_record.save()
+            
+        except Exception as e:
+            logger.error(f"Error during YouTube to MP3 conversion for {temp_record.serial}: {str(e)}")
+            temp_record.record_status = 'failed'
+            temp_record.save()
+            continue
+
+def create_youtube_track_record():
+    finished = False
+    while not finished:
+        temp_record = AddedFullTrackTemp.objects.filter(
+            mp3_file_added=True,
+            record_status='completed').first()
+        if temp_record is None:
+            finished = True
+            break
+
+        try:
+            track_record = MusicTrackRecord.objects.filter(
+                serial=temp_record.track).first()
+            
+            album_record = MusicAlbumRecord.objects.filter(
+                serial=track_record.album_record.serial).first()
+            
+            full_track_exists = MusicFullTrackRecord.objects.filter(
+                track=track_record).exists()
+            
+            if full_track_exists:
+                temp_record.record_status = 'failed'
+                temp_record.save()
+                continue
+            
+            with open('json/directory.json', 'r') as f:
+                directory = json.load(f)
+                
+            full_track_dir = directory['music_full_track_dir']
+            os.makedirs(full_track_dir, exist_ok=True)
+            
+            curent_track_location = os.path.join(temp_record.file_path,
+                                                f"{temp_record.serial}.mp3")
+            
+            serial = generate_serial_code(
+                config_section="music",
+                serial_key="full_track_record_serial_code",
+                model=MusicFullTrackRecord,
+                field_name="serial"
+            )
+            
+            shutil.move(curent_track_location,
+                        os.path.join(full_track_dir,
+                                     f"{serial}.mp3"))
+            
+            new_full_track_record = MusicFullTrackRecord.objects.create(
+                serial=serial,
+                album=album_record,
+                track=track_record,
+                track_location=full_track_dir,
+            )
+            
+            new_full_track_record.save()
+            
+            track_record.full_track_added = True
+            track_record.full_track_location = full_track_dir
+            track_record.full_track_serial = new_full_track_record
+            track_record.save()
+            
+            if curent_track_location and os.path.exists(curent_track_location):
+                os.remove(curent_track_location)
+                
+            temp_record.delete()
+            
+        except Exception as e:
+            logger.error(f"Error creating YouTube track record for {temp_record.serial}: {str(e)}")
+            temp_record.record_status = 'failed'
+            temp_record.save()
+
+def delete_failed_music_temp_records():
+    finished = False
+    while not finished:
+        temp_record = AddedFullTrackTemp.objects.filter(
+            record_status='failed').first()
+        
+        try:
+            file_location = os.path.join(temp_record.file_path,
+                                         temp_record.serial + '.mp3')
+            if os.path.exists(file_location):
+                os.remove(file_location)
+            temp_record.delete()
+            
+        except Exception as e:
+            logger.error(f"Error deleting failed music temp record for {temp_record.serial}: {str(e)}")
+            temp_record.record_status = 'failed deletion'
+            temp_record.save()
+
 def check_music_full_track():
     finished = False
     while not finished:
-        full_track = AddedFullTrack.objects.filter(status='pending').first()
+        full_track = AddedFullTrackTemp.objects.filter(record_status='pending',
+                                                   mp3_file_added=True).first()
         if full_track is None:
             finished = True
             break
@@ -1250,18 +1390,31 @@ def check_music_full_track():
             track_record = MusicTrackRecord.objects.filter(
                 serial=full_track.track).first()
             
-            if full_track.file is False:
-                pass
+            compare_results = compare_tracks(
+                ref_path=track_record.track_location,
+                ref_serial=track_record.serial,
+                test_path=full_track.file_path,
+                test_serial=full_track.serial,
+            )
             
-            track_location = track_record.track_location + track_record.serial + '.mp3'
-            
+            if compare_results['overall_similarity'] >= 0.8:
+                full_track.record_status = 'completed'
+                full_track.save()
+                
+            if compare_results['overall_similarity'] < 0.8:
+                full_track.record_status = 'not matched'
+                full_track.save()
+
         except Exception as e:
             logger.error(f"Error checking full track status: {str(e)}")
+            full_track.record_status = 'failed'
+            full_track.save()
 
 def parse_article_json_file():
     finished = True
     while not finished:
         try:
+            finished = True
             pass
         except Exception as e:
             logger.error(f"Error parsing article JSON file: {str(e)}")
@@ -1275,8 +1428,10 @@ def validate_scraper_links():
             if scraper_record is None:
                 finished = True
                 break
+            
             path = scraper_record.file_location + scraper_record.serial + '.csv'
             df = pd.read_csv(path)
+            
             for link in df['Links']:
                 if not link.startswith('https://www.face2facegames.com/'):
                     scraper_record.status = 'failed validation'
@@ -1284,8 +1439,10 @@ def validate_scraper_links():
                     break
                 else:
                     continue
+                
             scraper_record.status = 'validated'
             scraper_record.save()
+            
         except Exception as e:
             logger.error(f"Error validating scraper links: {str(e)}")
 
@@ -1298,10 +1455,12 @@ def run_scraper_jobs():
             if scraper_record is None:
                 finished = True
                 break
+            
             scraper = ScraperUploadFile.objects.filter(
                 serial=scraper_record.scraper_file.serial,
                 user=scraper_record.user
             ).first()
+            
             if scraper is None:
                 scraper_record.status = 'failed'
                 scraper_record.save()
@@ -1312,8 +1471,10 @@ def run_scraper_jobs():
                 output_serial=scraper_record.serial,
                 output_path=scraper_record.file_location
             )
+            
             scraper_record.status = 'completed'
             scraper_record.save()
+            
         except Exception as e:
             scraper.status = 'failed'
             scraper.save()

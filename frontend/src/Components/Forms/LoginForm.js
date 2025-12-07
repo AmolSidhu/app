@@ -75,7 +75,7 @@ const LoginForm = () => {
         </Button>
       </Form>
       <p>
-        Forgot your password? <a href="/u/forgot-password/">Reset Password</a>
+        Forgot your password? <a href="/forgotpassword/">Reset Password</a>
       </p>
       <p>{error}</p>
     </div>

@@ -93,6 +93,7 @@ INSTALLED_APPS = [
     'articles',
     'files',
     'mtg',
+    'admins',
     'rest_framework',
     'django.contrib.admin',
     'django.contrib.auth',
@@ -209,6 +210,7 @@ CORS_ALLOW_HEADERS = [
     'content-type',
     'range',
     'Resume-Time',
+    'Admin-Token',
 ]
 
 CORS_EXPOSE_HEADERS = [

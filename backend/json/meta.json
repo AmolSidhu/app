@@ -1,5 +1,5 @@
 {
-    "version": "2.1.21",
+    "version": "1.6.03",
     "enviroment": "development",
     "database": "postgresql",
     "other_requirements": [
@@ -7,5 +7,5 @@
         "wkhtmltox"
     ],
     "selenium_driver_version": "Edge V-18",
-    "last_updated": "2025-07-12"
+    "last_updated": "2025-11-01"
 }
