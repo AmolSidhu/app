@@ -2,6 +2,7 @@ from moviepy.editor import VideoFileClip
 from django.utils import timezone
 from collections import defaultdict
 from secrets import token_urlsafe
+from PIL import Image
 
 import numpy as np
 import pandas as pd
@@ -22,7 +23,7 @@ from videos.models import (Video, TempVideo, VideoRecord, VideoGenre, VideoTags,
                            VideoQuery, VideoFavourites, VideoRating,
                            VideoHistory, VideoComments, CustomVideoListRecords)
 from management.models import Identifier, IdentifierTempTable, TempGenreTable
-from youtube.models import YoutubeTempRecord, YoutubeVideoRecord, YoutubeListRecord, YoutubeLists
+from youtube.models import YoutubeTempRecord, YoutubeVideoRecord, YoutubeListRecord, YoutubeLists, YoutubeVideoMetadata
 from music.models import (MusicTempRecord, ArtistRecord, ArtistGenres, MusicAlbumRecord, MusicTrackRecord,
                           MusicFullTrackRecord, AddedFullTrackTemp)
 from analytics.models import DataSourceUpload, Dashboards, DashboardItem, DashboardTableDataLines, DashboardGraphData
@@ -863,11 +864,14 @@ def delete_picture_search_records():
 
 def convert_temp_youtube_record():
     finished = False
+
     while not finished:
+
         temp_record = YoutubeTempRecord.objects.filter(failed_status=False).first()
-        if temp_record is None:
+        if not temp_record:
             finished = True
             break
+
         try:
             serial = generate_serial_code(
                 config_section="youtube",
@@ -883,10 +887,16 @@ def convert_temp_youtube_record():
                 serial=serial,
             )
 
+            if youtube_data is None:
+                logger.error(f"Failed processing YouTube video for {temp_record.serial}")
+                temp_record.failed_status = True
+                temp_record.save()
+                continue
+
             new_record = YoutubeVideoRecord.objects.create(
                 serial=serial,
-                title=youtube_data[0],
-                description=youtube_data[1],
+                title=youtube_data["title"],
+                description=youtube_data["description"],
                 thumbnail_path=temp_record.youtube_thumbnail_location,
                 video_path=temp_record.youtube_video_location,
                 update_date=timezone.now(),
@@ -895,23 +905,56 @@ def convert_temp_youtube_record():
 
             playlist_serials = [s.strip() for s in temp_record.add_to_playlists]
             playlists = YoutubeLists.objects.filter(serial__in=playlist_serials)
-            playlist_map = {p.serial: p for p in playlists}
+            all_playlists = {p.serial: p for p in playlists}
+
             for serial in playlist_serials:
-                playlist = playlist_map.get(serial)
+                playlist = all_playlists.get(serial)
                 if not playlist:
-                    logger.warning(f"Playlist with serial '{serial}' not found. Skipping.")
+                    logger.warning(f"Playlist not found: {serial}")
                     continue
+
                 record_serial = generate_serial_code(
                     config_section="youtube",
                     serial_key="youtube_list_record_serial_code",
                     model=YoutubeListRecord,
                     field_name="serial"
                 )
-                YoutubeListRecord.objects.create(
+
+                list_record = YoutubeListRecord.objects.create(
                     serial=record_serial,
                     youtube_list=playlist,
                     youtube_video=new_record,
                 )
+                list_record.save()
+                
+                metadata_record = YoutubeVideoMetadata.objects.create(
+                    youtube_video = new_record,
+                    video_id = youtube_data["video_id"],
+                    full_title = youtube_data["title"],
+                    alt_title = youtube_data["alt_title"],
+                    uploader = youtube_data["uploader"],
+                    uploader_id = youtube_data["uploader_id"],
+                    uploader_url = youtube_data["uploader_url"],
+                    video_license = youtube_data["video_license"],
+                    creators = youtube_data["creators"],
+                    upload_time = youtube_data["upload_time"],
+                    upload_date = youtube_data["upload_date"],
+                    release_time = youtube_data["release_time"],
+                    release_date = youtube_data["release_date"],
+                    modified_timestamp = youtube_data["modified_timestamp"],
+                    modified_date = youtube_data["modified_date"],
+                    channel = youtube_data["channel"],
+                    channel_id = youtube_data["channel_id"],
+                    channel_url = youtube_data["channel_url"],
+                    duration = youtube_data["duration"],
+                    duration_formatted = youtube_data["duration_formatted"],
+                    age_limit = youtube_data["age_limit"],
+                    media_type = youtube_data["media_type"],
+                    tags = youtube_data["tags"],
+                    categories = youtube_data["categories"],
+                )
+                
+                metadata_record.save()
 
             temp_record.delete()
 
@@ -971,7 +1014,6 @@ def create_music_record():
             artist_record_instance = ArtistRecord.objects.filter(serial=artist_info['artist_id']).first()
 
             if not artist_record_instance:
-                logger.error(f"Artist record not found for artist_id: {artist_info['artist_id']}")
                 new_artist_record = ArtistRecord.objects.create(
                     serial=artist_info['artist_id'],
                     user=music_record.user,
@@ -1296,67 +1338,75 @@ def create_youtube_track_record():
     while not finished:
         temp_record = AddedFullTrackTemp.objects.filter(
             mp3_file_added=True,
-            record_status='completed').first()
+            record_status='completed'
+        ).first()
+
         if temp_record is None:
             finished = True
             break
 
         try:
             track_record = MusicTrackRecord.objects.filter(
-                serial=temp_record.track).first()
-            
+                serial=temp_record.track.serial
+            ).first()
+
             album_record = MusicAlbumRecord.objects.filter(
-                serial=track_record.album_record.serial).first()
-            
+                serial=track_record.album_record.serial
+            ).first()
+
             full_track_exists = MusicFullTrackRecord.objects.filter(
-                track=track_record).exists()
-            
+                track=track_record
+            ).exists()
+
             if full_track_exists:
                 temp_record.record_status = 'failed'
                 temp_record.save()
                 continue
-            
+
             with open('json/directory.json', 'r') as f:
                 directory = json.load(f)
-                
+
             full_track_dir = directory['music_full_track_dir']
             os.makedirs(full_track_dir, exist_ok=True)
-            
-            curent_track_location = os.path.join(temp_record.file_path,
-                                                f"{temp_record.serial}.mp3")
-            
+
+            current_track_location = os.path.join(
+                temp_record.file_path,
+                f"{temp_record.serial}.mp3"
+            )
+
             serial = generate_serial_code(
                 config_section="music",
                 serial_key="full_track_record_serial_code",
                 model=MusicFullTrackRecord,
                 field_name="serial"
             )
-            
-            shutil.move(curent_track_location,
-                        os.path.join(full_track_dir,
-                                     f"{serial}.mp3"))
-            
+
+            shutil.move(
+                current_track_location,
+                os.path.join(full_track_dir, f"{serial}.mp3")
+            )
+
             new_full_track_record = MusicFullTrackRecord.objects.create(
                 serial=serial,
                 album=album_record,
                 track=track_record,
                 track_location=full_track_dir,
             )
-            
-            new_full_track_record.save()
-            
+
             track_record.full_track_added = True
             track_record.full_track_location = full_track_dir
             track_record.full_track_serial = new_full_track_record
             track_record.save()
-            
-            if curent_track_location and os.path.exists(curent_track_location):
-                os.remove(curent_track_location)
-                
+
+            if os.path.exists(current_track_location):
+                os.remove(current_track_location)
+
             temp_record.delete()
-            
+
         except Exception as e:
-            logger.error(f"Error creating YouTube track record for {temp_record.serial}: {str(e)}")
+            logger.error(
+                f"Error creating YouTube track record for {temp_record.serial}: {str(e)}"
+            )
             temp_record.record_status = 'failed'
             temp_record.save()
 
@@ -1381,29 +1431,36 @@ def delete_failed_music_temp_records():
 def check_music_full_track():
     finished = False
     while not finished:
-        full_track = AddedFullTrackTemp.objects.filter(record_status='pending',
-                                                   mp3_file_added=True).first()
+        full_track = AddedFullTrackTemp.objects.filter(
+            record_status='pending',
+            mp3_file_added=True
+        ).first()
+
         if full_track is None:
             finished = True
             break
+
         try:
             track_record = MusicTrackRecord.objects.filter(
-                serial=full_track.track).first()
-            
+                serial=full_track.track.serial
+            ).first()
+
+            if track_record is None:
+                raise ValueError(f"Track not found for full_track {full_track.serial}")
+
             compare_results = compare_tracks(
                 ref_path=track_record.track_location,
                 ref_serial=track_record.serial,
                 test_path=full_track.file_path,
                 test_serial=full_track.serial,
-            )
-            
+            ) 
+
             if compare_results['overall_similarity'] >= 0.8:
                 full_track.record_status = 'completed'
-                full_track.save()
-                
-            if compare_results['overall_similarity'] < 0.8:
+            else:
                 full_track.record_status = 'not matched'
-                full_track.save()
+
+            full_track.save()
 
         except Exception as e:
             logger.error(f"Error checking full track status: {str(e)}")
@@ -1479,3 +1536,71 @@ def run_scraper_jobs():
             scraper.status = 'failed'
             scraper.save()
             logger.error(f"Error running scraper jobs: {str(e)}")
+
+def resize_album_playlist_thumbnails():
+    finished = False
+    while not finished:
+        try:
+            album_record = MusicAlbumRecord.objects.filter(
+                album_thumbnail_resized=False,
+                album_thumbnail_resize_failed=False
+            ).first()
+
+            if album_record is None:
+                finished = True
+                break
+
+            original_image_path = (
+                album_record.album_image_location + f"{album_record.serial}.jpg"
+            )
+
+            if not os.path.exists(original_image_path):
+                raise FileNotFoundError(f"Original image not found: {original_image_path}")
+
+            with open('json/directory.json', 'r') as f:
+                directory = json.load(f)
+
+            list_view_thumbnail_dir = directory['music_list_view_thumbnail_dir']
+            os.makedirs(list_view_thumbnail_dir, exist_ok=True)
+
+            active_player_thumbnail_dir = directory['music_active_player_thumbnail_dir']
+            os.makedirs(active_player_thumbnail_dir, exist_ok=True)
+
+            with Image.open(original_image_path) as img:
+                img = img.convert("RGB")
+
+                list_view_size = (200, 200)
+                list_view_img = img.copy()
+                list_view_img.thumbnail(list_view_size, Image.LANCZOS)
+
+                list_view_path = os.path.join(
+                    list_view_thumbnail_dir,
+                    f"{album_record.serial}.jpg"
+                )
+                list_view_img.save(list_view_path,
+                                   "JPEG",
+                                   quality=90,
+                                   optimize=True)
+
+                active_player_size = (400, 400)
+                active_player_img = img.copy()
+                active_player_img.thumbnail(active_player_size, Image.LANCZOS)
+
+                active_player_path = os.path.join(
+                    active_player_thumbnail_dir,
+                    f"{album_record.serial}.jpg"
+                )
+                active_player_img.save(active_player_path,
+                                       "JPEG",
+                                       quality=90,
+                                       optimize=True)
+
+            album_record.album_thumbnail_resized = True
+            album_record.list_view_thumbnail_location = list_view_thumbnail_dir
+            album_record.active_player_thumbnail_location = active_player_thumbnail_dir
+            album_record.save()
+
+        except Exception as e:
+            logger.error(f"Error resizing album and playlist thumbnails: {str(e)}")
+            album_record.album_thumbnail_resize_failed = True
+            album_record.save()

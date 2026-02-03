@@ -17,7 +17,8 @@ import re
 from functions.auth_functions import auth_check
 from functions.serial_default_generator import generate_serial_code
 
-from .models import YoutubeTempRecord, YoutubeVideoRecord, YoutubeLists, YoutubeListRecord, YoutubeVideoHistory
+from .models import (YoutubeTempRecord, YoutubeVideoRecord, YoutubeLists, YoutubeListRecord,
+                     YoutubeVideoHistory, YoutubeWatchLater, YoutubeFavourites)
 
 logger = logging.getLogger(__name__)
 
@@ -36,7 +37,7 @@ def upload_youtube_video(request):
                 model=YoutubeTempRecord,
                 field_name="serial"
             )
-            with open('directory.json', 'r') as f:
+            with open('json/directory.json', 'r') as f:
                 directory = json.load(f)
             video_dir = directory['youtube_video_dir']
             thumbnail_dir = directory['youtube_thumbnail_dir']
@@ -373,3 +374,255 @@ def update_youtube_playback_time(request, serial):
             logging.error(f"Error updating playback time: {str(e)}")
             return JsonResponse({'message': 'Internal server error'},
                                 status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            
+@api_view(['PATCH'])
+def edit_youtube_playlist(request, playlist_serial):
+    if request.method == 'PATCH':
+        try:
+            token = request.headers.get('Authorization')
+            auth_response = auth_check(token)
+            if 'error' in auth_response:
+                return Response(auth_response['error'],
+                                status=status.HTTP_401_UNAUTHORIZED)
+            user = auth_response['user']
+            existing_playlist = YoutubeLists.objects.filter(
+                serial=playlist_serial, user=user).first()
+            if not existing_playlist:
+                return Response({'message': 'Playlist not found.'},
+                                status=status.HTTP_404_NOT_FOUND)
+            existing_playlist.name = request.data.get('name')
+            existing_playlist.description = request.data.get('description')
+            existing_playlist.save()
+            return Response({'message': 'Playlist updated successfully.'},
+                            status=status.HTTP_200_OK)
+        except Exception as e:
+            logger.error(f'Error in edit_youtube_playlist: {e}')
+            return Response({'message': 'An error occurred while updating the YouTube playlist.'},
+                            status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+@api_view(['DELETE'])
+def delete_youtube_playlist(request, playlist_serial):
+    if request.method == 'DELETE':
+        try:
+            token = request.headers.get('Authorization')
+            auth_response = auth_check(token)
+            if 'error' in auth_response:
+                return Response(auth_response['error'],
+                                status=status.HTTP_401_UNAUTHORIZED)
+            user = auth_response['user']
+            existing_playlist = YoutubeLists.objects.filter(
+                serial=playlist_serial, user=user).first()
+            if not existing_playlist:
+                return Response({'message': 'Playlist not found.'},
+                                status=status.HTTP_404_NOT_FOUND)
+            existing_playlist_records = YoutubeListRecord.objects.filter(
+                youtube_list=existing_playlist)
+            existing_playlist_records.delete()
+            existing_playlist.delete()
+            return Response({'message': 'Playlist deleted successfully.'},
+                            status=status.HTTP_200_OK)
+        except Exception as e:
+            logger.error(f'Error in delete_youtube_playlist: {e}')
+            return Response({'message': 'An error occurred while deleting the YouTube playlist.'},
+                            status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+@api_view(['PATCH'])
+def update_youtube_video_details(request, video_serial):
+    if request.method == 'PATCH':
+        try:
+            token = request.headers.get('Authorization')
+            auth_response = auth_check(token)
+            if 'error' in auth_response:
+                return Response(auth_response['error'],
+                                status=status.HTTP_401_UNAUTHORIZED)
+            user = auth_response['user']
+            existing_video = YoutubeVideoRecord.objects.filter(
+                serial=video_serial, user=user).first()
+            if not existing_video:
+                return Response({'message': 'Video not found.'},
+                                status=status.HTTP_404_NOT_FOUND)
+            existing_video.title = request.data.get('title')
+            existing_video.description = request.data.get('description')
+            existing_video.save()
+            return Response({'message': 'Video details updated successfully.'},
+                            status=status.HTTP_200_OK)
+        except Exception as e:
+            logger.error(f'Error in update_youtube_video_details: {e}')
+            return Response({'message': 'An error occurred while updating the YouTube video details.'},
+                            status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+@api_view(['DELETE'])
+def delete_youtube_video(request, video_serial):
+    if request.method == 'DELETE':
+        try:
+            token = request.headers.get('Authorization')
+            auth_response = auth_check(token)
+            if 'error' in auth_response:
+                return Response(auth_response['error'],
+                                status=status.HTTP_401_UNAUTHORIZED)
+            user = auth_response['user']
+            video_record = YoutubeVideoRecord.objects.filter(
+                serial=video_serial, user=user).first()
+            if not video_record:
+                return Response({'message': 'Video not found.'},
+                                status=status.HTTP_404_NOT_FOUND)
+            video_playlist_records = YoutubeListRecord.objects.filter(
+                youtube_video=video_record)
+            video_playlist_records.delete()
+            video_record.delete()
+            return Response({'message': 'Video deleted successfully.'},
+                            status=status.HTTP_200_OK)
+        except Exception as e:
+            logger.error(f'Error in delete_youtube_video: {e}')
+            return Response({'message': 'An error occurred while deleting the YouTube video.'},
+                            status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+@api_view(['POST'])
+def add_youtube_video_to_favourites(request, video_serial):
+    if request.method == 'POST':
+        try:
+            token = request.headers.get('Authorization')
+            auth_response = auth_check(token)
+            if 'error' in auth_response:
+                return Response(auth_response['error'],
+                                status=status.HTTP_401_UNAUTHORIZED)
+            user = auth_response['user']
+            video_record = YoutubeVideoRecord.objects.filter(
+                serial=video_serial, user=user).first()
+            if not video_record:
+                return Response({'message': 'Video not found.'},
+                                status=status.HTTP_404_NOT_FOUND)
+            serial = generate_serial_code(
+                config_section='youtube',
+                serial_key='youtube_favourites_serial_code',
+                model=YoutubeFavourites,
+                field_name='serial'
+            )
+            new_favourite_record = YoutubeFavourites.objects.create(
+                serial=serial,
+                youtube_video=video_record,
+                user=user
+            )
+            new_favourite_record.save()
+            return Response({'message': 'Video added to favorites successfully.'},
+                            status=status.HTTP_200_OK)
+        except Exception as e:
+            logger.error(f'Error in add_youtube_video_to_favorites: {e}')
+            return Response({'message': 'An error occurred while adding the YouTube video to favorites.'},
+                            status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+@api_view(['DELETE'])
+def remove_youtube_video_from_favourites(request, video_serial, favourites_serial):
+    if request.method == 'DELETE':
+        try:
+            token = request.headers.get('Authorization')
+            auth_response = auth_check(token)
+            if 'error' in auth_response:
+                return Response(auth_response['error'],
+                                status=status.HTTP_401_UNAUTHORIZED)
+            user = auth_response['user']
+            video_record = YoutubeVideoRecord.objects.filter(
+                serial=video_serial, user=user).first()
+            if not video_record:
+                return Response({'message': 'Video not found.'},
+                                status=status.HTTP_404_NOT_FOUND)
+            favourite_record = YoutubeFavourites.objects.filter(
+                serial=favourites_serial, youtube_video=video_record, user=user).first()
+            if not favourite_record:
+                return Response({'message': 'Favourite record not found.'},
+                                status=status.HTTP_404_NOT_FOUND)
+            favourite_record.delete()
+            return Response({'message': 'Video removed from favorites successfully.'},
+                            status=status.HTTP_200_OK)
+        except Exception as e:
+            logger.error(f'Error in remove_youtube_video_from_favorites: {e}')
+            return Response({'message': 'An error occurred while removing the YouTube video from favorites.'},
+                            status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+@api_view(['POST'])
+def add_youtube_video_to_watch_later(request, video_serial):
+    if request.method == 'POST':
+        try:
+            token = request.headers.get('Authorization')
+            auth_response = auth_check(token)
+            if 'error' in auth_response:
+                return Response(auth_response['error'],
+                                status=status.HTTP_401_UNAUTHORIZED)
+            user = auth_response['user']
+            video_record = YoutubeVideoRecord.objects.filter(
+                serial=video_serial, user=user).first()
+            if not video_record:
+                return Response({'message': 'Video not found.'},
+                                status=status.HTTP_404_NOT_FOUND)
+            serial = generate_serial_code(
+                config_section='youtube',
+                serial_key='youtube_watch_later_serial_code',
+                model=YoutubeWatchLater,
+                field_name='serial'
+            )
+            new_watch_later_record = YoutubeWatchLater.objects.create(
+                serial=serial,
+                youtube_video=video_record,
+                user=user
+            )
+            new_watch_later_record.save()
+            return Response({'message': 'Video added to watch later successfully.'},
+                            status=status.HTTP_200_OK)
+        except Exception as e:
+            logger.error(f'Error in add_youtube_video_to_watch_later: {e}')
+            return Response({'message': 'An error occurred while adding the YouTube video to watch later.'},
+                            status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+@api_view(['DELETE'])
+def remove_youtube_video_from_watch_later(request, video_serial, watch_later_serial):
+    if request.method == 'DELETE':
+        try:
+            token = request.headers.get('Authorization')
+            auth_response = auth_check(token)
+            if 'error' in auth_response:
+                return Response(auth_response['error'],
+                                status=status.HTTP_401_UNAUTHORIZED)
+            user = auth_response['user']
+            video_record = YoutubeVideoRecord.objects.filter(
+                serial=video_serial, user=user).first()
+            if not video_record:
+                return Response({'message': 'Video not found.'},
+                                status=status.HTTP_404_NOT_FOUND)
+            watch_later_record = YoutubeWatchLater.objects.filter(
+                serial=watch_later_serial, youtube_video=video_record, user=user).first()
+            if not watch_later_record:
+                return Response({'message': 'Watch later record not found.'},
+                                status=status.HTTP_404_NOT_FOUND)
+            watch_later_record.delete()
+            return Response({'message': 'Video removed from watch later successfully.'},
+                            status=status.HTTP_200_OK)
+        except Exception as e:
+            logger.error(f'Error in remove_youtube_video_from_watch_later: {e}')
+            return Response({'message': 'An error occurred while removing the YouTube video from watch later.'},
+                            status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+@api_view(['GET'])
+def get_youtube_stream_data(request, serial):
+    if request.method == 'GET':
+        try:
+            token = request.headers.get('Authorization')
+            auth_response = auth_check(token)
+            if 'error' in auth_response:
+                return Response(auth_response['error'],
+                                status=status.HTTP_401_UNAUTHORIZED)
+            youtube_video = YoutubeVideoRecord.objects.filter(serial=serial).first()
+            if not youtube_video:
+                return Response({'message': 'Video not found.'},
+                                status=status.HTTP_404_NOT_FOUND)
+            data = {
+                'serial': youtube_video.serial,
+                'title': youtube_video.title,
+                'description': youtube_video.description,
+            }
+            return Response({'message': 'Youtube stream data fetched successfully.',
+                            'data': data},
+                            status=status.HTTP_200_OK)   
+        except Exception as e:
+            logger.error(f'Error in get_youtube_stream_data: {e}')
+            return Response({'message': 'An error occurred while fetching the YouTube stream data.'},
+                            status=status.HTTP_500_INTERNAL_SERVER_ERROR)

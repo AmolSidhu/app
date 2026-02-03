@@ -27,7 +27,10 @@
         "album_serial_code": "MAL-XXXXXX",
         "track_serial_code": "MTA-XXXXXX",
         "full_uploaded_track_serial_code": "MFU-XXXXXX",
-        "full_track_record_serial_code": "MFR-XXXXXX"
+        "full_track_record_serial_code": "MFR-XXXXXX",
+        "custom_music_playlist_serial_code": "MCP-XXXXXX",
+        "custom_music_playlist_record_serial_code": "MCR-XXXXXX",
+        "custom_music_player_settings_serial_code": "MPS-XXXXXX"
     },
     "pictures": {
         "picture_serial_code": "PPS-XXXXXX",
@@ -67,7 +70,9 @@
         "youtube_temp_record_serial_code": "YYT-XXXXXX",
         "youtube_lists_serial_code": "YYL-XXXXXX",
         "youtube_list_record_serial_code": "YYR-XXXXXX",
-        "youtube_video_record_serial_code": "YYV-XXXXXX"
+        "youtube_video_record_serial_code": "YYV-XXXXXX",
+        "youtube_watch_later_serial_code": "YYW-XXXXXX",
+        "youtube_favourites_serial_code": "YYF-XXXXXX"
     },
     "mtg": {
         "mtg_csv_upload_serial_code": "MMC-XXXXXX",

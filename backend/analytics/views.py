@@ -3,6 +3,7 @@ from rest_framework.response import Response
 from rest_framework import status
 from django.utils import timezone
 from secrets import token_urlsafe
+from pathlib import Path
 
 import os
 import json
@@ -72,7 +73,6 @@ def upload_data_source(request):
 @api_view(['PATCH'])
 def update_data_source(request, serial):
     if request.method == 'PATCH':
-        print('Updating data source')
         try:
             token = request.header.get('Authorization')
             auth_response = auth_check(token)
@@ -91,37 +91,37 @@ def update_data_source(request, serial):
 @api_view(['PATCH'])
 def update_data_source_lines(request, serial):
     if request.method == 'PATCH':
-        print('Updating data source lines')
         try:
             token = request.headers.get('Authorization')
             auth_response = auth_check(token)
             if 'error' in auth_response:
-                return Response({'message': f'{auth_response["error"]}'},
+                return Response({'message': auth_response['error']},
                                 status=status.HTTP_403_FORBIDDEN)
             data_source = DataSourceUpload.objects.filter(serial=serial).first()
             if not data_source:
                 return Response({'message': 'Data source not found'},
                                 status=status.HTTP_404_NOT_FOUND)
-            path = None
-            if data_source.edited_file_location is None:
+            if not data_source.edited_file_location:
                 with open('json/directory.json', 'r') as f:
                     directory = json.load(f)
-                data_source.edited_file_location = directory['data_source_cleaned_dir']
-                os.makedirs(data_source.edited_file_location, exist_ok=True)
+                cleaned_dir = Path(directory['data_source_cleaned_dir']).resolve()
+                cleaned_dir.mkdir(parents=True, exist_ok=True)
+                data_source.edited_file_location = str(cleaned_dir)
                 data_source.save()
-            path = data_source.edited_file_location + data_source.serial + '.csv'
-            print(f'Path: {path}')
-            data = pd.DataFrame(request.data.get('data'))
-            if data.empty:
+            cleaned_dir = Path(data_source.edited_file_location)
+            csv_path = cleaned_dir / f"{data_source.serial}.csv"
+            data = request.data.get('data')
+            if not data:
                 return Response({'message': 'No data to update'},
                                 status=status.HTTP_202_ACCEPTED)
             df = pd.DataFrame(data)
-            df.to_csv(path, index=False)
-            column_names = {
+            if df.empty:
+                return Response({'message': 'No data to update'},
+                                status=status.HTTP_202_ACCEPTED)
+            df.to_csv(csv_path, index=False)
+            data_source.column_names = {
                 str(i + 1): [col, str(dtype)]
-                for i, (col, dtype) in enumerate(zip(data.columns, data.dtypes))
-            }
-            data_source.column_names = column_names
+                for i, (col, dtype) in enumerate(zip(df.columns, df.dtypes))}
             data_source.total_rows = df.shape[0]
             data_source.total_columns = df.shape[1]
             data_source.save()
@@ -174,7 +174,6 @@ def get_data_source_cleaning_methods(request, serial):
             data_source = DataSourceUpload.objects.filter(serial=serial,
                                                           user=auth_response['user']).first()
             if data_source:
-                print('Data source found')
                 selected_column_options = None
                 selected_row_options = None
                 selected_override = data_source.override_column_cleaning
@@ -204,8 +203,6 @@ def get_data_source_cleaning_methods(request, serial):
 @api_view(['PATCH'])
 def update_data_source_cleaning_methods(request, serial):
     if request.method == 'PATCH':
-        print('Updating data source cleaning methods')
-        print(request.data)
         try:
             token = request.headers.get('Authorization')
             auth_response = auth_check(token)
@@ -235,7 +232,6 @@ def update_data_source_cleaning_methods(request, serial):
 def get_data_source_lines(request, serial):
     if request.method == 'GET':
         try:
-            print('getting lines')
             token = request.headers.get('Authorization')
             auth_response = auth_check(token)
             if 'error' in auth_response:
@@ -243,19 +239,16 @@ def get_data_source_lines(request, serial):
                                 status=status.HTTP_403_FORBIDDEN)
             data_source = DataSourceUpload.objects.filter(serial=serial).first()
             if not data_source:
-                print('no soruce found')
                 return Response({'message': 'Data source not found'},
                                 status=status.HTTP_404_NOT_FOUND)
             edited_path = data_source.edited_file_location
             raw_path = data_source.raw_file_location
             file_source = None
-            print(f'{raw_path}/{serial}.csv')
             if edited_path and os.path.exists(edited_path + serial + '.csv'):
                 file_source = edited_path + serial + '.csv'
             elif raw_path and os.path.exists(raw_path + serial + '.csv'):
                 file_source = raw_path + serial + '.csv'
             else:
-                (print('no file found'))
                 return Response({'message': 'Data source file not found'},
                                 status=status.HTTP_404_NOT_FOUND)
             with open(file_source, 'r') as file:
@@ -497,7 +490,6 @@ def get_dashboard_item_serials(request, dashboard_serial):
                     'data_item_name': item['data_item_name'],
                     'data_item_description': item['data_item_description']
                 }
-            print(f'Dashboard Item Data: {dashboard_item_data}')
             return Response({'dashboard_items': dashboard_item_data,
                              'message': 'Get Dashboard Item Serial Numbers'},
                             status=status.HTTP_200_OK)
@@ -509,7 +501,6 @@ def get_dashboard_item_serials(request, dashboard_serial):
 @api_view(['GET'])
 def get_dashboard_item(request, dashboard_serial, dashboard_item_serial):
     if request.method == 'GET':
-        print('Getting dashboard item')
         try:
             token = request.headers.get('Authorization')
             auth_response = auth_check(token)
@@ -590,6 +581,7 @@ def get_dashboard_item(request, dashboard_serial, dashboard_item_serial):
 def update_dashboard_item(request, dashboard_serial, dashboard_item_serial):
     if request.method == 'PATCH':
         try:
+            print(request.data)
             token = request.headers.get('Authorization')
             auth_response = auth_check(token)
             if 'error' in auth_response:
@@ -610,16 +602,16 @@ def update_dashboard_item(request, dashboard_serial, dashboard_item_serial):
             if not current_dashboard_item:
                 return Response({'message': 'Dashboard item not found'},
                                 status=status.HTTP_404_NOT_FOUND)
+            item_types = ['Graph', 'Table', 'Text']
+            if request.data.get('data_item_type') not in item_types:
+                return Response({'message': 'Data Item Type does not match any existing item type'},
+                                status=status.HTTP_400_BAD_REQUEST)
             current_dashboard_item.data_item_name = request.data['data_item_name']
-            current_dashboard_item.data_item_type = request.data['item_type']
+            current_dashboard_item.data_item_type = request.data['data_item_type']
             current_dashboard_item.data_item_description = request.data.get('data_item_description', '')
             current_dashboard_item.data_item_created = False
             current_dashboard_item.data_item_failed_creation = False
             current_dashboard_item.save()
-            item_types = ['Graph', 'Table', 'Text']
-            if request.data.get('data_item_type') not in item_types:
-                return Response({'message': 'Data Item Type does not match any existing item type'},
-                                status=status.HTTP_405_METHOD_NOT_ALLOWED)
             if request.data.get('data_item_type') == 'Graph':
                 current_graph_settings = DashboardGraphData.objects.filter(
                     dashboard_item_serial=current_dashboard_item,
@@ -636,7 +628,7 @@ def update_dashboard_item(request, dashboard_serial, dashboard_item_serial):
                 current_graph_settings.x_axis_title = request.data['x_axis_title']
                 current_graph_settings.y_axis_title = request.data['y_axis_title']
                 current_graph_settings.save()
-            if request.data.get('data_item_type') == 'Table':
+            elif request.data.get('data_item_type') == 'Table':
                 dashboard_item_table_lines = DashboardTableDataLines.objects.filter(
                     dashboard_item_serial=current_dashboard_item,
                     dashboard_serial=current_dashboard,
@@ -661,7 +653,7 @@ def update_dashboard_item(request, dashboard_serial, dashboard_item_serial):
                         operation=data_line['operation'] if data_line['operation'] else 'empty_operation'
                     )
                     new_table_data_line.save()
-            if request.data.get('data_item_type') == 'Text':
+            elif request.data.get('data_item_type') == 'Text':
                 current_text_item = DashboardTextData.objects.filter(
                     dashboard_item_serial=current_dashboard_item,
                     user=auth_response['user']
@@ -681,6 +673,7 @@ def update_dashboard_item(request, dashboard_serial, dashboard_item_serial):
             logger.error(f'Error updating dashboard item: {e}')
             return Response({'message': 'Error updating dashboard item'},
                             status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
             
 @api_view(['DELETE'])
 def delete_dashboard_item(request, dashboard_serial, dashboard_item_serial):
@@ -743,7 +736,6 @@ def delete_dashboard(request, serial):
 @api_view(['GET'])
 def get_data_sources(request):
     if request.method == 'GET':
-        print('Getting data sources')
         try:
             token = request.headers.get('Authorization')
             auth_response = auth_check(token)
@@ -755,7 +747,6 @@ def get_data_sources(request):
             )
             data = list(data_sources)
             if len(data) > 0:
-                print(data)
                 return Response({'data': data},
                                 status=status.HTTP_200_OK)
             return Response({'message': 'No data sources found'},
@@ -819,7 +810,6 @@ def get_data_source_details(request, serial):
         logger.error(f'Error getting data source details: {e}')
         return Response({'message': 'Error getting data source details'},
                         status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
 
 @api_view(['GET'])
 def get_dashboards(request):

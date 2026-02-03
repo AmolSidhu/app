@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import MainNavbar from "../../Components/Static/MainNavbar";
-import YoutubePlaylistsRequest from "../../Components/Requests/YoutubePlaylistsRequset";
+import YoutubePlaylistsRequest from "../../Components/Requests/YoutubePlaylistsRequest";
 import CreateYoutubePlaylistPopup from "../../Components/Popups/CreateYoutubePlaylistPopup";
 import UploadYoutubeVideoPopup from "../../Components/Popups/UploadYoutubeVideoPopup";
 

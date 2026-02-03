@@ -11,7 +11,7 @@ const ViewAllShareFoldersRequest = () => {
     const fetchFolders = async () => {
         try {
             setLoading(true);
-            const response = await fetch(`${server}/get/folders`, {
+            const response = await fetch(`${server}/get/folders/`, {
                 method: "GET",
                 headers: {
                     "Authorization": localStorage.getItem("token") || "",

@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from "react";
 import server from "../Static/Constants";
+import UploadYoutubeVideoToPlaylistPopup from "../Popups/UploadYoutubeVideoToPlaylistPopup";
 
 const YoutubePlaylistsRequest = () => {
     const [playlists, setPlaylists] = useState([]);
     const [errorMessage, setErrorMessage] = useState(null);
+    const [activePlaylistSerial, setActivePlaylistSerial] = useState(null);
 
-    const VIDEOS_PER_PAGE = 5;
+    const videoLimit = 5;
 
     useEffect(() => {
         const fetchPlaylists = async () => {
@@ -49,11 +51,11 @@ const YoutubePlaylistsRequest = () => {
 
     const fetchVideosForPlaylist = async (serial, page) => {
         const token = localStorage.getItem("token");
-        const offset = page * VIDEOS_PER_PAGE;
+        const offset = page * videoLimit;
 
         try {
             const res = await fetch(
-                `${server}/get/playlist_videos/${serial}/?offset=${offset}&limit=${VIDEOS_PER_PAGE}`,
+                `${server}/get/playlist_videos/${serial}/?offset=${offset}&limit=${videoLimit}`,
                 { headers: { Authorization: token } }
             );
             const result = await res.json();
@@ -61,22 +63,22 @@ const YoutubePlaylistsRequest = () => {
             if (!res.ok || !result.data) return;
 
             const { data: videos, total } = result;
-
             const videosWithThumbnails = [];
 
             for (const video of videos) {
                 let thumbnailUrl = null;
                 try {
-                    const thumbRes = await fetch(`${server}/get/youtube_thumbnail/${video.serial}/`, {
-                        headers: { Authorization: token }
-                    });
+                    const thumbRes = await fetch(
+                        `${server}/get/youtube_thumbnail/${video.serial}/`,
+                        { headers: { Authorization: token } }
+                    );
 
                     if (thumbRes.ok) {
                         const blob = await thumbRes.blob();
                         thumbnailUrl = URL.createObjectURL(blob);
                     }
                 } catch (err) {
-                    console.error(`Error fetching thumbnail for video ${video.serial}`, err);
+                    console.error(`Error fetching thumbnail for ${video.serial}`, err);
                 }
 
                 videosWithThumbnails.push({ ...video, thumbnailUrl });
@@ -99,7 +101,7 @@ const YoutubePlaylistsRequest = () => {
         if (!playlist) return;
 
         const nextPage = playlist.currentPage + direction;
-        const maxPage = Math.ceil(playlist.total / VIDEOS_PER_PAGE) - 1;
+        const maxPage = Math.ceil(playlist.total / videoLimit) - 1;
 
         if (nextPage >= 0 && nextPage <= maxPage) {
             fetchVideosForPlaylist(serial, nextPage);
@@ -110,10 +112,20 @@ const YoutubePlaylistsRequest = () => {
         <div className="video-list-container">
             <h1>YouTube Playlists</h1>
             {errorMessage && <p className="error-message">{errorMessage}</p>}
+
             {playlists.map(playlist => (
                 <div key={playlist.serial} className="genre-section">
                     <h2 className="genre-title">{playlist.name}</h2>
+
+                    <button
+                        className="upload-video-btn"
+                        onClick={() => setActivePlaylistSerial(playlist.serial)}
+                    >
+                        Upload Video
+                    </button>
+
                     <p>{playlist.description}</p>
+
                     <div className="video-grid-container">
                         {playlist.videos.length > 0 ? (
                             playlist.videos.map(video => (
@@ -122,7 +134,13 @@ const YoutubePlaylistsRequest = () => {
                                         {video.thumbnailUrl ? (
                                             <img src={video.thumbnailUrl} alt={video.title} />
                                         ) : (
-                                            <div style={{ width: "100%", height: "90px", backgroundColor: "#ccc" }} />
+                                            <div
+                                                style={{
+                                                    width: "100%",
+                                                    height: "90px",
+                                                    backgroundColor: "#ccc"
+                                                }}
+                                            />
                                         )}
                                     </a>
                                     <h4>
@@ -140,7 +158,7 @@ const YoutubePlaylistsRequest = () => {
                         )}
                     </div>
 
-                    {playlist.total > VIDEOS_PER_PAGE && (
+                    {playlist.total > videoLimit && (
                         <div className="video-navigation" style={{ marginTop: "1rem" }}>
                             <button
                                 className="nav-arrow"
@@ -151,12 +169,12 @@ const YoutubePlaylistsRequest = () => {
                             </button>
                             <span>
                                 Page {playlist.currentPage + 1} of{" "}
-                                {Math.ceil(playlist.total / VIDEOS_PER_PAGE)}
+                                {Math.ceil(playlist.total / videoLimit)}
                             </span>
                             <button
                                 className="nav-arrow"
                                 onClick={() => handlePageChange(playlist.serial, 1)}
-                                disabled={(playlist.currentPage + 1) * VIDEOS_PER_PAGE >= playlist.total}
+                                disabled={(playlist.currentPage + 1) * videoLimit >= playlist.total}
                             >
                                 &rarr;
                             </button>
@@ -164,6 +182,13 @@ const YoutubePlaylistsRequest = () => {
                     )}
                 </div>
             ))}
+
+            {activePlaylistSerial && (
+                <UploadYoutubeVideoToPlaylistPopup
+                    playlistSerial={activePlaylistSerial}
+                    onClose={() => setActivePlaylistSerial(null)}
+                />
+            )}
         </div>
     );
 };

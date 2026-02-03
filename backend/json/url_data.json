@@ -1,0 +1,7 @@
+{
+    "helper_frontend": {
+        "base_url": "http://localhost:3000/",
+        "file_download_url": "share-file-downloader/",
+        "folder_download_url": "share-folder-downloader/"
+    }
+}

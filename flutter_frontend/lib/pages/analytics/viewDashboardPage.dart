@@ -1,0 +1,12 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_frontend/assets/analytics/requests/viewDashboardRequest.dart';
+
+class ViewDashboardPage extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: Text('Dashboard')),
+      body: ViewDashboardRequest(),
+    );
+  }
+}

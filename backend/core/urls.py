@@ -80,7 +80,9 @@ urlpatterns = [
     path('get/favourite_videos/', videos.views.get_favourite_videos, name='get_favourite_videos'),
     path('create/video_request/', videos.views.create_video_request, name='create_video_request'),
     path('get/video_requests/', videos.views.get_video_requests, name='get_video_requests'),
-    path('get/series_serials/', videos.views.get_series_serials, name='get_series_serials'),
+    path('get/existing_series_serials/', videos.views.get_existing_series_serials, name='get_existing_series_serials'),
+    path('get/unadded_custom_playlists/<str:serial>/', videos.views.get_unadded_custom_playlists, name='get_unadded_custom_playlists'),
+    path('get/added_custom_playlists/<str:serial>/', videos.views.get_added_custom_playlists, name='get_added_custom_playlists'),
 
     # Management Routes
     path('import_identifier_api/', management.views.import_identifier_api, name='import_identifier_api'),
@@ -115,6 +117,15 @@ urlpatterns = [
     path('delete/youtube_video_from_playlist/<str:video_serial>/<str:playlist_serial>/', youtube.views.delete_youtube_video_from_playlist, name='delete_video_from_youtube_playlist'),
     path('get/youtube_video_stream/<str:serial>/<str:permission>/', youtube.views.get_youtube_video_stream, name='get_youtube_video_stream'),
     path('update/youtube_playback_time/<str:serial>/', youtube.views.update_youtube_playback_time, name='update_youtube_playback_time'),
+    path('edit/youtube_playlist/<str:playlist_serial>/', youtube.views.edit_youtube_playlist, name='edit_youtube_playlist'),
+    path('delete/youtube_playlist/<str:playlist_serial>/', youtube.views.delete_youtube_playlist, name='delete_youtube_playlist'),
+    path('update/youtube_video_details/<str:video_serial>/', youtube.views.update_youtube_video_details, name='update_youtube_video_details'),
+    path('delete/youtube_video/<str:video_serial>/', youtube.views.delete_youtube_video, name='delete_youtube_video'),
+    path('add/youtube_video_to_favourites/<str:video_serial>/', youtube.views.add_youtube_video_to_favourites, name='add_youtube_video_to_favourites'),
+    path('remove/youtube_video_from_favourites/<str:video_serial>/<str:favourites_serial>/', youtube.views.remove_youtube_video_from_favourites, name='remove_youtube_video_from_favourites'),
+    path('add/youtube_video_to_watch_later/<str:video_serial>/', youtube.views.add_youtube_video_to_watch_later, name='add_youtube_video_to_watch_later'),
+    path('remove/youtube_video_from_watch_later/<str:video_serial>/<str:water_later_serial>/', youtube.views.remove_youtube_video_from_watch_later, name='remove_youtube_video_from_watch_later'),
+    path('get/youtube_stream_data/<str:serial>/', youtube.views.get_youtube_stream_data, name='get_youtube_stream_data'),
 
     # Analytics Routes
     path('upload/data_source/', analytics.views.upload_data_source, name='upload_data_source'),
@@ -156,6 +167,23 @@ urlpatterns = [
     path('get/track_data/<str:serial>/', music.views.get_track_data, name='get_track_data'),
     path('get/track_preview/<str:serial>/', music.views.get_track_preview, name='get_track_preview'),
     path('get/artist_data/', music.views.get_artist_data, name='get_artist_data'),
+    path('add/full_track/<str:track_serial>/', music.views.add_full_track, name='add_full_track'),
+    path('create/custom_music_playlist/', music.views.create_custom_music_playlist, name='create_custom_music_playlist'),
+    path('add/track_to_custom_music_playlist/<str:playlist_serial>/<str:track_serial>/', music.views.add_track_to_custom_music_playlist, name='add_track_to_custom_music_playlist'),
+    path('delete/track_from_custom_music_playlist/<str:playlist_serial>/<str:track_serial>/', music.views.delete_track_from_custom_playlist, name='delete_track_from_custom_music_playlist'),
+    path('get/custom_music_playlists/', music.views.get_custom_music_playlists, name='get_custom_music_playlists'),
+    path('get/not_added_to_custom_music_playlists/<str:track_serial>/', music.views.get_not_added_to_custom_music_playlists, name='get_not_added_to_custom_music_playlists'),
+    path('get/added_to_custom_music_playlists/<str:track_serial>/', music.views.get_added_to_custom_music_playlists, name='get_added_to_custom_music_playlists'),
+    path('get/custom_music_playlist_tracks/<str:playlist_serial>/', music.views.get_custom_music_playlist_tracks, name='get_custom_music_playlist_tracks'),
+    path('get/custom_music_player_settings/', music.views.get_custom_music_player_settings, name='get_custom_music_player_settings'),
+    path('get/currently_playing_track_data/<str:playlist_serial>/', music.views.get_currently_playing_track_data, name='get_currently_playing_track'),
+    path('get/listed_track_thumbnails/<str:playlist_serial>/<str:track_serial>/ ', music.views.get_listed_track_thumbnails, name='get_listed_track_thumbnails'),
+    path('get/currently_streaming_track_thumbnail/<str:playlist_serial>/<str:track_serial>/', music.views.get_currently_streaming_track_thumbnail, name='get_currently_stream_track_thumbnail'),
+    path('get/next_track_in_custom_playist/<str:playlist_serial>/<str:current_track_serial>/<int:current_track_number>/', music.views.get_next_track_in_custom_playlist, name='get_next_track_in_custom_playlist'),
+    path('get/previous_track_in_custom_playlist/<str:playlist_serial>/<str:current_track_serial>/<int:current_track_number>/', music.views.get_previous_track_in_custom_playlist, name='get_previous_track_in_custom_playlist'),
+    path('update/custom_music_player_settings/', music.views.update_custom_music_player_settings, name='update_custom_music_player_settings'),
+    path('update/played_tracks/<str:playlist_serial>/<str:track_serial>/', music.views.update_played_tracks, name='update_played_tracks'),
+    path('save/currently_streaming_track/<str:playlist_serial>/<str:track_serial>/', music.views.save_currently_streaming_track, name='save_currently_streaming_track'),
     
     # Article Routes
     path('create/single_article/', articles.views.create_single_article, name='create_single_article'),
@@ -185,6 +213,10 @@ urlpatterns = [
     path('get/folder_share_link/<str:folder_serial>/', files.views.get_folder_share_link, name='get_folder_share_link'),
     path('delete/file/<str:file_id>/', files.views.delete_file, name='delete_file'),
     path('delete/folder/<str:folder_serial>/', files.views.delete_folder, name='delete_folder'),
+    path('get/folder_share_link/<str:folder_serial>/', files.views.get_folder_share_link, name='get_folder_share_link'),
+    path('get/file_share_link/<str:file_id>/', files.views.get_file_share_link, name='get_file_share_link'),
+    path('get/helper/folder_download/<str:folder_serial>/<str:share_code>/', files.views.get_helper_folder_download_files, name='get_helper_folder_download_files'), 
+    path('get/helper/file_download/<str:file_id>/<str:share_code>/', files.views.get_helper_file_download, name='get_helper_file_download'),
     
     # MTG Routes
     path('create/scraper/', mtg.views.create_new_scraper, name='create_new_scraper'),
@@ -196,6 +228,7 @@ urlpatterns = [
     
     # Admins Routes
     path('admins/login/', admins.views.admin_login, name='admin_login'),
+    path('admins/check/', admins.views.admin_check, name='admin_check'),
     path('admins/video_request_options/', admins.views.video_request_options, name='video_request_options'),
     path('admins/video_requests/<str:status_filter>/', admins.views.video_requests, name='video_requests'),
     path('admins/review_video_request/<str:serial>/', admins.views.review_video_request, name='review_video_request'),

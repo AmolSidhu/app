@@ -49,7 +49,36 @@ def admin_login(request):
             return Response({'message': 'Internal server error'},
                             status=status.HTTP_500_INTERNAL_SERVER_ERROR)
             
-            
+@api_view(['GET'])
+def admin_check(request):
+    if request.method == 'GET':
+        try:
+            token = request.headers.get('Authorization')
+            auth_response = auth_check(token)
+            if 'error' in auth_response:
+                return auth_response['error']
+            admin_user = AdminCredentials.objects.filter(
+                admin_username=auth_response['user']).first()
+            if admin_user is None:
+                return Response({'message': 'Admin user not found'},
+                                status=status.HTTP_400_BAD_REQUEST)
+            if admin_user.active_admin is False: 
+                return Response({'message': 'Admin user is not active'},
+                                status=status.HTTP_403_FORBIDDEN)
+            generate_admin_token = admin_token_generator(
+                username = admin_user.admin_username.username,
+                email = admin_user.admin_email,
+                admin_code = admin_user.admin_code
+            )
+            return Response({
+                'message': 'Admin check successful',
+                'admin_token': generate_admin_token
+            }, status=status.HTTP_200_OK)
+        except Exception as e:
+            logger.error(f"Error in admin check: {str(e)}")
+            return Response({'message': 'Internal server error'},
+                            status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
 @api_view(['GET'])
 def video_request_options(request):
     if request.method == 'GET':

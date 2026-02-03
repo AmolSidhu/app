@@ -18,7 +18,7 @@ const UploadFullMusicTrackPopup = ({ album, track, onClose }) => {
 
         try {
             const response = await fetch(
-                `${server}/add_full_track/${track.track_serial}/`,
+                `${server}/add/full_track/${track.track_serial}/`,
                 {
                     method: "POST",
                     headers: { Authorization: token },

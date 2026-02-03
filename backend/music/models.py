@@ -50,6 +50,12 @@ class MusicAlbumRecord(models.Model):
     release_date = models.DateTimeField(null=False)
     total_tracks = models.IntegerField(default=0, null=False)
     album_spotify_link = models.CharField(max_length=300, null=False)
+    album_thumbnail_resized = models.BooleanField(default=False, null=False)
+    album_thumbnail_resize_failed = models.BooleanField(default=False, null=False)
+    list_view_thumbnail_location = models.CharField(max_length=300, null=True, default='')
+    active_player_thumbnail_location = models.CharField(max_length=300, null=True, default='')
+    create_date = models.DateTimeField(auto_now_add=True, null=False)
+    last_updated_date = models.DateTimeField(auto_now=True, null=False)
     
     class Meta:
         db_table = 'music_album_record'
@@ -104,3 +110,44 @@ class MusicFullTrackRecord(models.Model):
         db_table = 'music_full_track_record'
         verbose_name = 'Music Full Track Record'
         verbose_name_plural = 'Music Full Track Records'
+
+class CustomMusicPlayerSettings(models.Model):
+    serial = models.CharField(max_length=100, primary_key=True, unique=True, null=False)
+    user = models.ForeignKey('user.Credentials', on_delete=models.CASCADE)
+    order_playback = models.BooleanField(default=True, null=False)
+    shuffle_playback = models.BooleanField(default=False, null=False)
+    create_date = models.DateTimeField(auto_now_add=True, null=False)
+    last_updated_date = models.DateTimeField(auto_now=True, null=False)
+    
+    class Meta:
+        db_table = 'custom_music_player_settings'
+        verbose_name = 'Custom Music Player Settings'
+        verbose_name_plural = 'Custom Music Player Settings'
+        
+class CustomMusicPlaylist(models.Model):
+    serial = models.CharField(max_length=100, primary_key=True, unique=True, null=False)
+    user = models.ForeignKey('user.Credentials', on_delete=models.CASCADE)
+    playlist_name = models.CharField(max_length=100, null=False)
+    playlist_description = models.TextField(null=True, default='')
+    played = models.BooleanField(default=False, null=False)
+    create_date = models.DateTimeField(auto_now_add=True, null=False)
+    last_updated_date = models.DateTimeField(auto_now=True, null=False)
+
+    class Meta:
+        db_table = 'custom_music_playlist'
+        verbose_name = 'Custom Music Playlist'
+        verbose_name_plural = 'Custom Music Playlists'
+        
+class CustomMusicPlaylistRecord(models.Model):
+    serial = models.CharField(max_length=100, primary_key=True, unique=True, null=False)
+    playlist = models.ForeignKey(CustomMusicPlaylist, on_delete=models.CASCADE)
+    track = models.ForeignKey(MusicTrackRecord, on_delete=models.CASCADE)
+    play_order = models.IntegerField(default=0, null=False)
+    current_track = models.BooleanField(default=False, null=False)
+    track_play_stop_time = models.FloatField(default=0.0, null=False)
+    added_date = models.DateTimeField(auto_now_add=True, null=False)
+    
+    class Meta:
+        db_table = 'custom_music_playlist_record'
+        verbose_name = 'Custom Music Playlist Record'
+        verbose_name_plural = 'Custom Music Playlist Records'

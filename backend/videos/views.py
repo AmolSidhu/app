@@ -11,6 +11,8 @@ import logging
 import json
 import os
 
+import user
+
 from .models import (TempVideo, Video, VideoRecord, VideoHistory, VideoGenre, VideoQuery,
                      CustomVideoList, CustomVideoListRecords, VideoFavourites, VideoRequest)
 from .queries import (get_video_list_query, get_video_by_genre_query, get_recently_viewed_query,
@@ -798,14 +800,18 @@ def get_favourite_videos(request):
                                 status=status.HTTP_401_UNAUTHORIZED)
             user = auth_response['user']
             user_id = user.username
+            page = int(request.query_params.get('page', 1))
+            limit = int(request.query_params.get('limit', 5))
+            offset = (page - 1) * limit
             query = get_favourite_videos_query()
             with connection.cursor() as cursor:
-                cursor.execute(query, [user_id])
+                cursor.execute(query, [user_id, limit + 1, offset])
                 columns = [col[0] for col in cursor.description]
                 rows = cursor.fetchall()
+                has_more = len(rows) > limit
                 videos = [dict(zip(columns, row)) for row in rows]
             return Response({'message': 'Favourite videos retrieved successfully',
-                'data': videos
+                'data': {'videos': videos[:limit], 'has_more': has_more}
             }, status=status.HTTP_200_OK)
         except Exception as e:
             logging.error(f"Error during favourite video retrieval: {str(e)}")
@@ -867,7 +873,7 @@ def get_video_requests(request):
                             status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 @api_view(['GET'])
-def get_series_serials(request):
+def get_existing_series_serials(request):
     if request.method == 'GET':
         try:
             token = request.headers.get('Authorization')
@@ -884,5 +890,66 @@ def get_series_serials(request):
                             status=status.HTTP_200_OK)
         except Exception as e:
             logging.error(f"Error during series serial retrieval: {str(e)}")
+            return Response({'message': 'Internal server error'},
+                            status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+@api_view(['GET'])
+def get_unadded_custom_playlists(request, serial):
+    if request.method == 'GET':
+        try:
+            token = request.headers.get('Authorization')
+            auth_response = auth_check(token)
+            if 'error' in auth_response:
+                return Response({'message': f'{auth_response["error"]}'},
+                                status=status.HTTP_401_UNAUTHORIZED)
+            user = auth_response['user']
+            video_record = Video.objects.filter(serial=serial).first()
+            if not video_record:
+                return Response({'message': 'Video not found'},
+                                status=status.HTTP_404_NOT_FOUND)
+            unadded_playlists = CustomVideoList.objects.filter(
+                user=user).exclude(
+                list_serial__in=CustomVideoListRecords.objects.filter(
+                    video_serial=video_record,
+                    user=user).values_list('list_serial__list_serial',
+                                           flat=True)).values(
+                                               'list_name', 'list_serial')
+            data = [{'serial': list_serial, 'name': list_name} for list_name, list_serial in unadded_playlists]
+            return Response({'message': 'Unadded custom playlists retrieved successfully',
+                            'data': data},
+                            status=status.HTTP_200_OK)
+        except Exception as e:
+            logging.error(f"Error during unadded custom playlist retrieval: {str(e)}")
+            return Response({'message': 'Internal server error'},
+                            status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            
+@api_view(['GET'])
+def get_added_custom_playlists(request, serial):
+    if request.method == 'GET':
+        try:
+            token = request.headers.get('Authorization')
+            auth_response = auth_check(token)
+            if 'error' in auth_response:
+                return Response({'message': f'{auth_response["error"]}'},
+                                status=status.HTTP_401_UNAUTHORIZED)
+            user = auth_response['user']
+            video_record = Video.objects.filter(serial=serial).first()
+            if not video_record:
+                return Response({'message': 'Video not found'},
+                                status=status.HTTP_404_NOT_FOUND)
+            added_playlists = CustomVideoList.objects.filter(
+                user=user,
+            ).filter(
+                list_serial__in=CustomVideoListRecords.objects.filter(
+                    video_serial=video_record,
+                    user=user
+                ).values_list('list_serial__list_serial', flat=True)
+            ).values('list_name', 'list_serial')
+            data = [{'serial': list_serial, 'name': list_name} for list_name, list_serial in added_playlists]
+            return Response({'message': 'Added custom playlists retrieved successfully',
+                            'data': data},
+                            status=status.HTTP_200_OK)
+        except Exception as e:
+            logging.error(f"Error during added custom playlist retrieval: {str(e)}")
             return Response({'message': 'Internal server error'},
                             status=status.HTTP_500_INTERNAL_SERVER_ERROR)

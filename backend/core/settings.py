@@ -21,10 +21,25 @@ SECRET_KEY = os.getenv('SECRET_KEY')
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = [
-    'localhost',
-    '127.0.0.1',
+origins = [
+    value
+    for key, value in os.environ.items()
+    if key.startswith("ORIGIN_")
 ]
+
+allowed_hosts = [
+    value
+    for key, value in os.environ.items()
+    if key.startswith("ALLOWED_HOST_")
+]
+
+trusted_origin = [
+    value
+    for key, value in os.environ.items()
+    if key.startswith("TRUSTED_ORIGIN_")
+]
+
+ALLOWED_HOSTS = allowed_hosts
 
 # Logging Config
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -198,9 +213,10 @@ STATIC_URL = 'static/'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 CORS_ALLOW_CREDENTIALS = True
-CORS_ALLOWED_ORIGINS = ['http://localhost:*', 'http://127.0.0.1:*']
+CORS_ALLOWED_ORIGINS = origins
 CORS_ORIGIN_ALLOW_ALL = True
 CORS_ALLOW_ALL_ORIGINS = True
+#APPEND_SLASH = False
 
 
 CORS_ALLOW_HEADERS = [
@@ -226,10 +242,7 @@ CORS_ALLOW_METHODS = [
     'PUT',
 ]
 
-CSRF_TRUSTED_ORIGINS = [
-    'http://localhost:3000',
-]
-
+CSRF_TRUSTED_ORIGINS = trusted_origin
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
         'rest_framework_simplejwt.authentication.JWTAuthentication',

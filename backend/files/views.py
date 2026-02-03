@@ -145,7 +145,6 @@ def get_files(request):
                     'file_type': file['file_type'],
                     'file_share_status': file['sharable']
                 }
-            print( data)
             return Response({'message': 'Files retrieved successfully',
                             'data': data},
                             status=status.HTTP_200_OK)
@@ -180,7 +179,6 @@ def get_folder_files(request, folder_serial):
                     'file_type': file['file_type'],
                     'file_share_status': file['sharable']
                 }
-            print(data)
             return Response({'message': 'Files retrieved successfully',
                             'data': data},
                             status=status.HTTP_200_OK)
@@ -352,7 +350,6 @@ def get_folder_downloaded_files(request, folder_serial, share_code):
             files = ShareFile.objects.filter(folder_serial=folder,
                                              sharable=True).all()
             if not files:
-                print('No files found in this folder')
                 return Response({'message': 'No files found in this folder'},
                                 status=status.HTTP_200_OK)
             for file in files:
@@ -606,3 +603,152 @@ def delete_folder(request, folder_serial):
             logger.error(f"Error in delete_folder: {e}")
             return Response({'message': 'Internal server error'},
                             status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            
+@api_view(['GET'])
+def get_folder_share_link(request, folder_serial):
+    if request.method == 'GET':
+        try:
+            token = request.headers.get('Authorization')
+            auth_response = auth_check(token)
+            if 'error' in auth_response:
+                return Response({'message': f'{auth_response["error"]}'},
+                                status=status.HTTP_403_FORBIDDEN)
+            user = auth_response['user']
+            folder = ShareFolder.objects.filter(serial=folder_serial,
+                                                user=user).first()
+            if not folder:
+                return Response({'message': 'Folder not found'},
+                                status=status.HTTP_404_NOT_FOUND)
+            if not folder.sharable:
+                return Response({'message': 'Folder is not sharable'},
+                                status=status.HTTP_403_FORBIDDEN)
+            with open('json/url_data.json', 'r') as f:
+                url_data = json.load(f)
+            frontend = url_data['helper_frontend']
+            share_link = (
+                f"{frontend['base_url']}"
+                f"{frontend['folder_download_url']}"
+                f"?folder_serial={folder.serial}&share_code={folder.share_code}"
+            )
+            return Response({'message': 'Folder share link retrieved successfully',
+                            'data': {'share_link': share_link}},
+                            status=status.HTTP_200_OK)
+        except Exception as e:
+            logger.error(f"Error in get_folder_share_link: {e}")
+            return Response({'message': 'Internal server error'},
+                            status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            
+@api_view(['GET'])
+def get_file_share_link(request, file_id):
+    if request.method == 'GET':
+        try:
+            token = request.headers.get('Authorization')
+            auth_response = auth_check(token)
+            if 'error' in auth_response:
+                return Response({'message': f'{auth_response["error"]}'},
+                                status=status.HTTP_403_FORBIDDEN)
+            user = auth_response['user']
+            file = ShareFile.objects.filter(file_serial=file_id,
+                                            user=user).first()
+            if not file:
+                return Response({'message': 'File not found'},
+                                status=status.HTTP_404_NOT_FOUND)
+            if not file.sharable:
+                return Response({'message': 'File is not sharable'},
+                                status=status.HTTP_403_FORBIDDEN)
+            with open('json/url_data.json', 'r') as f:
+                url_data = json.load(f)
+            frontend = url_data['helper_frontend']
+            share_link = (
+                f"{frontend['base_url']}"
+                f"{frontend['file_download_url']}"
+                f"?file_serial={file.file_serial}&share_code={file.share_code}"
+            )
+            return Response({'message': 'File share link retrieved successfully',
+                            'data': {'share_link': share_link}},
+                            status=status.HTTP_200_OK)
+        except Exception as e:
+            logger.error(f"Error in get_file_share_link: {e}")
+            return Response({'message': 'Internal server error'},
+                            status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            
+@api_view(['GET'])
+def get_helper_folder_download_files(request, folder_serial, share_code):
+    if request.method == 'GET':
+        try:
+            folder = ShareFolder.objects.filter(serial=folder_serial,
+                                                share_code=share_code,
+                                                sharable=True).first()
+            if not folder:
+                return Response({'message': 'Folder not found'},
+                                status=status.HTTP_404_NOT_FOUND)
+            files = ShareFile.objects.filter(folder_serial=folder,
+                                             sharable=True).all()
+            if not files:
+                return Response({'message': 'No files found in this folder'},
+                                status=status.HTTP_200_OK)
+            for file in files:
+                file_path = file.file_location + file.file_serial + '.' + file.file_type
+                if not os.path.exists(file_path):
+                    return Response({'message': f'File {file.file_name} not found on server'},
+                                    status=status.HTTP_404_NOT_FOUND)
+            zip_filename = f"{folder_serial}_files.zip"
+            with zipfile.ZipFile(zip_filename, 'w') as zipf:
+                for file in files:
+                    file_path = file.file_location + file.file_serial + '.' + file.file_type
+                    zipf.write(file_path, arcname=file.file_name)
+            with open(zip_filename, 'rb') as f:
+                response = HttpResponse(f.read(), content_type='application/zip')
+                response['Content-Disposition'] = f'attachment; filename="{zip_filename}"'
+                response['status'] = status.HTTP_200_OK
+            os.remove(zip_filename)
+            return response
+        except Exception as e:
+            logger.error(f"Error in get_helper_folder_download_files: {e}")
+            return Response({'message': 'Internal server error'},
+                            status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+@api_view(['GET'])
+def get_helper_file_download(request, file_id, share_code):
+    if request.method == 'GET':
+        try:
+            extension_mime_map = {
+                "csv": "text/csv; charset=utf-8",
+                "tsv": "text/tab-separated-values; charset=utf-8",
+                "json": "application/json; charset=utf-8",
+                "txt": "text/plain; charset=utf-8",
+            }
+            file = ShareFile.objects.filter(
+                file_serial=file_id,
+                share_code=share_code,
+                sharable=True
+            ).first()
+            if not file:
+                return Response(
+                    {'message': 'File not found'},
+                    status=status.HTTP_404_NOT_FOUND)
+            file_path = os.path.join(
+                file.file_location,
+                f"{file.file_serial}.{file.file_type}")
+            if not os.path.exists(file_path):
+                return Response(
+                    {'message': 'File not found on server'},
+                    status=status.HTTP_404_NOT_FOUND)
+            ext = file.file_type.lower()
+            mime_type = extension_mime_map.get(ext)
+            if not mime_type:
+                mime_type, _ = mimetypes.guess_type(file_path)
+                if not mime_type:
+                    mime_type = "application/octet-stream"
+            response = FileResponse(
+                open(file_path, 'rb'),
+                content_type=mime_type,
+                status=status.HTTP_200_OK)
+            response['Content-Disposition'] = (
+                f'attachment; filename="{quote(file.file_name)}.{file.file_type}"')
+            return response
+        except Exception as e:
+            logger.error(f"Error in get_helper_file_download: {e}")
+            return Response(
+                {'message': 'Internal server error'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR)

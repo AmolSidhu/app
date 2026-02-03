@@ -53,7 +53,7 @@ class BatchVideoUploadForm extends Component {
 
   async fetchSeriesOptions() {
     const token = localStorage.getItem("token");
-    const url = `${server}/get/series_serials/`;
+    const url = `${server}/get/existing_series_serials/`;
 
     this.setState({ loadingSeries: true });
 

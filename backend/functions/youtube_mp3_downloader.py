@@ -6,7 +6,7 @@ def youtube_mp3_downloader(url=None, output_folder=None, serial=None):
 
     setup_options = {
         "format": "bestaudio/best",
-        "outtmpl": os.path.join(output_folder, serial + ".mp3"),
+        "outtmpl": os.path.join(output_folder, serial),
         "postprocessors": [
             {
                 "key": "FFmpegExtractAudio",

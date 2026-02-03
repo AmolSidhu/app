@@ -24,8 +24,8 @@
   "report_dir": "D:/bucket/main/analytics/report/",
   "youtube_video_dir": "D:/bucket/main/youtube/video/",
   "youtube_thumbnail_dir": "D:/bucket/main/youtube/thumbnail/",
-  "music_artist_thumbnail_dir": "D:/bucket/main/music/artist_thumbnail/",
-  "music_album_thumbnail_dir": "D:/bucket/main/music/album_thumbnail/",
+  "music_artist_thumbnail_dir": "D:/bucket/main/music/thumbnail/artist_thumbnail/",
+  "music_album_thumbnail_dir": "D:/bucket/main/music/thumbnail/album_thumbnail/",
   "music_track_preview_dir": "D:/bucket/main/music/preview/",
   "music_track_dir": "D:/bucket/main/music/track/",
   "music_artist_json_dir": "D:/bucket/main/music/artist_json/",
@@ -35,5 +35,7 @@
   "article_file_upload_dir": "D:/bucket/main/article/uploads/",
   "share_file_upload_dir": "D:/bucket/main/share_file/uploads/",
   "mtg_upload_dir": "D:/bucket/main/mtg/uploads/",
-  "mtg_scraper_output_dir": "D:/bucket/main/mtg/scraper_output/"
+  "mtg_scraper_output_dir": "D:/bucket/main/mtg/scraper_output/",
+  "music_list_view_thumbnail_dir": "D:/bucket/main/music/thumbnail/list_view_thumbnail/",
+  "music_active_player_thumbnail_dir": "D:/bucket/main/music/thumbnail/active_player_thumbnail/"
 }

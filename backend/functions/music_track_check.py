@@ -120,7 +120,7 @@ def compare_tracks(
         )
 
         overall_similarity = float(np.clip(overall_similarity, 0.0, 1.0))
-        return overall_similarity
+        return {"overall_similarity": overall_similarity}
 
     finally:
         if reference_is_temp and os.path.exists(reference_audio_path):

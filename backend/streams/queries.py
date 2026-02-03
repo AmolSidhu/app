@@ -81,7 +81,7 @@ similar_videos AS (
     LEFT JOIN video_directors vd ON vd.video_id = v.serial AND vd.director IN (SELECT director FROM target_directors)
     LEFT JOIN video_stars vs ON vs.video_id = v.serial AND vs.star IN (SELECT star FROM target_stars)
     LEFT JOIN video_writers vw ON vw.video_id = v.serial AND vw.writer IN (SELECT writer FROM target_writers)
-    WHERE v.serial != (SELECT video_id FROM target_video)  -- Exclude the original video
+    WHERE v.serial != (SELECT video_id FROM target_video)
     GROUP BY v.serial, v.title, v.imdb_rating, v.main_tag, v.description
 )
 SELECT * FROM similar_videos

@@ -1,0 +1,39 @@
+{
+    "analytics": {
+        "get_all_dashboard_items_query": "sql/analytics/get_all_dashboard_items.sql"
+    },
+    "articles": {
+        "get_article_tag_search_query": "sql/articles/get_article_tag_search.sql",
+        "get_article_title_search_query": "sql/articles/get_article_title_search.sql"
+    },
+    "management": {
+        "get_uploaded_video_record_query": "sql/management/get_uploaded_video_record.sql",
+        "picture_upload_data_query": "sql/management/picture_upload_data.sql"
+    },
+    "music": {
+        "get_active_player_track_thumbnail_query": "sql/music/get_active_player_track_thumbnail.sql",
+        "get_currently_playing_track_query": "sql/music/get_currently_playing_track.sql",
+        "get_custom_playlist_music_records_query": "sql/music/get_custom_playlist_music_records.sql",
+        "get_listed_track_thumbnail_query": "sql/music/get_listed_track_thumbnail.sql"
+    },
+    "pictures": {
+        "custom_album_data_query": "sql/pictures/custom_album_data.sql",
+        "favourite_pictures_query": "sql/pictures/favourite_pictures.sql",
+        "picture_data_query": "sql/pictures/picture_data.sql",
+        "picture_search_query": "sql/pictures/picture_search.sql"
+    },
+    "streams": {
+        "next_previous_episode_query": "sql/streams/next_previous_episode.sql",
+        "video_suggestion_query": "sql/streams/video_suggestion.sql"
+    },
+    "videos": {
+        "get_custom_video_list_records_query": "sql/videos/get_custom_video_list_records.sql",
+        "get_favourite_videos_query": "sql/videos/get_favourite_videos.sql",
+        "get_recently_viewed_query": "sql/videos/get_recently_viewed.sql",
+        "get_record_data_query": "sql/videos/get_record_data.sql",
+        "get_video_by_genre_query": "sql/videos/get_video_by_genre.sql",
+        "get_video_list_query": "sql/videos/get_video_list.sql",
+        "get_video_search_query": "sql/videos/get_video_search.sql",
+        "video_search_query": "sql/videos/video_search.sql"
+    }
+}

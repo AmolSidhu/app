@@ -98,7 +98,7 @@ def upload_article_files(request):
                 config_section='articles',
                 serial_key='file_serial_code',
                 model=MassUploadFiles,
-                field_name=''
+                field_name='serial'
             )
             uploaded_file = MassUploadFiles(
                 serial=serial,
