@@ -55,7 +55,7 @@ def get_recently_viewed_query():
             vh.video_stop_time,
             vh.serial_id,
             vh.last_updated AS timestamp
-        FROM main.video_history vh
+        FROM video_history vh
         WHERE vh.user_id = %s
         ORDER BY vh.master_record_id, vh.last_updated DESC
     )
@@ -66,9 +66,9 @@ def get_recently_viewed_query():
     FROM 
         latest_history lh
     JOIN 
-        main.video v ON v.serial = lh.master_record_id
+        video v ON v.serial = lh.master_record_id
     JOIN 
-        main.credentials u ON v.uploaded_by_id = u.username
+        credentials u ON v.uploaded_by_id = u.username
     WHERE 
         v.current_status = 'P'
     AND 
@@ -130,28 +130,28 @@ SELECT
         )::text
     END) FILTER (WHERE cvr.video_serial_id IS NULL AND cvl.list_serial IS NOT NULL) AS not_in_custom_album
 FROM 
-    main.video_record vr
+    video_record vr
 LEFT JOIN 
-    main.video v ON v.serial = vr.master_record_id
+    video v ON v.serial = vr.master_record_id
 LEFT JOIN 
-    main.video_tags vt ON vt.video_id = v.serial
+    video_tags vt ON vt.video_id = v.serial
 LEFT JOIN 
-    main.video_directors vd ON vd.video_id = v.serial
+    video_directors vd ON vd.video_id = v.serial
 LEFT JOIN 
-    main.video_stars vs ON vs.video_id = v.serial
+    video_stars vs ON vs.video_id = v.serial
 LEFT JOIN 
-    main.video_writers vw ON vw.video_id = v.serial
+    video_writers vw ON vw.video_id = v.serial
 LEFT JOIN 
-    main.video_creators vc ON vc.video_id = v.serial
+    video_creators vc ON vc.video_id = v.serial
 LEFT JOIN 
-    main.video_history vh ON vh.master_record_id = v.serial AND vh.user_id = %s
+    video_history vh ON vh.master_record_id = v.serial AND vh.user_id = %s
 LEFT JOIN 
     LATERAL (
         SELECT 
             vh.serial_id AS video_serial, 
             vh.master_record_id AS record_serial
         FROM 
-            main.video_history vh 
+            video_history vh 
         WHERE 
             vh.user_id = %s
         ORDER BY 
@@ -159,11 +159,11 @@ LEFT JOIN
         LIMIT 1
     ) vr_history ON vr_history.record_serial = v.serial
 LEFT JOIN 
-    main.video_favourites vf ON vf.video_id = v.serial AND vf.user_id = %s
+    video_favourites vf ON vf.video_id = v.serial AND vf.user_id = %s
 LEFT JOIN 
-    main.custom_video_list cvl ON cvl.user_id = %s
+    custom_video_list cvl ON cvl.user_id = %s
 LEFT JOIN 
-    main.custom_video_list_records cvr ON cvr.video_serial_id = v.serial AND cvl.list_serial = cvr.list_serial_id
+    custom_video_list_records cvr ON cvr.video_serial_id = v.serial AND cvl.list_serial = cvr.list_serial_id
 WHERE 
     v.serial = %s
 GROUP BY 

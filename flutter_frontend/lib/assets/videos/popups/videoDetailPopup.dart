@@ -35,8 +35,6 @@ class _VideoDetailPopupState extends State<VideoDetailPopup> {
     super.dispose();
   }
 
-  /* ===================== API ===================== */
-
   Future<void> _fetchVideo() async {
     final token = await _storage.read(key: 'token');
     final res = await http.get(
@@ -102,8 +100,6 @@ class _VideoDetailPopupState extends State<VideoDetailPopup> {
     );
   }
 
-  /* ===================== SUBMENU ===================== */
-
   Offset _getWidgetPosition(BuildContext context) {
     final RenderBox box = context.findRenderObject() as RenderBox;
     return box.localToGlobal(Offset.zero);
@@ -155,8 +151,6 @@ class _VideoDetailPopupState extends State<VideoDetailPopup> {
     _submenuOverlay = null;
   }
 
-  /* ===================== PLAY ===================== */
-
   Future<void> _play(String serial, bool resume) async {
     await _storage.write(key: 'videoSerial', value: serial);
     await _storage.write(key: 'videoResume', value: resume.toString());
@@ -165,8 +159,6 @@ class _VideoDetailPopupState extends State<VideoDetailPopup> {
       MaterialPageRoute(builder: (_) => VideoStreamPage()),
     );
   }
-
-  /* ===================== UI ===================== */
 
   @override
   Widget build(BuildContext context) {
@@ -178,7 +170,6 @@ class _VideoDetailPopupState extends State<VideoDetailPopup> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            /* HEADER */
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [

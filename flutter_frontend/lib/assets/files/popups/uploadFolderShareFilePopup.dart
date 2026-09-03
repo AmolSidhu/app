@@ -80,7 +80,7 @@ class _UploadFolderShareFilePopupState
         throw Exception(responseBody);
       }
 
-      Navigator.of(context).pop(true); // success
+      Navigator.of(context).pop(true);
     } catch (e) {
       setState(() {
         _error = "Error uploading file: $e";

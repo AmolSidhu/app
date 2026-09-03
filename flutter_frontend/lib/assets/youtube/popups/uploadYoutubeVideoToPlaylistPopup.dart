@@ -6,12 +6,10 @@ import 'package:flutter_frontend/static/constants.dart';
 
 class UploadYoutubeVideoToPlaylistPopup extends StatefulWidget {
   final String playlistSerial;
-  final VoidCallback onClose;
 
   const UploadYoutubeVideoToPlaylistPopup({
     Key? key,
     required this.playlistSerial,
-    required this.onClose,
   }) : super(key: key);
 
   @override
@@ -47,9 +45,7 @@ class _UploadYoutubeVideoToPlaylistPopupState
 
     try {
       final token = await _storage.read(key: 'token');
-      if (token == null) {
-        throw Exception('Not authenticated');
-      }
+      if (token == null) throw Exception('Not authenticated');
 
       final res = await http.post(
         Uri.parse('$server/upload/youtube_video/'),
@@ -69,18 +65,15 @@ class _UploadYoutubeVideoToPlaylistPopupState
         return;
       }
 
-      setState(() {
-        successMessage = 'YouTube video upload started successfully.';
-        _videoUrlController.clear();
-      });
+      Navigator.of(context, rootNavigator: true).pop();
     } catch (e) {
       setState(() {
         errorMessage = 'An unexpected error occurred.';
       });
     } finally {
-      setState(() {
-        loading = false;
-      });
+      if (mounted) {
+        setState(() => loading = false);
+      }
     }
   }
 
@@ -103,12 +96,6 @@ class _UploadYoutubeVideoToPlaylistPopupState
             if (errorMessage != null)
               Text(errorMessage!, style: const TextStyle(color: Colors.red)),
 
-            if (successMessage != null)
-              Text(
-                successMessage!,
-                style: const TextStyle(color: Colors.green),
-              ),
-
             const SizedBox(height: 12),
 
             TextField(
@@ -126,7 +113,9 @@ class _UploadYoutubeVideoToPlaylistPopupState
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
                 TextButton(
-                  onPressed: loading ? null : widget.onClose,
+                  onPressed: loading
+                      ? null
+                      : () => Navigator.of(context, rootNavigator: true).pop(),
                   child: const Text('Cancel'),
                 ),
                 const SizedBox(width: 12),

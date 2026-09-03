@@ -45,3 +45,8 @@ run.start_parse_article_json_file()
 run.start_validate_scraper_links()
 run.start_run_scraper_jobs()
 run.start_resize_album_playlist_thumbnails()
+run.start_process_admin_file_uploads()
+run.start_handle_processed_admin_files()
+run.start_create_mtg_database()
+run.start_handle_processed_mtg_temp_files
+run.start_handle_failed_mtg_temp_files()

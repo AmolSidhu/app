@@ -27,6 +27,7 @@ class _VideoStreamPageState extends State<VideoStreamPage> {
   Future<void> _loadInitialSerial() async {
     final serial = await _storage.read(key: 'videoSerial');
     final resumeValue = await _storage.read(key: 'videoResume');
+
     setState(() {
       currentSerial = serial;
       resume = resumeValue != 'false';
@@ -43,29 +44,53 @@ class _VideoStreamPageState extends State<VideoStreamPage> {
   @override
   Widget build(BuildContext context) {
     if (currentSerial == null) {
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+      return const Center(child: CircularProgressIndicator());
     }
 
-    return Scaffold(
-      appBar: AppBar(title: const Text('Video Stream Page')),
-      body: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: VideoStreamRequest(serial: currentSerial!, resume: resume),
-            ),
-
-            VideoStreamDataRequest(onSerialChange: _handleSerialChange),
-
-            const Padding(
-              padding: EdgeInsets.only(top: 8),
-              child: VideoSuggestionsRequest(),
-            ),
-          ],
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Row(
+            children: [
+              IconButton(
+                icon: const Icon(Icons.arrow_back),
+                onPressed: () => Navigator.of(context).pop(),
+              ),
+              const SizedBox(width: 8),
+              const Text(
+                'Video Stream Page',
+                style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+              ),
+            ],
+          ),
         ),
-      ),
+
+        Expanded(
+          child: SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: VideoStreamRequest(
+                    serial: currentSerial!,
+                    resume: resume,
+                  ),
+                ),
+
+                VideoStreamDataRequest(onSerialChange: _handleSerialChange),
+
+                const Padding(
+                  padding: EdgeInsets.only(top: 8),
+                  child: VideoSuggestionsRequest(),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

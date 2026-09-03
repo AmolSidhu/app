@@ -9,7 +9,7 @@ from django.core.mail import send_mail
 from django.conf import settings
 
 from .models import Credentials
-from functions.auth_functions import token_generator, auth_check, send_verification_email
+from functions.check_functions.auth_functions import token_generator, auth_check, send_verification_email
 
 import logging
 import hashlib
@@ -25,10 +25,10 @@ def register(request):
                 Q(username=request.data['username']) | Q(email=request.data['email'])
             ).first()
             if existing_user:
-                return JsonResponse({'msg': 'User already exists'},
+                return JsonResponse({'error': 'User already exists'},
                                     status=status.HTTP_400_BAD_REQUEST)
             if request.data['password'] != request.data['confirmPassword']:
-                return JsonResponse({'msg': 'Passwords do not match'},
+                return JsonResponse({'error': 'Passwords do not match'},
                                     status=status.HTTP_400_BAD_REQUEST)
             verification_code = token_urlsafe(6)
             password = hashlib.sha256(request.data['password'].encode()).hexdigest()
@@ -41,29 +41,30 @@ def register(request):
             new_user.save()
             threading.Thread(target=send_verification_email, args=(
                 new_user.email, new_user.verification_code)).start()
-            return JsonResponse({'msg': 'User registered successfully'},
+            return JsonResponse({'message': 'User registered successfully'},
                                 status=status.HTTP_200_OK)
         except Exception as e:
             logging.error(f"Error during registration: {str(e)}")
-            return Response({'message': 'Internal server error'},
+            return Response({'Error': f'Internal server error: {str(e)}'},
                             status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 @api_view(['PATCH'])
 def verification(request):
     if request.method == 'PATCH':
         try:
+            print(request.data)
             user = Credentials.objects.filter(email=request.data['email']).first()
             if str(request.data['verificationCode']) == str(user.verification_code):
                 user.is_verified = True
                 user.save()
-                return JsonResponse({'msg': 'User verified successfully'},
+                return JsonResponse({'message': 'User verified successfully'},
                                         status=status.HTTP_200_OK)
             else:
-                return JsonResponse({'msg': 'Invalid verification code'},
+                return JsonResponse({'error': 'Invalid verification code'},
                                         status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
             logging.error(f"Error during verification: {str(e)}")
-            return Response({'message': 'Internal server error'},
+            return Response({'Error': f'Internal server error: {str(e)}'},
                             status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 @api_view(['PATCH'])
@@ -71,29 +72,29 @@ def login(request):
     if request.method == 'PATCH':
         try:
             try:
-                user = Credentials.objects.get(email=request.data['email'])
+                user = Credentials.objects.filter(email=request.data['email']).first()
             except Credentials.DoesNotExist:
-                return JsonResponse({'msg': 'User not found'},
+                return JsonResponse({'error': 'User not found'},
                                     status=status.HTTP_404_NOT_FOUND)
             if not user.is_verified:
-                return JsonResponse({'msg': 'User not verified'},
+                return JsonResponse({'error': 'User not verified'},
                                     status=status.HTTP_401_UNAUTHORIZED)
             if not user.is_active:
-                return JsonResponse({'msg': 'User is inactive'},
+                return JsonResponse({'error': 'User is inactive'},
                                     status=status.HTTP_403_FORBIDDEN)
             correct_password = hashlib.sha256(request.data['password'].encode(
                 )).hexdigest() == user.password
             if not correct_password:
-                return JsonResponse({'msg': 'Incorrect password'},
+                return JsonResponse({'error': 'Incorrect password'},
                                     status=status.HTTP_401_UNAUTHORIZED)
             else:
                 user.last_login = timezone.now()
                 token = token_generator(user.username, user.email)
-                return JsonResponse({'token': token, 'msg': 'Logged in successfully'},
+                return JsonResponse({'token': token, 'message': 'Logged in successfully'},
                                             status=status.HTTP_200_OK)
         except Exception as e:
             logging.error(f"Error during login: {str(e)}")
-            return Response({'message': 'Internal server error'},
+            return Response({'Error': f'Internal server error: {str(e)}'},
                             status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         
 @api_view(['PATCH'])

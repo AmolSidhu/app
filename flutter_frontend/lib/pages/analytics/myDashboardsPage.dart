@@ -16,8 +16,8 @@ class MyDashboardsPage extends StatelessWidget {
               showDialog(
                 context: context,
                 barrierDismissible: false,
-                builder: (_) => CreateDashboardPopup(
-                  onClose: () => Navigator.of(context).pop(),
+                builder: (dialogContext) => CreateDashboardPopup(
+                  onClose: () => Navigator.of(dialogContext).pop(),
                 ),
               );
             },

@@ -1,0 +1,12 @@
+{
+    "analytics": {
+        "standard_report_template": "templates/analytics/default_standard_report.html",
+        "standard_detailed_report_template": "templates/analytics/default_detailed_standard_report.html"
+    },
+    "articles": {
+        "bulk_articles_template": "templates/articles/bulk_articles.json"
+    },
+    "mtg": {
+        "default_template": "templates/mtg/default_template.csv"
+    }
+}

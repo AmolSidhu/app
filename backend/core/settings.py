@@ -230,7 +230,8 @@ CORS_ALLOW_HEADERS = [
 ]
 
 CORS_EXPOSE_HEADERS = [
-    'Resume-Time'
+    'Resume-Time',
+    'back-exists'
 ]
 
 CORS_ALLOW_METHODS = [

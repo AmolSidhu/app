@@ -33,6 +33,7 @@ import 'package:flutter_frontend/pages/analytics/uploadDataSourcePage.dart';
 // MTG Pages
 import 'package:flutter_frontend/pages/mtg/uploadScraperPage.dart';
 import 'package:flutter_frontend/pages/mtg/viewScraperPage.dart';
+import 'package:flutter_frontend/pages/mtg/viewAllMagicCardsPage.dart';
 
 // File Pages
 import 'package:flutter_frontend/pages/files/myUploadFilePage.dart';
@@ -52,6 +53,7 @@ import 'package:flutter_frontend/pages/management/viewMyVideoRequestsPage.dart';
 // Admin Pages
 import 'package:flutter_frontend/pages/admin/adminDataPage.dart';
 import 'package:flutter_frontend/pages/admin/videoRequestApprovalPage.dart';
+import 'package:flutter_frontend/pages/admin/adminFileUploadPage.dart';
 
 // Logout
 import 'package:flutter_frontend/assets/auth/requests/logoutRequest.dart';
@@ -65,6 +67,11 @@ import 'package:flutter_frontend/assets/general/popups/serverMetaDataPopup.dart'
 class MainNavbar extends StatefulWidget {
   final bool isAdmin;
 
+  static final GlobalKey<NavigatorState> rootNav = GlobalKey<NavigatorState>();
+
+  static final GlobalKey<NavigatorState> contentNav =
+      GlobalKey<NavigatorState>();
+
   const MainNavbar({Key? key, required this.isAdmin}) : super(key: key);
 
   @override
@@ -74,8 +81,8 @@ class MainNavbar extends StatefulWidget {
 class _MainNavbarState extends State<MainNavbar> {
   bool isExpanded = true;
   bool showServerMeta = false;
-  String selectedPageKey = 'HomePage';
 
+  String selectedPageKey = 'HomePage';
   static String pictureId = '';
 
   late final Map<String, List<Map<String, dynamic>>> sections;
@@ -191,6 +198,11 @@ class _MainNavbarState extends State<MainNavbar> {
           'pageKey': 'ViewScraperPage',
           'page': ViewScraperPage(),
         },
+        {
+          'title': 'View All Magic Cards',
+          'pageKey': 'ViewAllMagicCardsPage',
+          'page': ViewAllMagicCardsPage(),
+        },
       ],
 
       'File Pages': [
@@ -224,31 +236,26 @@ class _MainNavbarState extends State<MainNavbar> {
           'title': 'Account Detail',
           'pageKey': 'AccountDetailPage',
           'page': AccountDetailPage(),
-          'adminOnly': true,
         },
         {
           'title': 'My Video Uploads',
           'pageKey': 'MyVideoUploadsPage',
           'page': MyVideoUploadsPage(),
-          'adminOnly': true,
         },
         {
           'title': 'View All Picture Uploads',
           'pageKey': 'ViewAllPictureUploadsPage',
           'page': ViewAllPictureUploadsPage(),
-          'adminOnly': true,
         },
         {
           'title': 'View All Video Uploads',
           'pageKey': 'ViewAllVideoUploadsPage',
           'page': ViewAllVideoUploadsPage(),
-          'adminOnly': true,
         },
         {
           'title': 'View My Video Requests',
           'pageKey': 'ViewMyVideoRequestsPage',
           'page': ViewMyVideoRequestsPage(),
-          'adminOnly': true,
         },
       ],
     };
@@ -265,6 +272,12 @@ class _MainNavbarState extends State<MainNavbar> {
           'title': 'Review Video Requests',
           'pageKey': 'videoRequestApprovalPage',
           'page': VideoRequestApprovalPage(),
+          'adminOnly': true,
+        },
+        {
+          'title': 'Admin File Upload',
+          'pageKey': 'adminFileUploadPage',
+          'page': AdminFileUploadPage(),
           'adminOnly': true,
         },
       ];
@@ -299,6 +312,7 @@ class _MainNavbarState extends State<MainNavbar> {
         children: [
           Row(
             children: [
+              // Sidebar
               AnimatedContainer(
                 duration: const Duration(milliseconds: 300),
                 width: isExpanded ? 250 : 70,
@@ -312,9 +326,8 @@ class _MainNavbarState extends State<MainNavbar> {
                           isExpanded ? Icons.arrow_left : Icons.arrow_right,
                           color: Colors.white,
                         ),
-                        onPressed: () {
-                          setState(() => isExpanded = !isExpanded);
-                        },
+                        onPressed: () =>
+                            setState(() => isExpanded = !isExpanded),
                       ),
                     ),
 
@@ -360,9 +373,17 @@ class _MainNavbarState extends State<MainNavbar> {
                                           ),
                                         ),
                                         onTap: () {
-                                          setState(() {
-                                            selectedPageKey = item['pageKey'];
-                                          });
+                                          setState(
+                                            () => selectedPageKey =
+                                                item['pageKey'],
+                                          );
+
+                                          MainNavbar.contentNav.currentState!
+                                              .pushReplacement(
+                                                MaterialPageRoute(
+                                                  builder: (_) => item['page'],
+                                                ),
+                                              );
                                         },
                                       );
                                     }).toList()
@@ -384,9 +405,7 @@ class _MainNavbarState extends State<MainNavbar> {
                               style: TextStyle(color: Colors.white),
                             )
                           : null,
-                      onTap: () {
-                        setState(() => showServerMeta = true);
-                      },
+                      onTap: () => setState(() => showServerMeta = true),
                     ),
 
                     ListTile(
@@ -399,8 +418,10 @@ class _MainNavbarState extends State<MainNavbar> {
                           : null,
                       onTap: () async {
                         await logoutRequest();
-                        Navigator.of(context).pushAndRemoveUntil(
-                          MaterialPageRoute(builder: (_) => LoginNavbar()),
+                        MainNavbar.rootNav.currentState!.pushAndRemoveUntil(
+                          MaterialPageRoute(
+                            builder: (_) => const LoginNavbar(),
+                          ),
                           (_) => false,
                         );
                       },
@@ -409,7 +430,14 @@ class _MainNavbarState extends State<MainNavbar> {
                 ),
               ),
 
-              Expanded(child: _resolvePage()),
+              Expanded(
+                child: Navigator(
+                  key: MainNavbar.contentNav,
+                  onGenerateRoute: (settings) {
+                    return MaterialPageRoute(builder: (_) => _resolvePage());
+                  },
+                ),
+              ),
             ],
           ),
 
@@ -418,9 +446,7 @@ class _MainNavbarState extends State<MainNavbar> {
               child: Container(
                 color: Colors.black54,
                 child: ServerMetaDataPopup(
-                  onClose: () {
-                    setState(() => showServerMeta = false);
-                  },
+                  onClose: () => setState(() => showServerMeta = false),
                 ),
               ),
             ),

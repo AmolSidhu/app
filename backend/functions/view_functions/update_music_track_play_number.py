@@ -1,5 +1,5 @@
 from music.models import CustomMusicPlaylist, CustomMusicPlaylistRecord
-
+from django.db import transaction
 import random
 
 def update_music_track_play_number(user, playlist, shuffle_play, order_play):
@@ -65,4 +65,41 @@ def generate_music_track_play_number(user, playlist,
                 record.play_order = idx + 1
                 record.current_track = (idx == 0)
                 record.save()
+    current_playlist_record = CustomMusicPlaylist.objects.filter(serial=playlist).first()
+    with transaction.atomic():
+        CustomMusicPlaylist.objects.filter(user=user).update(played=False)
+    if current_playlist_record:
+        current_playlist_record.played = True
+        current_playlist_record.save()
     return True
+
+def update_music_track_numbers(user, playlist, shuffle_play, order_play):
+    playlist_record = CustomMusicPlaylist.objects.filter(serial=playlist,
+                                                               user=user).first()
+    if not playlist_record:
+        return False
+    track_records = CustomMusicPlaylistRecord.objects.filter(
+        playlist=playlist_record).all()
+    current_track_record = track_records.filter(playlist=playlist_record, current_track=True).first()
+    if not current_track_record:
+        return False
+    if shuffle_play:
+        current_track_record.play_order = 1
+        current_track_record.save()
+        remaining_records = track_records.exclude(serial=current_track_record.serial)
+        records_list = list(remaining_records)
+        random.shuffle(records_list)
+        for idx, record in enumerate(records_list):
+            record.play_order = idx + 2
+            record.current_track = False
+            record.save()
+    if order_play and not shuffle_play:
+        current_track_record.play_order = 1
+        current_track_record.save()
+        remaining_records = track_records.exclude(serial=current_track_record.serial).order_by('added_date')
+        for idx, record in enumerate(remaining_records):
+            record.play_order = idx + 2
+            record.current_track = False
+            record.save()
+    return True
+    

@@ -32,10 +32,9 @@ class _RegistrationFormState extends State<RegistrationForm> {
       );
 
       if (response.statusCode == 200) {
-        Navigator.pushReplacement(
+        Navigator.of(
           context,
-          MaterialPageRoute(builder: (context) => VerificationPage()),
-        );
+        ).push(MaterialPageRoute(builder: (_) => const VerificationPage()));
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(jsonDecode(response.body)['message'])),
@@ -53,44 +52,32 @@ class _RegistrationFormState extends State<RegistrationForm> {
           TextFormField(
             controller: _usernameController,
             decoration: const InputDecoration(labelText: 'Username'),
-            validator: (value) {
-              if (value == null || value.isEmpty) {
-                return 'Please enter your username';
-              }
-              return null;
-            },
+            validator: (value) => value == null || value.isEmpty
+                ? 'Please enter your username'
+                : null,
           ),
           TextFormField(
             controller: _emailController,
             decoration: const InputDecoration(labelText: 'Email'),
-            validator: (value) {
-              if (value == null || value.isEmpty) {
-                return 'Please enter your email';
-              }
-              return null;
-            },
+            validator: (value) => value == null || value.isEmpty
+                ? 'Please enter your email'
+                : null,
           ),
           TextFormField(
             controller: _passwordController,
             decoration: const InputDecoration(labelText: 'Password'),
             obscureText: true,
-            validator: (value) {
-              if (value == null || value.isEmpty) {
-                return 'Please enter your password';
-              }
-              return null;
-            },
+            validator: (value) => value == null || value.isEmpty
+                ? 'Please enter your password'
+                : null,
           ),
           TextFormField(
             controller: _confirmPasswordController,
             decoration: const InputDecoration(labelText: 'Confirm Password'),
             obscureText: true,
-            validator: (value) {
-              if (value != _passwordController.text) {
-                return 'Passwords do not match';
-              }
-              return null;
-            },
+            validator: (value) => value != _passwordController.text
+                ? 'Passwords do not match'
+                : null,
           ),
           ElevatedButton(onPressed: _register, child: const Text('Register')),
         ],

@@ -26,6 +26,14 @@ class _LoginNavbarState extends State<LoginNavbar>
     super.dispose();
   }
 
+  Widget _buildTabNavigator(Widget child) {
+    return Navigator(
+      onGenerateRoute: (settings) {
+        return MaterialPageRoute(builder: (_) => child);
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -42,7 +50,11 @@ class _LoginNavbarState extends State<LoginNavbar>
       ),
       body: TabBarView(
         controller: _tabController,
-        children: [LoginPage(), VerificationPage(), RegistrationPage()],
+        children: [
+          _buildTabNavigator(const LoginPage()),
+          _buildTabNavigator(const VerificationPage()),
+          _buildTabNavigator(const RegistrationPage()),
+        ],
       ),
     );
   }

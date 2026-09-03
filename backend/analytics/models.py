@@ -12,6 +12,7 @@ class DataSourceUpload(models.Model):
     total_rows = models.IntegerField()
     total_columns = models.IntegerField()
     date_uploaded = models.DateTimeField(auto_now_add=True)
+    date_last_updated = models.DateTimeField(auto_now=True)
     data_cleaning_status = models.CharField(max_length=20, default='pending')
     data_cleaning_method_for_columns = models.JSONField(default=dict)
     data_cleaning_column_cleaning_value = models.JSONField(default=dict)
@@ -56,6 +57,8 @@ class DashboardItem(models.Model):
     data_item_description = models.TextField()
     data_item_created = models.BooleanField(default=False)
     data_item_failed_creation = models.BooleanField(default=False)
+    date_created = models.DateTimeField(auto_now_add=True)
+    date_updated = models.DateTimeField(auto_now=True)
     
     class Meta:
         db_table = 'dashboard_item'
@@ -166,6 +169,9 @@ class ReportSettings(models.Model):
     data_source = models.ForeignKey('DataSourceUpload', on_delete=models.CASCADE)
     report_serial = models.CharField(max_length=30, primary_key=True, unique=True)
     report_type = models.CharField(max_length=20)
+    report_name = models.CharField(max_length=40)
+    date_created = models.DateTimeField(auto_now_add=True)
+    date_last_updated = models.DateTimeField(auto_now=True)
     
     class Meta:
         db_table = 'report_settings'

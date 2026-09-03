@@ -1,24 +1,29 @@
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
-from django.http import FileResponse, HttpResponse
+from django.http import FileResponse
+from django.http import HttpResponse
+from django.http import StreamingHttpResponse
 from django.utils import timezone
 from rest_framework import status
 from django.db import connection
+from django.db import transaction
 
 import logging
 import json
 import os
 
-from functions.auth_functions import auth_check
-from functions.serial_default_generator import generate_serial_code
-from functions.create_music_player_settings import create_default_music_player_settings
-from functions.update_music_track_play_number import generate_music_track_play_number
+from functions.check_functions.auth_functions import auth_check
+from functions.check_functions.serial_default_generator import generate_serial_code
+from functions.view_functions.create_music_player_settings import create_default_music_player_settings
+from functions.view_functions.update_music_track_play_number import generate_music_track_play_number, update_music_track_numbers
+from functions.view_functions.music_streaming import resume_play_conversion, stream_audio
 
 from .queries import (get_custom_playlist_music_records_query, get_currently_playing_track_query,
-                      get_listed_track_thumbnail_query, get_active_player_track_thumbnail_query)
+                      get_listed_track_thumbnail_query, get_active_player_track_thumbnail_query,
+                      get_currently_streaming_track_query)
 from .models import (AddedFullTrackTemp, MusicTempRecord, ArtistRecord, ArtistGenres, MusicAlbumRecord,
                      MusicTrackRecord, MusicFullTrackRecord, CustomMusicPlaylist, CustomMusicPlaylistRecord,
-                     CustomMusicPlayerSettings)
+                     CustomMusicPlayerSettings, MusicPlayerHistory)
 
 logger = logging.getLogger(__name__)
 
@@ -621,7 +626,7 @@ def get_custom_music_player_settings(request):
                 settings_record = CustomMusicPlayerSettings.objects.filter(user=user).first()
             data = {
                 'serial': settings_record.serial,
-                'oder_playback': settings_record.order_playback,
+                'order_playback': settings_record.order_playback,
                 'shuffle_playback': settings_record.shuffle_playback,
             }
             return Response({"message": "Custom music player settings fetched successfully",
@@ -641,9 +646,44 @@ def get_currently_playing_track_data(request, playlist_serial):
             if 'error' in auth_response:
                 return Response({'message': f'{auth_response["error"]}'},
                                 status=status.HTTP_401_UNAUTHORIZED)
+            user = auth_response['user']
+            if request.query_params.get('track_serial'):
+                track_record = MusicTrackRecord.objects.filter(
+                    serial=request.query_params.get('track_serial')
+                ).first()
+                if not track_record:
+                    return Response({'message': 'Track record not found'},
+                                    status=status.HTTP_400_BAD_REQUEST)
+                with transaction.atomic():
+                    CustomMusicPlaylistRecord.objects.filter(
+                        playlist=playlist_serial,
+                        current_track=True
+                    ).update(current_track=False)
+                    custom_track_record = CustomMusicPlaylistRecord.objects.filter(
+                        playlist=playlist_serial,
+                        track=track_record).first()
+                    if not custom_track_record:
+                        return Response({'message': 'Custom playlist track not found'},
+                                        status=status.HTTP_400_BAD_REQUEST)
+                    custom_track_record.current_track = True
+                    custom_track_record.save()
+                return Response({'message': 'Current track updated successfully'},
+                                status=status.HTTP_200_OK)
             current_track = CustomMusicPlaylistRecord.objects.filter(
                 playlist=playlist_serial,
                 current_track=True).first()
+            if not current_track and not request.query_params.get('track_serial'):
+                play_settings = CustomMusicPlayerSettings.objects.filter(user=user).first()
+                run_music_generation = generate_music_track_play_number(
+                    user=user,
+                    playlist=playlist_serial,
+                    shuffle_play=play_settings.shuffle_playback,
+                    order_play=play_settings.order_playback,
+                    if_current_track=False,
+                    current_track_serial=None)
+                if not run_music_generation:
+                    return Response({'message': 'Failed to generate music track play number'},
+                                    status=status.HTTP_400_BAD_REQUEST)
             data = {}
             query = get_currently_playing_track_query()
             with connection.cursor() as cursor:
@@ -651,16 +691,36 @@ def get_currently_playing_track_data(request, playlist_serial):
                 columns = [col[0] for col in cursor.description]
                 row = cursor.fetchone()
                 if row:
-                    data = dict(zip(columns, row))
-                return Response({"data": data,
-                                    "message": "Currently playing track data fetched successfully"},
-                                status=status.HTTP_200_OK)
-            if not current_track:
-                return Response({'message': 'No currently playing track found',
-                                 'data': data},
-                                status=status.HTTP_200_OK)
-            return Response({"message": "Currently playing track data fetched successfully"},
-                            status=status.HTTP_200_OK)
+                    fetch = dict(zip(columns, row))
+                else:
+                    return Response({'message': 'No current track found'},
+                                    status=status.HTTP_400_BAD_REQUEST)
+            data['playlist_serial'] = playlist_serial
+            data['custom_playlist_track_serial'] = fetch.get('playlist_record_serial')
+            data['track_serial'] = fetch.get('track_serial')
+            data['track_name'] = fetch.get('track_name')
+            data['track_duration'] = fetch.get('track_duration')
+            data['track_location'] = fetch.get('track_location')
+            data['artist_name'] = fetch.get('artist_name')
+            data['album_name'] = fetch.get('album_name')
+            data['play_order'] = int(fetch.get('play_order'))
+            history = MusicPlayerHistory.objects.filter(
+                user=user,
+                custom_playlist__serial=playlist_serial,
+                track_record__serial=data['track_serial']).first()
+            if history:
+                data['track_stop_time'] = float(history.track_stop_time)
+            else:
+                data['track_stop_time'] = 0.0
+            with transaction.atomic():
+                CustomMusicPlaylistRecord.objects.exclude(
+                    playlist=playlist_serial,
+                    current_track=True
+                ).update(current_track=False)
+                return Response(
+                    {"data": data,
+                     "message": "Currently playing track data fetched successfully"},
+                    status=status.HTTP_200_OK)
         except Exception as e:
             logger.error(f"Error during fetching currently playing track data: {str(e)}")
             return Response({'message': 'Internal server error'},
@@ -681,12 +741,12 @@ def get_listed_track_thumbnails(request, playlist_serial, track_serial):
                 row = cursor.fetchone()
             if not row:
                 return Response({'message': 'Custom music playlist track not found'},
-                                status=status.HTTP_404_NOT_FOUND)
+                                status=status.HTTP_401_UNAUTHORIZED)
             album_serial, thumbnail_location = row
             file_path = os.path.join(thumbnail_location,f"{album_serial}.jpg")
             if not os.path.exists(file_path):
                 return Response({'message': 'File not found'},
-                                status=status.HTTP_404_NOT_FOUND)
+                                status=status.HTTP_401_UNAUTHORIZED)
             return FileResponse(open(file_path, 'rb'),
                                 content_type='image/jpeg',
                                 status=status.HTTP_200_OK)
@@ -704,7 +764,6 @@ def get_currently_streaming_track_thumbnail(request, playlist_serial, track_seri
             if 'error' in auth_response:
                 return Response({'message': f'{auth_response["error"]}'},
                                 status=status.HTTP_401_UNAUTHORIZED)
-            user = auth_response['user']
             query = get_active_player_track_thumbnail_query()
             with connection.cursor() as cursor:
                 cursor.execute(query, [playlist_serial, track_serial])
@@ -726,40 +785,249 @@ def get_currently_streaming_track_thumbnail(request, playlist_serial, track_seri
                             status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 @api_view(['GET'])
-def get_currently_streaming_track(request, track_serial):
-    if request.method == 'GET':
+def get_currently_streaming_track_stream_data(request, track_serial, custom_playlist_track_serial):
+    try:
+        query = get_currently_streaming_track_query()
+        with connection.cursor() as cursor:
+            cursor.execute(query, [track_serial,
+                                   custom_playlist_track_serial])
+            row = cursor.fetchone()
+        if not row:
+            return Response({'message': 'Track not found'},
+                            status=status.HTTP_400_BAD_REQUEST)
+        (
+            track_serial,
+            resolved_file_path,
+            custom_track_serial,
+            playlist_serial,
+            *_
+        ) = row
+        full_path = os.path.join(resolved_file_path, f"{track_serial}.mp3")
+        if not os.path.exists(full_path):
+            return Response({'message': 'Track file missing'},
+                            status=status.HTTP_400_BAD_REQUEST)
+        file_size = os.path.getsize(full_path)
+        bitrate_kbps = 320
+        bytes_per_second = (bitrate_kbps * 1000) / 8
+        playlist = CustomMusicPlaylist.objects.select_related(
+            'user').get(serial=playlist_serial)
+        user = playlist.user
+        range_header = request.headers.get('Range')
+        start_byte = 0
+        end_byte = file_size - 1
+        if range_header:
+            range_value = range_header.replace("bytes=", "")
+            parts = range_value.split("-")
+            start_byte = int(parts[0]) if parts[0] else 0
+            if len(parts) > 1 and parts[1]:
+                end_byte = int(parts[1])
+            status_code = status.HTTP_206_PARTIAL_CONTENT
+        else:
+            status_code = status.HTTP_200_OK
+        chunk_size = end_byte - start_byte + 1
+        start_offset_seconds = start_byte / bytes_per_second
+        def on_disconnect(bytes_sent):
+            try:
+                if bytes_sent >= chunk_size:
+                    return
+                played_seconds = bytes_sent / bytes_per_second
+                absolute_stop_time = start_offset_seconds + played_seconds
+                with transaction.atomic():
+                    MusicPlayerHistory.objects.filter(user=user).delete()
+                    serial = generate_serial_code(
+                        config_section='music',
+                        serial_key='custom_music_history_serial_code',
+                        model=MusicPlayerHistory,
+                        field_name='serial')
+                    MusicPlayerHistory.objects.create(
+                        serial=serial,
+                        user=user,
+                        custom_playlist_id=playlist_serial,
+                        custom_track_id=custom_track_serial,
+                        track_record_id=track_serial,
+                        track_stop_time=absolute_stop_time,
+                        last_played_date=timezone.now())
+            except Exception as e:
+                logger.error(f"History save error: {e}")
+        response = StreamingHttpResponse(
+            stream_audio(
+                file_path=full_path,
+                start_byte=start_byte,
+                end_byte=end_byte,
+                on_disconnect=on_disconnect),
+            status=status_code,
+            content_type='audio/mpeg')
+        response['Accept-Ranges'] = 'bytes'
+        response['Content-Length'] = str(chunk_size)
+        response['Content-Range'] = f"bytes {start_byte}-{end_byte}/{file_size}"
+        return response
+    except Exception as e:
+        logger.error(f"Streaming error: {e}")
+        return Response({'message': 'Internal server error'},
+                        status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+@api_view(['POST'])
+def update_custom_music_history(request):
+    try:
+        token = request.headers.get('Authorization')
+        auth_response = auth_check(token)
+        if 'error' in auth_response:
+            return Response({'message': f'{auth_response["error"]}'},
+                            status=status.HTTP_401_UNAUTHORIZED)
+        playlist_serial = request.data.get('playlist_serial')
+        custom_track_serial = request.data.get('custom_track_serial')
+        track_serial = request.data.get('track_serial')
+        track_stop_time = request.data.get('track_stop_time')
+        if not playlist_serial or not custom_track_serial or not track_serial:
+            return Response({'message': 'Missing required fields'},
+                            status=status.HTTP_400_BAD_REQUEST)
         try:
-            track_record = ''
-        except Exception as e:
-            logger.error(f"Error during fetching currently streaming track: {str(e)}")
-            return Response({'message': 'Internal server error'},
-                            status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            track_stop_time = float(track_stop_time)
+        except Exception:
+            track_stop_time = 0.0
+        playlist = CustomMusicPlaylist.objects.select_related('user').get(serial=playlist_serial)
+        user = playlist.user
+        with transaction.atomic():
+            MusicPlayerHistory.objects.filter(user=user).delete()
+            serial = generate_serial_code(
+                config_section='music',
+                serial_key='custom_music_history_serial_code',
+                model=MusicPlayerHistory,
+                field_name='serial')
+            MusicPlayerHistory.objects.create(
+                serial=serial,
+                user=user,
+                custom_playlist_id=playlist_serial,
+                custom_track_id=custom_track_serial,
+                track_record_id=track_serial,
+                track_stop_time=track_stop_time,
+                last_played_date=timezone.now())
+        return Response({'message': 'History saved',
+                         'data': {'track_stop_time': track_stop_time}},
+                        status=status.HTTP_200_OK)
+    except CustomMusicPlaylist.DoesNotExist:
+        return Response({'message': 'Playlist not found'},
+                        status=status.HTTP_400_BAD_REQUEST)
+    except Exception as e:
+        logger.error(f"History update error: {e}")
+        return Response({'message': 'Internal server error'},
+                        status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 @api_view(['GET'])
-def get_next_track_in_custom_playlist(request, playlist_serial, current_track_serial, current_track_number):
+def get_next_track_in_custom_playlist(request, playlist_serial, current_track_number):
     if request.method == 'GET':
         try:
-            pass
+            token = request.headers.get('Authorization')
+            auth_response = auth_check(token)
+            if 'error' in auth_response:
+                return Response({'message': f'{auth_response["error"]}'},
+                                status=status.HTTP_401_UNAUTHORIZED)
+            next_track = CustomMusicPlaylistRecord.objects.filter(
+                playlist_id=playlist_serial,
+                play_order=current_track_number + 1
+            ).first()
+            if not next_track:
+                playlist_settings = CustomMusicPlayerSettings.objects.filter(
+                    user=auth_response['user']
+                ).first()
+                if playlist_settings and playlist_settings.shuffle_playback:
+                    next_track = CustomMusicPlaylistRecord.objects.filter(
+                        playlist_id=playlist_serial,
+                        play_order=1
+                    ).first()
+                if not next_track:
+                    return Response({'message': 'No next track found in custom playlist'},
+                                    status=status.HTTP_400_BAD_REQUEST)
+            track_data = {
+                'track_serial': next_track.track.serial,
+                'play_order': next_track.play_order,
+                'track_name': next_track.track.track_name,
+                'track_duration': next_track.track.track_duration,
+                'full_track_added': next_track.track.full_track_added
+            }
+            with transaction.atomic():
+                CustomMusicPlaylistRecord.objects.filter(
+                    playlist_id=playlist_serial,
+                    current_track=True
+                ).update(current_track=False)
+                next_track.current_track = True
+                next_track.save()
+            return Response({"data": track_data,
+                             "message": "Next track data fetched successfully"},
+                            status=status.HTTP_200_OK)
         except Exception as e:
             logger.error(f"Error during fetching next track in custom playlist: {str(e)}")
             return Response({'message': 'Internal server error'},
                             status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-            
+
 @api_view(['GET'])
-def get_previous_track_in_custom_playlist(request, playlist_serial, current_track_serial, current_track_number):
+def get_previous_track_in_custom_playlist(request, playlist_serial, current_track_number):
     if request.method == 'GET':
         try:
-            pass
+            token = request.headers.get('Authorization')
+            auth_response = auth_check(token)
+            if 'error' in auth_response:
+                return Response({'message': f'{auth_response["error"]}'},
+                                status=status.HTTP_401_UNAUTHORIZED)
+            previous_track = CustomMusicPlaylistRecord.objects.select_related('track').filter(
+                playlist_id=playlist_serial,
+                play_order=(current_track_number - 1)
+            ).first()
+            if not previous_track:
+                return Response({'message': 'No previous track found in custom playlist'},
+                                status=status.HTTP_404_NOT_FOUND)
+            track_data = {
+                'track_serial': previous_track.track.serial,
+                'play_order': previous_track.play_order,
+                'track_name': previous_track.track.track_name,
+                'track_duration': previous_track.track.track_duration,
+                'full_track_added': previous_track.track.full_track_added
+            }
+            with transaction.atomic():
+                CustomMusicPlaylistRecord.objects.filter(
+                    playlist_id=playlist_serial,
+                    current_track=True
+                ).update(current_track=False)
+                previous_track.current_track = True
+                previous_track.save()
+            return Response(
+                {"data": track_data, "message": "Previous track data fetched successfully"},
+                status=status.HTTP_200_OK
+            )
         except Exception as e:
             logger.error(f"Error during fetching previous track in custom playlist: {str(e)}")
             return Response({'message': 'Internal server error'},
                             status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 @api_view(['PATCH'])
-def update_custom_music_player_settings(request):
+def update_custom_music_player_settings(request, active_playlist):
     if request.method == 'PATCH':
         try:
-            pass
+            token = request.headers.get('Authorization')
+            auth_response = auth_check(token)
+            if 'error' in auth_response:
+                return Response({'message': f'{auth_response["error"]}'},
+                                status=status.HTTP_401_UNAUTHORIZED)
+            user = auth_response['user']
+            settings_record = CustomMusicPlayerSettings.objects.filter(user=user).first()
+            if not settings_record:
+                return Response({'message': 'Custom music player settings not found'},
+                                status=status.HTTP_404_NOT_FOUND)
+            if 'order_playback' in request.data:
+                settings_record.order_playback = request.data['order_playback']
+            if 'shuffle_playback' in request.data:
+                settings_record.shuffle_playback = request.data['shuffle_playback']
+            settings_record.save()
+            update_play_order = update_music_track_numbers(
+                user=user,
+                playlist=active_playlist,
+                shuffle_play=settings_record.shuffle_playback,
+                order_play=settings_record.order_playback)
+            if not update_play_order:
+                return Response({'message': 'Failed to update play order of tracks'},
+                                status=status.HTTP_400_BAD_REQUEST)
+            return Response({"message": "Custom music player settings updated successfully"},
+                            status=status.HTTP_200_OK)
         except Exception as e:
             logger.error(f"Error during updating custom music player settings: {str(e)}")
             return Response({'message': 'Internal server error'},

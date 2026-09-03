@@ -12,7 +12,13 @@
         "file_serial_code": "AFS-XXXXXX",
         "article_tag_serial_code": "AAT-XXXXXX",
         "article_user_list_serial_code": "AUL-XXXXXX",
-        "articles_user_list_record_serial_code": "AUR-XXXXXX"
+        "articles_user_list_record_serial_code": "AUR-XXXXXX",
+        "documentation_header_serial_code": "ADH-XXXXXX",
+        "documentation_sub_header_serial_code": "ADU-XXXXXX",
+        "documentation_content_serial_code": "ADC-XXXXXX"
+    },
+    "admin": {
+        "admin_file_serial_code": "AAF-XXXXXX"
     },
     "files": {
         "folder_serial_code": "FFL-XXXXXX",
@@ -30,7 +36,8 @@
         "full_track_record_serial_code": "MFR-XXXXXX",
         "custom_music_playlist_serial_code": "MCP-XXXXXX",
         "custom_music_playlist_record_serial_code": "MCR-XXXXXX",
-        "custom_music_player_settings_serial_code": "MPS-XXXXXX"
+        "custom_music_player_settings_serial_code": "MPS-XXXXXX",
+        "custom_music_history_serial_code": "MPH-XXXXXX"
     },
     "pictures": {
         "picture_serial_code": "PPS-XXXXXX",

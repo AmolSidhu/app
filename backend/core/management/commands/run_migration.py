@@ -7,7 +7,7 @@ class Command(BaseCommand):
             'user',
             'auth',
             'contenttypes',
-            'sessions',\
+            'sessions',
             'admin',
             'pictures',
             'videos',

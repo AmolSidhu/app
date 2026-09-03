@@ -10,8 +10,8 @@ import json
 import logging
 import pandas as pd
 
-from functions.auth_functions import auth_check
-from functions.serial_default_generator import generate_serial_code
+from functions.check_functions.auth_functions import auth_check
+from functions.check_functions.serial_default_generator import generate_serial_code
 
 from .models import (
     DataSourceUpload, Dashboards, DashboardItem, DashboardTableDataLines,
@@ -673,7 +673,6 @@ def update_dashboard_item(request, dashboard_serial, dashboard_item_serial):
             logger.error(f'Error updating dashboard item: {e}')
             return Response({'message': 'Error updating dashboard item'},
                             status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
             
 @api_view(['DELETE'])
 def delete_dashboard_item(request, dashboard_serial, dashboard_item_serial):

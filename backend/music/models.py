@@ -144,10 +144,23 @@ class CustomMusicPlaylistRecord(models.Model):
     track = models.ForeignKey(MusicTrackRecord, on_delete=models.CASCADE)
     play_order = models.IntegerField(default=0, null=False)
     current_track = models.BooleanField(default=False, null=False)
-    track_play_stop_time = models.FloatField(default=0.0, null=False)
     added_date = models.DateTimeField(auto_now_add=True, null=False)
     
     class Meta:
         db_table = 'custom_music_playlist_record'
         verbose_name = 'Custom Music Playlist Record'
         verbose_name_plural = 'Custom Music Playlist Records'
+
+class MusicPlayerHistory(models.Model):
+    serial = models.CharField(max_length=100, primary_key=True, unique=True, null=False)
+    user = models.ForeignKey('user.Credentials', on_delete=models.CASCADE)
+    custom_playlist = models.ForeignKey(CustomMusicPlaylist, on_delete=models.CASCADE)
+    custom_track = models.ForeignKey(CustomMusicPlaylistRecord, on_delete=models.CASCADE)
+    track_record = models.ForeignKey(MusicTrackRecord, on_delete=models.CASCADE)
+    track_stop_time = models.FloatField(default=0.0, null=False)
+    last_played_date = models.DateTimeField(auto_now=True, null=False)
+    
+    class Meta:
+        db_table = 'music_player_history'
+        verbose_name = 'Music Player History'
+        verbose_name_plural = 'Music Player Histories'

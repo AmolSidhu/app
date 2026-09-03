@@ -37,5 +37,9 @@
   "mtg_upload_dir": "D:/bucket/main/mtg/uploads/",
   "mtg_scraper_output_dir": "D:/bucket/main/mtg/scraper_output/",
   "music_list_view_thumbnail_dir": "D:/bucket/main/music/thumbnail/list_view_thumbnail/",
-  "music_active_player_thumbnail_dir": "D:/bucket/main/music/thumbnail/active_player_thumbnail/"
+  "music_active_player_thumbnail_dir": "D:/bucket/main/music/thumbnail/active_player_thumbnail/",
+  "admin_file_upload_dir": "D:/bucket/main/admin_file/uploads/",
+  "magic_temp_files_dir": "D:/bucket/main/magic/temp_files/",
+  "magic_card_image_dir": "D:/bucket/main/magic/card_image/",
+  "mtg_json_dir": "D:/bucket/main/mtg/json/"
 }

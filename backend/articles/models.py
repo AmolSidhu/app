@@ -43,7 +43,6 @@ class JSONFileUploads(models.Model):
 class ArticleTags(models.Model):
     serial = models.CharField(max_length=100, primary_key=True, unique=True, null=False)
     main_article = models.ForeignKey(MainArticle, on_delete=models.CASCADE, related_name='tags')
-    article = models.ForeignKey(MainArticle, on_delete=models.CASCADE)
     tag = models.CharField(max_length=50, null=False)
 
     class Meta:
@@ -68,9 +67,54 @@ class MyArticleListRecords(models.Model):
     serial = models.CharField(max_length=100, primary_key=True, unique=True, null=False)
     user = models.ForeignKey('user.Credentials', on_delete=models.CASCADE)
     main_article = models.ForeignKey(MainArticle, on_delete=models.CASCADE)
-    created_at = models.DateTimeField(auto_now_add=True)
+    create_date = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         db_table = 'my_article_list_records'
         verbose_name = 'My Article List Record'
         verbose_name_plural = 'My Article List Records'
+        
+class DocumentationHeader(models.Model):
+    serial = models.CharField(max_length=100, primary_key=True, unique=True, null=False)
+    user = models.ForeignKey('user.Credentials', on_delete=models.CASCADE)
+    title = models.CharField(max_length=200, null=False)
+    description = models.TextField(null=False)
+    public = models.BooleanField(default=True)
+    create_date = models.DateTimeField(auto_now_add=True, null=False)
+    update_date = models.DateTimeField(auto_now=True, null=False)
+
+    class Meta:
+        db_table = 'documentation_header'
+        verbose_name = 'Documentation Header'
+        verbose_name_plural = 'Documentation Headers'
+        
+class DocumentationSubHeader(models.Model):
+    serial = models.CharField(max_length=100, primary_key=True, unique=True, null=False)
+    documentation_header = models.ForeignKey(DocumentationHeader, on_delete=models.CASCADE, related_name='sub_headers')
+    user = models.ForeignKey('user.Credentials', on_delete=models.CASCADE)
+    title = models.CharField(max_length=200, null=False)
+    description = models.TextField(null=False)
+    order = models.IntegerField(null=False, default=0)
+    create_date = models.DateTimeField(auto_now_add=True, null=False)
+    update_date = models.DateTimeField(auto_now=True, null=False)
+
+    class Meta:
+        db_table = 'documentation_sub_header'
+        verbose_name = 'Documentation Sub Header'
+        verbose_name_plural = 'Documentation Sub Headers'
+
+class DocumentationContent(models.Model):
+    serial = models.CharField(max_length=100, primary_key=True, unique=True, null=False)
+    documentation_header = models.ForeignKey(DocumentationHeader, on_delete=models.CASCADE, related_name='contents')
+    documentation_sub_header = models.ForeignKey(DocumentationSubHeader, on_delete=models.CASCADE, related_name='contents')
+    user = models.ForeignKey('user.Credentials', on_delete=models.CASCADE)
+    title = models.CharField(max_length=200, null=False)
+    content = models.TextField(null=False)
+    order = models.IntegerField(null=False, default=0)
+    create_date = models.DateTimeField(auto_now_add=True, null=False)
+    update_date = models.DateTimeField(auto_now=True, null=False)
+
+    class Meta:
+        db_table = 'documentation_content'
+        verbose_name = 'Documentation Content'
+        verbose_name_plural = 'Documentation Contents'

@@ -14,8 +14,8 @@ import os
 import mimetypes
 import re
 
-from functions.auth_functions import auth_check
-from functions.serial_default_generator import generate_serial_code
+from functions.check_functions.auth_functions import auth_check
+from functions.check_functions.serial_default_generator import generate_serial_code
 
 from .models import (YoutubeTempRecord, YoutubeVideoRecord, YoutubeLists, YoutubeListRecord,
                      YoutubeVideoHistory, YoutubeWatchLater, YoutubeFavourites)

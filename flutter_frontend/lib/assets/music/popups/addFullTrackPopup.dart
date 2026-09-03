@@ -2,7 +2,6 @@ import 'dart:html' as html;
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-
 import 'package:flutter_frontend/static/constants.dart';
 
 class AddFullTrackPopup extends StatefulWidget {
@@ -93,14 +92,14 @@ class _AddFullTrackPopupState extends State<AddFullTrackPopup> {
 
       if (response.statusCode == 201) {
         setState(() {
-          statusMessage = '✅ Full track added successfully';
+          statusMessage = 'Full track added successfully';
         });
       } else {
         throw Exception(responseBody);
       }
     } catch (e) {
       setState(() {
-        statusMessage = '❌ Error: $e';
+        statusMessage = 'Error: $e';
       });
     } finally {
       setState(() {
@@ -164,9 +163,10 @@ class _AddFullTrackPopupState extends State<AddFullTrackPopup> {
               Text(
                 statusMessage,
                 style: TextStyle(
-                  color: statusMessage.startsWith('✅')
+                  color:
+                      statusMessage.startsWith('Full track added successfully')
                       ? Colors.green
-                      : statusMessage.startsWith('❌')
+                      : statusMessage.startsWith('Error')
                       ? Colors.red
                       : Colors.black,
                 ),

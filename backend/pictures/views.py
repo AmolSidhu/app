@@ -8,9 +8,9 @@ from django.http import FileResponse, JsonResponse
 from secrets import token_urlsafe
 from PIL import Image, ExifTags
 
-from functions.auth_functions import auth_check
-from functions.image_functions import extract_exif_data
-from functions.search_parameters import build_picture_query_parameters
+from functions.check_functions.auth_functions import auth_check
+from functions.view_functions.image_functions import extract_exif_data
+from functions.view_functions.search_parameters import build_picture_query_parameters
 from functions.json_formats import json_image_backup, json_album_backup, custom_album_backup, json_revision_format_for_albums
 from functions.json_formats import json_revision_format_for_custom_albums, json_revision_format_for_images
 from .models import DefaultAlbums, Picture, MyAlbums, MyAlbumPictures, FavouritePictures, ImageTags, ImagePeopleTags, PictureQuery
@@ -18,7 +18,7 @@ from .queries import custom_album_data_query, favourite_pictures_query, picture_
 from core.serializer import DefaultAlbumsSerializer, MyAlbumsSerializer, PictureQuerySerializer
 from core.fetch_serializer import PictureFetchSerializer, DefaultAlbumFetchSerializer, MyAlbumsFetchSerializer
 
-from functions.serial_default_generator import generate_serial_code
+from functions.check_functions.serial_default_generator import generate_serial_code
 
 import logging
 import json

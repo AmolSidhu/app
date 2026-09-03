@@ -1,0 +1,20 @@
+{
+    "apps": [
+        "user",
+        "auth",
+        "contenttypes",
+        "sessions",
+        "admin",
+        "pictures",
+        "videos",
+        "streams",
+        "management",
+        "analytics",
+        "youtube",
+        "music",
+        "articles",
+        "files",
+        "mtg",
+        "admins"
+    ]
+}

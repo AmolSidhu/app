@@ -177,11 +177,13 @@ urlpatterns = [
     path('get/custom_music_playlist_tracks/<str:playlist_serial>/', music.views.get_custom_music_playlist_tracks, name='get_custom_music_playlist_tracks'),
     path('get/custom_music_player_settings/', music.views.get_custom_music_player_settings, name='get_custom_music_player_settings'),
     path('get/currently_playing_track_data/<str:playlist_serial>/', music.views.get_currently_playing_track_data, name='get_currently_playing_track'),
-    path('get/listed_track_thumbnails/<str:playlist_serial>/<str:track_serial>/ ', music.views.get_listed_track_thumbnails, name='get_listed_track_thumbnails'),
+    path('get/listed_track_thumbnails/<str:playlist_serial>/<str:track_serial>/', music.views.get_listed_track_thumbnails, name='get_listed_track_thumbnails'),
     path('get/currently_streaming_track_thumbnail/<str:playlist_serial>/<str:track_serial>/', music.views.get_currently_streaming_track_thumbnail, name='get_currently_stream_track_thumbnail'),
-    path('get/next_track_in_custom_playist/<str:playlist_serial>/<str:current_track_serial>/<int:current_track_number>/', music.views.get_next_track_in_custom_playlist, name='get_next_track_in_custom_playlist'),
-    path('get/previous_track_in_custom_playlist/<str:playlist_serial>/<str:current_track_serial>/<int:current_track_number>/', music.views.get_previous_track_in_custom_playlist, name='get_previous_track_in_custom_playlist'),
-    path('update/custom_music_player_settings/', music.views.update_custom_music_player_settings, name='update_custom_music_player_settings'),
+    path('get/currently_streaming_track_stream_data/<str:track_serial>/<str:custom_playlist_track_serial>/', music.views.get_currently_streaming_track_stream_data, name='get_currently_streaming_track_stream_data'),
+    path('update/custom_music_history/', music.views.update_custom_music_history, name='update_custom_music_history'),
+    path('get/next_track_in_custom_playlist/<str:playlist_serial>/<int:current_track_number>/', music.views.get_next_track_in_custom_playlist, name='get_next_track_in_custom_playlist'),
+    path('get/previous_track_in_custom_playlist/<str:playlist_serial>/<int:current_track_number>/', music.views.get_previous_track_in_custom_playlist, name='get_previous_track_in_custom_playlist'),
+    path('update/custom_music_player_settings/<str:active_playlist>/', music.views.update_custom_music_player_settings, name='update_custom_music_player_settings'),
     path('update/played_tracks/<str:playlist_serial>/<str:track_serial>/', music.views.update_played_tracks, name='update_played_tracks'),
     path('save/currently_streaming_track/<str:playlist_serial>/<str:track_serial>/', music.views.save_currently_streaming_track, name='save_currently_streaming_track'),
     
@@ -194,6 +196,10 @@ urlpatterns = [
     path('add/articles_to_my_list/<str:serial>/', articles.views.add_article_to_my_list, name='add_articles_to_my_list'),
     path('update/article/<str:serial>/', articles.views.update_article, name='update_article'),
     path('delete/article/<str:serial>/', articles.views.delete_article, name='delete_article'),
+    path('create/documentation_header/', articles.views.create_documentation_header, name='create_documentation_header'),
+    path('create/documentation_sub_header/<str:header_serial>/', articles.views.create_documentation_sub_header, name='create_documentation_sub_header'),
+    path('create/documentation_content/<str:subheader_serial>/<str:header_serial>/', articles.views.create_documentation_content, name='create_documentation_content'),
+    path('get/bulk_article_template/', articles.views.get_bulk_article_template, name='get_bulk_article_template'),
     
     # File Routes
     path('create/upload_folder/', files.views.create_upload_folder, name='create_upload_folder'),
@@ -225,6 +231,17 @@ urlpatterns = [
     path('get/scraper_status/<str:serial>/', mtg.views.get_scraper_status, name='get_scraper_status'),
     path('get/all_scraper_statuses/', mtg.views.get_all_scraper_statues, name='get_all_scraper_statuses'),
     path('trigger/mtg_f2f_scraper/<str:serial>/', mtg.views.trigger_mtg_f2f_scraper, name='trigger_mtg_f2f_scraper'),
+    path('get/magic_card_view_options/', mtg.views.get_magic_card_view_options, name='get_magic_card_view_options'),
+    path('get/magic_card_view_options_fields/', mtg.views.get_magic_card_view_options_fields, name='get_magic_card_view_options_fields'),
+    path('update/magic_card_view_options/', mtg.views.update_magic_card_view_options, name='update_magic_card_view_options'),
+    path('get/magic_card_all_view_options/', mtg.views.get_magic_card_all_view_options, name='get_magic_card_all_view_options'),
+    path('get/magic_card_view_filters/', mtg.views.get_magic_card_view_filters, name='get_magic_card_view_filters'),
+    path('reset/magic_card_view_options/', mtg.views.reset_magic_card_view_options, name='reset_magic_card_view_options'),
+    path('get/magic_card_data/', mtg.views.get_magic_card_data, name='get_magic_card_data'),
+    path('get/magic_card_image/<str:serial>/', mtg.views.get_magic_card_image, name='get_magic_card_image'),
+    path('get/magic_card_json/<str:serial>/', mtg.views.get_magic_card_json, name='get_magic_card_json'),
+    path('get/magic_card_legalities/<str:serial>/', mtg.views.get_magic_card_legalities, name='get_magic_card_legalities'),
+    path('get/magic_card_prices/<str:serial>/', mtg.views.get_magic_card_prices, name='get_magic_card_prices'),
     
     # Admins Routes
     path('admins/login/', admins.views.admin_login, name='admin_login'),
@@ -232,4 +249,6 @@ urlpatterns = [
     path('admins/video_request_options/', admins.views.video_request_options, name='video_request_options'),
     path('admins/video_requests/<str:status_filter>/', admins.views.video_requests, name='video_requests'),
     path('admins/review_video_request/<str:serial>/', admins.views.review_video_request, name='review_video_request'),
+    path('admins/add/admin_file_record/', admins.views.add_admin_file_record, name='add_admin_file_record'),
+    path('admins/get/admin_file_options/', admins.views.get_admin_file_options, name='get_admin_file_options'),
 ]

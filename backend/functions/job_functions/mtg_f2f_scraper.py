@@ -36,11 +36,11 @@ def mtg_f2f_scraper(file_path, serial, output_serial, output_path):
     try:
         df = pd.read_csv(path)
     except Exception as e:
-        print(f"[ERROR] Could not read input file {path}: {e}")
+        print(f"Could not read input file {path}: {e}")
         return
 
     if 'Links' not in df.columns:
-        print(f"[ERROR] Input file {path} must contain a 'Links' column.")
+        print(f"Input file {path} must contain a 'Links' column.")
         return
 
     f2f_df = pd.DataFrame()
@@ -55,12 +55,12 @@ def mtg_f2f_scraper(file_path, serial, output_serial, output_path):
                     if results.status_code == 200:
                         break
                     else:
-                        print(f"[WARN] Non-200 ({results.status_code}) for {link}, retrying...")
+                        print(f"({results.status_code}) for {link}, retrying...")
                 except requests.exceptions.RequestException as e:
-                    print(f"[WARN] Request failed ({e}), retrying...")
+                    print(f"Request failed ({e}), retrying...")
                 time.sleep(1.5)
             else:
-                print(f"[ERROR] Failed to fetch {link} after 3 attempts.")
+                print(f"Failed to fetch {link} after 3 attempts.")
                 continue
 
             soup = bs4.BeautifulSoup(results.text, 'lxml')
@@ -98,7 +98,7 @@ def mtg_f2f_scraper(file_path, serial, output_serial, output_path):
                             elif svg_id == "Groupe_3321":
                                 legality_dict[label] = False
                     except Exception as inner_e:
-                        print(f"[WARN] Error parsing legality div: {inner_e}")
+                        print(f"Error parsing legality div: {inner_e}")
 
             prices = price_block.find_all("div", class_="f2f-featured-variant")
             near_mint_price = lightly_played_price = "N/A"
@@ -141,11 +141,11 @@ def mtg_f2f_scraper(file_path, serial, output_serial, output_path):
             time.sleep(1.03)
 
         except Exception as e:
-            print(f"[ERROR] Error processing {link}: {e}")
+            print(f"Error processing {link}: {e}")
             continue
 
     output_dir = output_path + output_serial + '.csv'
     try:
         f2f_df.to_csv(output_dir, index=False, encoding='utf-8-sig')
     except Exception as e:
-        print(f"[ERROR] Failed to save CSV to {output_dir}: {e}")
+        print(f"Failed to save CSV to {output_dir}: {e}")

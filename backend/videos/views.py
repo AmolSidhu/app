@@ -19,9 +19,9 @@ from .queries import (get_video_list_query, get_video_by_genre_query, get_recent
                       get_video_search_query, get_record_data, video_search_query,
                       get_custom_video_list_records_query, get_favourite_videos_query)
 
-from functions.auth_functions import auth_check
-from functions.search_parameters import build_video_query_parameters
-from functions.serial_default_generator import generate_serial_code
+from functions.check_functions.auth_functions import auth_check
+from functions.view_functions.search_parameters import build_video_query_parameters
+from functions.check_functions.serial_default_generator import generate_serial_code
 from core.serializer import TempVideoSerializer, VideoQuerySerializer, CustomVideoListSerializer
 
 logger = logging.getLogger(__name__)

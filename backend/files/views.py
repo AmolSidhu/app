@@ -11,9 +11,9 @@ import mimetypes
 import json
 import os
 
-from functions.auth_functions import auth_check
-from functions.generate_share_code import generate_share_code
-from functions.serial_default_generator import generate_serial_code
+from functions.check_functions.auth_functions import auth_check
+from functions.check_functions.generate_share_code import generate_share_code
+from functions.check_functions.serial_default_generator import generate_serial_code
 
 from .models import ShareFolder, ShareFile
 

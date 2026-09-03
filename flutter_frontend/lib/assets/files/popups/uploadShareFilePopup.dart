@@ -59,7 +59,6 @@ class _UploadShareFilePopupState extends State<UploadShareFilePopup> {
 
       request.headers['Authorization'] = token ?? '';
 
-      // File
       request.files.add(
         http.MultipartFile.fromBytes(
           'file',

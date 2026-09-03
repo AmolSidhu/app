@@ -141,3 +141,28 @@ def start_resize_album_playlist_thumbnails():
     scheduler = BackgroundScheduler()
     scheduler.add_job(job.resize_album_playlist_thumbnails, 'interval', minutes=1, max_instances=1, coalesce=True)
     scheduler.start()
+
+def start_process_admin_file_uploads():
+    scheduler = BackgroundScheduler()
+    scheduler.add_job(job.process_admin_file_upload, 'interval', minutes=1, max_instances=1, coalesce=True)
+    scheduler.start()
+    
+def start_handle_processed_admin_files():
+    scheduler = BackgroundScheduler()
+    scheduler.add_job(job.handle_processed_admin_file, 'interval', minutes=1, max_instances=1, coalesce=True)
+    scheduler.start()
+    
+def start_create_mtg_database():
+    scheduler = BackgroundScheduler()
+    scheduler.add_job(job.create_mtg_database, 'interval', minutes=1, max_instances=1, coalesce=True)
+    scheduler.start()
+    
+def start_handle_processed_mtg_temp_files():
+    scheduler = BackgroundScheduler()
+    scheduler.add_job(job.handle_processed_mtg_temp_files, 'interval', minutes=1, max_instances=1, coalesce=True)
+    scheduler.start()
+    
+def start_handle_failed_mtg_temp_files():
+    scheduler = BackgroundScheduler()
+    scheduler.add_job(job.handle_failed_mtg_temp_files, 'interval', minutes=1, max_instances=1, coalesce=True)
+    scheduler.start()

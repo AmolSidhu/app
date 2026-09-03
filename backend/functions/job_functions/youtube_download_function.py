@@ -4,8 +4,18 @@ from io import BytesIO
 from PIL import Image
 import yt_dlp
 import logging
+from urllib.parse import urlparse, parse_qs
 
 logger = logging.getLogger(__name__)
+
+def extract_clean_youtube_url(url):
+    parsed = urlparse(url)
+    qs = parse_qs(parsed.query)
+    video_id = qs.get("v", [""])[0]
+
+    if not video_id:
+        return url
+    return f"https://www.youtube.com/watch?v={video_id}"
 
 def process_youtube_video(
     video_url,
@@ -14,6 +24,7 @@ def process_youtube_video(
     serial=None,
     thumbnail_output_dir=None
 ):
+    clean_url = extract_clean_youtube_url(video_url)
 
     os.makedirs(video_output_dir, exist_ok=True)
     os.makedirs(thumbnail_output_dir, exist_ok=True)
@@ -47,9 +58,9 @@ def process_youtube_video(
 
     try:
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            info_dict = ydl.extract_info(video_url, download=True)
+            info_dict = ydl.extract_info(clean_url, download=True)
     except Exception as e:
-        logger.error(f"yt-dlp failed: {video_url} | Error: {e}")
+        logger.error(f"yt-dlp failed: {clean_url} | Error: {e}")
         return None
 
     title = info_dict.get("title", "Unknown Title")
@@ -120,4 +131,5 @@ def process_youtube_video(
         "media_type": media_type,
         "tags": tags,
         "categories": categories,
+        "youtube_link": clean_url,
     }

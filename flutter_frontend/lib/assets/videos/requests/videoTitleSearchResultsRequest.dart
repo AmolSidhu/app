@@ -67,9 +67,7 @@ class _VideoTitleSearchResultsRequestState
           if (thumbResponse.statusCode == 200) {
             thumbnailBytes = thumbResponse.bodyBytes;
           }
-        } catch (_) {
-          // Ignore thumbnail errors
-        }
+        } catch (_) {}
 
         enrichedVideos.add({...video, 'thumbnail': thumbnailBytes});
       }

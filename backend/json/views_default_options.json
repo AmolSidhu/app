@@ -1,0 +1,330 @@
+{
+    "magic_cards": {
+        "card_name": {
+            "user_view": "Card Name",
+            "field_name": "card_name",
+            "data_type": "string",
+            "queryable": true,
+            "orderable": true,
+            "data_in_table": true,
+            "filters": [
+                "eq",
+                "ne",
+                "has"
+            ]
+        },
+        "release_date": {
+            "user_view": "Release Date",
+            "field_name": "release_date",
+            "data_type": "string",
+            "queryable": false,
+            "orderable": true,
+            "data_in_table": true,
+            "filters": null
+        },
+        "mana_cost": {
+            "user_view": "Mana Cost",
+            "field_name": "mana_cost",
+            "data_type": "string",
+            "queryable": true,
+            "orderable": false,
+            "data_in_table": true,
+            "filters": [
+                "eq",
+                "ne",
+                "has"
+            ]
+        },
+        "cmc": {
+            "user_view": "CMC",
+            "field_name": "cmc",
+            "data_type": "float",
+            "queryable": true,
+            "orderable": true,
+            "data_in_table": true,
+            "filters": [
+                "eq",
+                "ne",
+                "gt",
+                "gte",
+                "lt",
+                "lte"
+            ]
+        },
+        "type_line": {
+            "user_view": "Type Line",
+            "field_name": "type_line",
+            "data_type": "string",
+            "queryable": false,
+            "orderable": false,
+            "data_in_table": true,
+            "filters": null
+        },
+        "oracle_text": {
+            "user_view": "Oracle Text",
+            "field_name": "oracle_text",
+            "data_type": "string",
+            "queryable": false,
+            "orderable": false,
+            "data_in_table": true,
+            "filters": null
+        },
+        "colours": {
+            "user_view": "Colours",
+            "field_name": "colours",
+            "data_type": "boolean",
+            "queryable": true,
+            "orderable": false,
+            "data_in_table": true,
+            "filters": [
+                "bool"
+            ]
+        },
+        "colour_identity": {
+            "user_view": "Colour Identity",
+            "field_name": "colour_identity",
+            "data_type": "boolean",
+            "queryable": true,
+            "orderable": false,
+            "data_in_table": true,
+            "filters": [
+                "bool"
+            ]
+        },
+        "reserved": {
+            "user_view": "Reserved",
+            "field_name": "reserved",
+            "data_type": "boolean",
+            "queryable": true,
+            "orderable": true,
+            "data_in_table": true,
+            "filters": [
+                "bool"
+            ]
+        },
+        "keywords": {
+            "user_view": "Keywords",
+            "field_name": "keywords",
+            "data_type": "json",
+            "queryable": true,
+            "orderable": false,
+            "data_in_table": true,
+            "filters": [
+                "has",
+                "con"
+            ]
+        },
+        "legalities": {
+            "user_view": "Legalities",
+            "field_name": "legalities",
+            "data_type": "json",
+            "queryable": false,
+            "orderable": false,
+            "data_in_table": false,
+            "filters": null
+        },
+        "foil": {
+            "user_view": "Foil",
+            "field_name": "foil",
+            "data_type": "boolean",
+            "queryable": true,
+            "orderable": true,
+            "data_in_table": true,
+            "filters": [
+                "bool"
+            ]
+        },
+        "non_foil": {
+            "user_view": "Non-Foil",
+            "field_name": "non_foil",
+            "data_type": "boolean",
+            "queryable": true,
+            "orderable": true,
+            "data_in_table": true,
+            "filters": [
+                "bool"
+            ]
+        },
+        "set_name": {
+            "user_view": "Set Name",
+            "field_name": "set_name",
+            "data_type": "string",
+            "queryable": true,
+            "orderable": true,
+            "data_in_table": true,
+            "filters": [
+                "eq",
+                "ne",
+                "has"
+            ]
+        },
+        "collector_number": {
+            "user_view": "Collector Number",
+            "field_name": "collector_number",
+            "data_type": "string",
+            "queryable": false,
+            "orderable": true,
+            "data_in_table": true,
+            "filters": null
+        },
+        "rarity": {
+            "user_view": "Rarity",
+            "field_name": "rarity",
+            "data_type": "string",
+            "queryable": true,
+            "orderable": true,
+            "data_in_table": true,
+            "filters": [
+                "eq",
+                "ne",
+                "has"
+            ]
+        },
+        "prices": {
+            "user_view": "Prices",
+            "field_name": "prices",
+            "data_type": "json",
+            "queryable": false,
+            "orderable": false,
+            "data_in_table": false,
+            "filters": null
+        },
+        "power": {
+            "user_view": "Power",
+            "field_name": "power",
+            "data_type": "string",
+            "queryable": true,
+            "orderable": true,
+            "data_in_table": true,
+            "filters": [
+                "eq",
+                "ne",
+                "gt",
+                "gte",
+                "lt",
+                "lte"
+            ]
+        },
+        "toughness": {
+            "user_view": "Toughness",
+            "field_name": "toughness",
+            "data_type": "string",
+            "queryable": true,
+            "orderable": true,
+            "data_in_table": true,
+            "filters": [
+                "eq",
+                "ne",
+                "gt",
+                "gte",
+                "lt",
+                "lte"
+            ]
+        },
+        "flavor_text": {
+            "user_view": "Flavor Text",
+            "field_name": "flavor_text",
+            "data_type": "string",
+            "queryable": false,
+            "orderable": false,
+            "data_in_table": true,
+            "filters": null
+        },
+        "edh_rank": {
+            "user_view": "EDH Rank",
+            "field_name": "edh_rank",
+            "data_type": "integer",
+            "queryable": false,
+            "orderable": true,
+            "data_in_table": true,
+            "filters": null
+        },
+        "penny_rank": {
+            "user_view": "Penny Rank",
+            "field_name": "penny_rank",
+            "data_type": "integer",
+            "queryable": false,
+            "orderable": true,
+            "data_in_table": true
+        },
+        "promo_types": {
+            "user_view": "Promo Types",
+            "field_name": "promo_types",
+            "data_type": "json",
+            "queryable": false,
+            "orderable": false,
+            "data_in_table": true,
+            "filters": null
+        },
+        "loyalty": {
+            "user_view": "Loyalty",
+            "field_name": "loyalty",
+            "data_type": "string",
+            "queryable": true,
+            "orderable": true,
+            "data_in_table": true,
+            "filters": [
+                "eq",
+                "ne",
+                "gt",
+                "gte",
+                "lt",
+                "lte"
+            ]
+        },
+        "life_modifier": {
+            "user_view": "Life Modifier",
+            "field_name": "life_modifier",
+            "data_type": "float",
+            "queryable": false,
+            "orderable": false,
+            "data_in_table": true,
+            "filters": null
+        },
+        "produced_mana": {
+            "user_view": "Produced Mana",
+            "field_name": "produced_mana",
+            "data_type": "json",
+            "queryable": false,
+            "orderable": false,
+            "data_in_table": true,
+            "filters": null
+        },
+        "hand_modifier": {
+            "user_view": "Hand Modifier",
+            "field_name": "hand_modifier",
+            "data_type": "string",
+            "queryable": false,
+            "orderable": false,
+            "data_in_table": true,
+            "filters": null
+        },
+        "defense": {
+            "user_view": "Defense",
+            "field_name": "defense",
+            "data_type": "float",
+            "queryable": false,
+            "orderable": false,
+            "data_in_table": true,
+            "filters": null
+        },
+        "card_image": {
+            "user_view": "Card Image",
+            "field_name": "card_image",
+            "data_type": "image",
+            "queryable": false,
+            "orderable": false,
+            "data_in_table": false,
+            "filters": null
+        },
+        "json_data": {
+            "user_view": "JSON Data",
+            "field_name": "json_data",
+            "data_type": "file",
+            "queryable": false,
+            "orderable": false,
+            "data_in_table": false,
+            "filters": null
+        }
+    }
+}

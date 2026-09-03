@@ -3,7 +3,7 @@ from django.db import models
 class Identifier(models.Model):
     identifier = models.CharField(max_length=12, unique=True, primary_key=True, null=False)
     current_status = models.CharField(max_length=100, null=True)
-    created = models.DateTimeField(auto_now_add=True, null=False)
+    create_date = models.DateTimeField(auto_now_add=True, null=False)
     last_updated = models.DateTimeField(auto_now=True, null=False)
     title = models.CharField(max_length=100, null=True)
     json_location = models.CharField(max_length=300, null=True)

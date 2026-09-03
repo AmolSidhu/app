@@ -33,7 +33,6 @@ class _CreateDashboardItemPopupState extends State<CreateDashboardItemPopup> {
 
   Map<String, dynamic> columnsMeta = {};
 
-  // Graph
   String graphType = 'bar';
   String cleaningMethod = 'drop_duplicates';
   List<String> columns = [];
@@ -43,7 +42,6 @@ class _CreateDashboardItemPopupState extends State<CreateDashboardItemPopup> {
   String xAxisTitle = '';
   String yAxisTitle = '';
 
-  // Table
   List<Map<String, dynamic>> dataLines = [
     {
       'column_order': 1,
@@ -54,7 +52,6 @@ class _CreateDashboardItemPopupState extends State<CreateDashboardItemPopup> {
     },
   ];
 
-  // Text
   String textHeader = '';
   String textBody = '';
 
@@ -69,8 +66,6 @@ class _CreateDashboardItemPopupState extends State<CreateDashboardItemPopup> {
   bool isNumeric(String col) => columnsMeta.values.any(
     (e) => e[0] == col && (e[1] == 'int64' || e[1] == 'float64'),
   );
-
-  /* ------------------ API ------------------ */
 
   Future<void> createItem() async {
     if (itemOrder.isEmpty) {
@@ -154,8 +149,6 @@ class _CreateDashboardItemPopupState extends State<CreateDashboardItemPopup> {
       setState(() => error = 'Failed to submit item data');
     }
   }
-
-  /* ------------------ UI ------------------ */
 
   @override
   Widget build(BuildContext context) {
@@ -296,8 +289,6 @@ class _CreateDashboardItemPopupState extends State<CreateDashboardItemPopup> {
       textField('Body', (v) => textBody = v, multiline: true),
     ],
   );
-
-  /* ------------------ Helpers ------------------ */
 
   Widget textField(
     String label,

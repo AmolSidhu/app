@@ -13,7 +13,7 @@ import mimetypes
 import re
 
 from .queries import next_previous_episode_query, video_suggestion_query
-from functions.auth_functions import auth_check
+from functions.check_functions.auth_functions import auth_check
 from videos.models import VideoRecord, VideoHistory
 
 logger = logging.getLogger(__name__)

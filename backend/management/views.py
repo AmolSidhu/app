@@ -10,7 +10,7 @@ import logging
 import json
 
 from .queries import get_uploaded_video_record_query, picture_upload_data_query
-from functions.auth_functions import auth_check, token_generator
+from functions.check_functions.auth_functions import auth_check, token_generator
 from functions.json_formats import json_revision_format_for_images
 from videos.models import Video, VideoRecord, VideoTags, VideoDirectors, VideoStars, VideoWriters, VideoCreators
 from pictures.models import Picture, ImageTags, ImagePeopleTags
@@ -621,7 +621,7 @@ def get_server_metadata(request):
                             status=status.HTTP_200_OK)
         except Exception as e:
             logging.error(f"Error during server metadata retrieval: {str(e)}")
-            return Response({'message': 'Internal server error'},
+            return Response({'error': f'Internal server error: {str(e)}'},
                             status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 @api_view(['GET'])

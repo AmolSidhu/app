@@ -1,6 +1,6 @@
 from django.core.management.base import BaseCommand
 from user.models import Credentials, AdminCredentials
-from functions.generate_share_code import generate_share_code
+from functions.check_functions.generate_share_code import generate_share_code
 
 class Command(BaseCommand):
     def handle(self, *args, **options):

@@ -1,11 +1,12 @@
 {
-    "version": "1.6.10",
+    "version": "1.7.02",
     "enviroment": "development",
     "database": "postgresql",
     "other_requirements": [
         "ffmpeg",
-        "wkhtmltox"
+        "wkhtmltox",
+        "caddy"
     ],
-    "selenium_driver_version": "Edge V-18",
-    "last_updated": "2025-11-01"
+    "selenium_driver_version": "Edge V-19",
+    "last_updated": "2026-08-31"
 }

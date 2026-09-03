@@ -86,7 +86,7 @@ def imdb_scraper(imdb_link, serial, identifier=False):
     try:
         is_tv_series = json_data['props']['pageProps']['aboveTheFoldData']['titleType']['isSeries']
     except Exception as e:
-        print(f"Error determining if it is a TV series: {e}")
+        print(f"Error determining if series: {e}")
         is_tv_series = False
 
     release_year = None

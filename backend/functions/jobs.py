@@ -3,6 +3,7 @@ from django.utils import timezone
 from collections import defaultdict
 from secrets import token_urlsafe
 from PIL import Image
+from decimal import Decimal
 
 import numpy as np
 import pandas as pd
@@ -10,6 +11,7 @@ import subprocess
 import logging
 import shutil
 import librosa
+import uuid
 import json
 import cv2
 import os
@@ -27,18 +29,24 @@ from youtube.models import YoutubeTempRecord, YoutubeVideoRecord, YoutubeListRec
 from music.models import (MusicTempRecord, ArtistRecord, ArtistGenres, MusicAlbumRecord, MusicTrackRecord,
                           MusicFullTrackRecord, AddedFullTrackTemp)
 from analytics.models import DataSourceUpload, Dashboards, DashboardItem, DashboardTableDataLines, DashboardGraphData
-from mtg.models import ScraperUploadFile, ScraperOutputFile
+from mtg.models import (ScraperUploadFile, ScraperOutputFile, MagicCards, MagicTempFiles, MagicCardsView,
+                        MagicCardLegalities, MagicCardPrices, MagicCardKeywords, MagicCardUris, MagicCardMiscData,
+                        CompletedTempFilesLog)
 from pictures.models import PictureQuery
-from .scraper import imdb_scraper
-from .youtube_download_function import process_youtube_video
+from admins.models import AdminFileRecord
+from .job_functions.scraper import imdb_scraper
+from .job_functions.youtube_download_function import process_youtube_video
 from .json_formats import json_imdb_video_record, json_music_artist_record, json_music_album_record
-from .music_api import get_spotify_music_data, get_apple_music_data
-from .create_graphs import generate_basic_graph
-from .create_table import create_table
-from .serial_default_generator import generate_serial_code
-from .mtg_f2f_scraper import mtg_f2f_scraper
-from .youtube_mp3_downloader import youtube_mp3_downloader
-from .music_track_check import compare_tracks
+from .job_functions.music_api import get_spotify_music_data, get_apple_music_data
+from .job_functions.create_graphs import generate_basic_graph
+from .job_functions.create_table import create_table
+from .check_functions.serial_default_generator import generate_serial_code
+from .job_functions.mtg_f2f_scraper import mtg_f2f_scraper
+from .job_functions.youtube_mp3_downloader import youtube_mp3_downloader
+from .job_functions.music_track_check import compare_tracks
+from .job_functions.admin_file_verification import chunk_magic_data_file
+from .job_functions.create_mtg_records import magic_image_downloader
+from .job_functions.mtg_data_sorters import legalities_sorter, prices_sorter, magic_color_identifier
 
 logger = logging.getLogger(__name__)
 
@@ -1479,29 +1487,31 @@ def parse_article_json_file():
 def validate_scraper_links():
     finished = False
     while not finished:
-        try:
             scraper_record = ScraperUploadFile.objects.filter(
                 status='validating').first()
             if scraper_record is None:
                 finished = True
                 break
-            
-            path = scraper_record.file_location + scraper_record.serial + '.csv'
-            df = pd.read_csv(path)
-            
-            for link in df['Links']:
-                if not link.startswith('https://www.face2facegames.com/'):
-                    scraper_record.status = 'failed validation'
-                    scraper_record.save()
-                    break
-                else:
-                    continue
+
+            try:
+                path = scraper_record.file_location + scraper_record.serial + '.csv'
+                df = pd.read_csv(path)
                 
-            scraper_record.status = 'validated'
-            scraper_record.save()
+                for link in df['Links']:
+                    if not link.startswith('https://www.face2facegames.com/'):
+                        scraper_record.status = 'failed validation'
+                        scraper_record.save()
+                        break
+                    else:
+                        continue
+                    
+                scraper_record.status = 'validated'
+                scraper_record.save()
             
-        except Exception as e:
-            logger.error(f"Error validating scraper links: {str(e)}")
+            except Exception as e:
+                scraper_record.status = 'failed validation'
+                scraper_record.save()
+                logger.error(f"Error validating scraper links: {str(e)}")
 
 def run_scraper_jobs():
     finished = False
@@ -1540,16 +1550,16 @@ def run_scraper_jobs():
 def resize_album_playlist_thumbnails():
     finished = False
     while not finished:
+        album_record = MusicAlbumRecord.objects.filter(
+            album_thumbnail_resized=False,
+            album_thumbnail_resize_failed=False
+        ).first()
+        
+        if album_record is None:
+            finished = True
+            break
+        
         try:
-            album_record = MusicAlbumRecord.objects.filter(
-                album_thumbnail_resized=False,
-                album_thumbnail_resize_failed=False
-            ).first()
-
-            if album_record is None:
-                finished = True
-                break
-
             original_image_path = (
                 album_record.album_image_location + f"{album_record.serial}.jpg"
             )
@@ -1604,3 +1614,546 @@ def resize_album_playlist_thumbnails():
             logger.error(f"Error resizing album and playlist thumbnails: {str(e)}")
             album_record.album_thumbnail_resize_failed = True
             album_record.save()
+
+def process_admin_file_upload():
+    finished = False
+    while not finished:
+        admin_file_record = AdminFileRecord.objects.filter(record_status='uploaded',
+                                                           file_validated=False,
+                                                           processed=False).first()
+        try:
+            if admin_file_record is None:
+                finished = True
+                break
+            if admin_file_record.process == 'mtg_card_source':
+                if admin_file_record.file_type == '.jsonl':
+                    source_file = os.path.join(
+                        admin_file_record.file_location,
+                        f"{admin_file_record.serial}{admin_file_record.file_type}"
+                    )
+                    create_chunks = chunk_magic_data_file(file_path=source_file, chunk_size=500)
+                    
+                    if create_chunks is not True:
+                        admin_file_record.record_status = 'processing_failed'
+                        admin_file_record.processed = True
+                        admin_file_record.save()
+                        continue
+                
+                else:
+                    admin_file_record.record_status = 'invalid_file_type'
+                    admin_file_record.processed = True
+                    admin_file_record.save()
+                    continue
+                
+            else:
+                admin_file_record.record_status = 'unknown_process'
+                admin_file_record.processed = True
+                admin_file_record.save()
+                continue
+            
+            admin_file_record.file_validated = True
+            admin_file_record.record_status = 'validated'
+            admin_file_record.save()
+
+        except Exception as e:
+            logger.error(f"Error processing admin file upload: {str(e)}")
+
+def handle_processed_admin_file():
+    pass
+
+def create_mtg_database():
+    finished = False
+
+    while not finished:
+        mtg_temp_file = MagicTempFiles.objects.filter(file_status='pending').first()
+
+        if mtg_temp_file is None:
+            finished = True
+            break
+
+        try:
+            mtg_file = os.path.join(
+                mtg_temp_file.file_location,
+                f"{mtg_temp_file.file_name}{mtg_temp_file.file_extension}"
+            )
+
+            with open(mtg_file, 'r') as f:
+                cards = json.load(f)
+
+            with open('json/directory.json', 'r') as f:
+                directory = json.load(f)
+
+            image_dir = directory['magic_card_image_dir']
+            json_dir = directory['mtg_json_dir']
+            os.makedirs(image_dir, exist_ok=True)
+            os.makedirs(json_dir, exist_ok=True)
+
+            for card in cards:
+                try:
+                    if MagicCards.objects.filter(card_id=card['id']).exists():
+                        update_legalities = card.get('legalities')
+                        new_sorted_legalities = legalities_sorter(update_legalities)
+                        legalities_record = MagicCardLegalities.objects.filter(
+                            card=card['id']).first()
+                        
+                        legalities_record.duel = new_sorted_legalities.get('duel')
+                        legalities_record.brawl = new_sorted_legalities.get('brawl')
+                        legalities_record.penny = new_sorted_legalities.get('penny')
+                        legalities_record.predh = new_sorted_legalities.get('predh')
+                        legalities_record.future = new_sorted_legalities.get('future')
+                        legalities_record.legacy = new_sorted_legalities.get('legacy')
+                        legalities_record.modern = new_sorted_legalities.get('modern')
+                        legalities_record.pauper = new_sorted_legalities.get('pauper')
+                        legalities_record.alchemy = new_sorted_legalities.get('alchemy')
+                        legalities_record.pioneer = new_sorted_legalities.get('pioneer')
+                        legalities_record.vintage = new_sorted_legalities.get('vintage')
+                        legalities_record.historic = new_sorted_legalities.get('historic')
+                        legalities_record.standard = new_sorted_legalities.get('standard')
+                        legalities_record.timeless = new_sorted_legalities.get('timeless')
+                        legalities_record.commander = new_sorted_legalities.get('commander')
+                        legalities_record.gladiator = new_sorted_legalities.get('gladiator')
+                        legalities_record.oldschool = new_sorted_legalities.get('oldschool')
+                        legalities_record.premodern = new_sorted_legalities.get('premodern')
+                        legalities_record.oathbreaker = new_sorted_legalities.get('oathbreaker')
+                        legalities_record.standardbrawl = new_sorted_legalities.get('standardbrawl')
+                        legalities_record.paupercommander = new_sorted_legalities.get('paupercommander')
+                        legalities_record.update_date = timezone.now()
+                        legalities_record.save()
+                        
+                        update_prices = card.get('prices')
+                        new_sorted_prices = prices_sorter(update_prices)
+                        prices_record = MagicCardPrices.objects.filter(
+                            card=card['id']).first()
+                        
+                        prices_record.eur_price = new_sorted_prices.get('eur')
+                        prices_record.tix_price = new_sorted_prices.get('tix')
+                        prices_record.usd_price = new_sorted_prices.get('usd')
+                        prices_record.eur_foil_price = new_sorted_prices.get('eur_foil')
+                        prices_record.usd_foil_price = new_sorted_prices.get('usd_foil')
+                        prices_record.usd_etched_price = new_sorted_prices.get('usd_etched')
+                        prices_record.update_date = timezone.now()
+                        prices_record.save()
+
+                    front_url = None
+                    back_url = None
+
+                    if card.get("card_faces"):
+                        faces = card["card_faces"]
+                        front_url = faces[0].get("image_uris", {}).get("png")
+                        if len(faces) > 1:
+                            back_url = faces[1].get("image_uris", {}).get("png")
+
+                    if not front_url:
+                        front_url = card.get("image_uris", {}).get("png")
+                    
+                    try:
+                        add_image = magic_image_downloader(
+                            image_url=front_url,
+                            image_url_back=back_url,
+                            output_path=image_dir,
+                            serial=card['id']
+                        )
+                        image_added = True
+                        
+                    except Exception as e:
+                        logger.error(f"Error downloading image for card {card['id']}: {str(e)}")
+                        image_added = False
+
+                    back_exists = back_url is not None
+                    back_serial = f"{card['id']}_1" if back_exists else None
+
+                    cmc_value = card.get('cmc')
+                    if isinstance(cmc_value, Decimal):
+                        cmc_value = float(cmc_value)
+
+                    data = {
+                        "card_object": card.get('object'),
+                        "oracle_id": card.get('oracle_id'),
+                        "multiverse_ids": card.get('multiverse_ids'),
+                        "mtgo_id": card.get('mtgo_id'),
+                        "arena_id": card.get('arena_id'),
+                        "tcgplayer_id": card.get('tcgplayer_id'),
+                        "cardmarket_id": card.get('cardmarket_id'),
+                        "card_name": card.get('name'),
+                        "language": card.get('lang'),
+                        "released_at": card.get('released_at'),
+                        "card_uri": card.get('uri'),
+                        "scryfall_uri": card.get('scryfall_uri'),
+                        "layout": card.get('layout'),
+                        "highres_image": card.get('highres_image'),
+                        "image_status": card.get('image_status'),
+                        "image_uris": card.get('image_uris'),
+                        "mana_cost": card.get('mana_cost'),
+                        "cmc": cmc_value,
+                        "type_line": card.get('type_line'),
+                        "oracle_text": card.get('oracle_text'),
+                        "colors": card.get('colors'),
+                        "color_identity": card.get('color_identity'),
+                        "keywords": card.get('keywords'),
+                        "legalities": card.get('legalities'),
+                        "games": card.get('games'),
+                        "produced_mana": card.get('produced_mana'),
+                        "reserved": card.get('reserved'),
+                        "game_changer": card.get('game_changer'),
+                        "foil": card.get('foil'),
+                        "non_foil": card.get('nonfoil'),
+                        "finishes": card.get('finishes'),
+                        "oversized": card.get('oversized'),
+                        "promo": card.get('promo'),
+                        "reprint": card.get('reprint'),
+                        "variation": card.get('variation'),
+                        "set_id": card.get('set_id'),
+                        "set_code": card.get('set'),
+                        "set_name": card.get('set_name'),
+                        "set_type": card.get('set_type'),
+                        "set_uri": card.get('set_uri'),
+                        "set_search_uri": card.get('set_search_uri'),
+                        "scryfall_set_uri": card.get('scryfall_set_uri'),
+                        "rulings_uri": card.get('rulings_uri'),
+                        "prints_search_uri": card.get('prints_search_uri'),
+                        "collector_number": card.get('collector_number'),
+                        "digital": card.get('digital'),
+                        "rarity": card.get('rarity'),
+                        "card_back_id": card.get('card_back_id'),
+                        "artist": card.get('artist'),
+                        "artist_ids": card.get('artist_ids'),
+                        "illustration_id": card.get('illustration_id'),
+                        "border_color": card.get('border_color'),
+                        "frame": card.get('frame'),
+                        "full_art": card.get('full_art'),
+                        "textless": card.get('textless'),
+                        "booster": card.get('booster'),
+                        "story_spotlight": card.get('story_spotlight'),
+                        "prices": card.get('prices'),
+                        "related_uris": card.get('related_uris'),
+                        "purchase_uris": card.get('purchase_uris'),
+                        "mtgo_foil_id": card.get('mtgo_foil_id'),
+                        "power": card.get('power'),
+                        "toughness": card.get('toughness'),
+                        "flavor_text": card.get('flavor_text'),
+                        "edhrec_rank": card.get('edhrec_rank'),
+                        "penny_rank": card.get('penny_rank'),
+                        "printed_name": card.get('printed_name'),
+                        "printed_type_line": card.get('printed_type_line'),
+                        "printed_text": card.get('printed_text'),
+                        "security_stamp": card.get('security_stamp'),
+                        "all_parts": card.get('all_parts'),
+                        "promo_types": card.get('promo_types'),
+                        "loyalty": card.get('loyalty'),
+                        "watermark": card.get('watermark'),
+                        "frame_effects": card.get('frame_effects'),
+                        "card_faces": card.get('card_faces'),
+                        "preview": card.get('preview'),
+                        "resource_id": card.get('resource_id'),
+                        "color_indicator": card.get('color_indicator'),
+                        "tcgplayer_etched_id": card.get('tcgplayer_etched_id'),
+                        "content_warning": card.get('content_warning'),
+                        "flavor_name": card.get('flavor_name'),
+                        "attraction_lights": card.get('attraction_lights'),
+                        "variation_of": card.get('variation_of'),
+                        "life_modifier": card.get('life_modifier'),
+                        "hand_modifier": card.get('hand_modifier'),
+                        "defense": card.get('defense'),
+                        "image_added": image_added,
+                        "image_dir": image_dir,
+                        "back_exists": back_exists,
+                        "back_serial": back_serial,
+                        "json_dir": json_dir,
+                    }
+
+                    card_json = {"card_id": card['id']}
+                    for key, value in data.items():
+                        if isinstance(value, Decimal):
+                            card_json[key] = float(value)
+                        elif hasattr(value, "isoformat"):
+                            card_json[key] = value.isoformat()
+                        else:
+                            card_json[key] = value
+
+                    data["card_json"] = card_json
+
+                    new_card, created = MagicCards.objects.update_or_create(
+                        card_id=card['id'], 
+                        defaults=data)
+                    new_card.save()
+
+                    with open(os.path.join(json_dir, f"{card['id']}.json"), 'w') as json_file:
+                        json.dump(card, json_file, indent=4)
+                        
+                    colors = card.get('colors')
+                    get_colors = magic_color_identifier(colors)
+                    color_identity = card.get('color_identity')
+                    get_color_identity = magic_color_identifier(color_identity)
+                        
+                    new_card_view = MagicCardsView.objects.create(
+                        card_id = new_card.card_id,
+                        oracle_id = new_card.oracle_id,
+                        card_name = new_card.card_name,
+                        release_date = new_card.released_at,
+                        mana_cost = new_card.mana_cost,
+                        cmc = new_card.cmc,
+                        type_line = new_card.type_line,
+                        oracle_text = new_card.oracle_text,
+                        colour_white = get_colors.get('W'),
+                        colour_blue = get_colors.get('U'),
+                        colour_black = get_colors.get('B'),
+                        colour_red = get_colors.get('R'),
+                        colour_green = get_colors.get('G'),
+                        colour_colourless = get_colors.get('C'),
+                        colour_identity_white = get_color_identity.get('W'),
+                        colour_identity_blue = get_color_identity.get('U'),
+                        colour_identity_black = get_color_identity.get('B'),
+                        colour_identity_red = get_color_identity.get('R'),
+                        colour_identity_green = get_color_identity.get('G'),
+                        colour_identity_colourless = get_color_identity.get('C'),
+                        reserved = new_card.reserved,
+                        keywords = new_card.keywords,
+                        foil = new_card.foil,
+                        non_foil = new_card.non_foil,
+                        set_name = new_card.set_name,
+                        set_type = new_card.set_type,
+                        collector_number = new_card.collector_number,
+                        rarity = new_card.rarity,
+                        power = new_card.power,
+                        toughness = new_card.toughness,
+                        flavor_text = new_card.flavor_text,
+                        edh_rank = new_card.edhrec_rank,
+                        penny_rank = new_card.penny_rank,
+                        promo_types = new_card.promo_types,
+                        loyalty = new_card.loyalty,
+                        life_modifier = new_card.life_modifier,
+                        produced_mana = new_card.produced_mana,
+                        hand_modifier = new_card.hand_modifier,
+                        defense = new_card.defense,
+                        back_exists = new_card.back_exists,
+                        back_serial = new_card.back_serial,
+                        image_dir = new_card.image_dir,
+                        image_added = new_card.image_added,
+                        json_dir = new_card.json_dir,
+                        create_date = timezone.now(),
+                        update_date = timezone.now()
+                    )
+                    new_card_view.save()
+                    
+                    keywords = card.get('keywords')
+                    for keyword in keywords:
+                        serial = uuid.uuid1()
+                        MagicCardKeywords.objects.create(
+                            serial=serial,
+                            card=new_card_view,
+                            keyword=keyword,
+                            create_date = timezone.now(),
+                            update_date = timezone.now()
+                        ).save()
+                    
+                    legalities = card.get('legalities')
+                    sorted_legalities = legalities_sorter(legalities)
+                    legalities_serial = uuid.uuid1()
+                    
+                    new_legalities_record = MagicCardLegalities.objects.create(
+                        serial=legalities_serial,
+                        card=new_card_view,
+                        duel =sorted_legalities.get('duel'),
+                        brawl = sorted_legalities.get('brawl'),
+                        penny = sorted_legalities.get('penny'),
+                        predh = sorted_legalities.get('predh'),
+                        future = sorted_legalities.get('future'),
+                        legacy = sorted_legalities.get('legacy'),
+                        modern = sorted_legalities.get('modern'),
+                        pauper = sorted_legalities.get('pauper'),
+                        alchemy = sorted_legalities.get('alchemy'),
+                        pioneer = sorted_legalities.get('pioneer'),
+                        vintage = sorted_legalities.get('vintage'),
+                        historic = sorted_legalities.get('historic'),
+                        standard = sorted_legalities.get('standard'),
+                        timeless = sorted_legalities.get('timeless'),
+                        commander = sorted_legalities.get('commander'),
+                        gladiator = sorted_legalities.get('gladiator'),
+                        oldschool = sorted_legalities.get('oldschool'),
+                        premodern = sorted_legalities.get('premodern'),
+                        oathbreaker = sorted_legalities.get('oathbreaker'),
+                        standardbrawl = sorted_legalities.get('standardbrawl'),
+                        paupercommander = sorted_legalities.get('paupercommander'),
+                        create_date = timezone.now(),
+                        update_date = timezone.now()
+                    )
+                    new_legalities_record.save()
+                    
+                    card_prices = card.get('prices')
+                    sorted_card_prices = prices_sorter(card_prices)
+                    prices_serial = uuid.uuid1()
+                    
+                    new_card_price_record = MagicCardPrices.objects.create(
+                        serial = prices_serial,
+                        card = new_card_view,
+                        eur_price = sorted_card_prices.get('eur'),
+                        tix_price = sorted_card_prices.get('tix'),
+                        usd_price = sorted_card_prices.get('usd'),
+                        eur_foil_price = sorted_card_prices.get('eur_foil'),
+                        usd_foil_price = sorted_card_prices.get('usd_foil'),
+                        usd_etched_price = sorted_card_prices.get('usd_etched'),
+                        create_date = timezone.now(),
+                        update_date = timezone.now()
+                    )
+                    new_card_price_record.save()
+                    
+                    uris_serial = uuid.uuid1()
+                    
+                    magic_uris = MagicCardUris.objects.create(
+                        serial = uris_serial,
+                        card = new_card_view,
+                        card_uri = new_card.card_uri,
+                        scryfall_uri = new_card.scryfall_uri,
+                        set_uri = new_card.set_uri,
+                        set_search_uri = new_card.set_search_uri,
+                        scryfall_set_uri = new_card.scryfall_set_uri,
+                        rulings_uri = new_card.rulings_uri,
+                        prints_search_uri = new_card.prints_search_uri,
+                        related_uris = new_card.related_uris,
+                        purchase_uris = new_card.purchase_uris,
+                        image_uris = new_card.image_uris,
+                        create_date = timezone.now(),
+                        update_date = timezone.now()
+                    )
+                    magic_uris.save()
+                    
+                    misc_serial = uuid.uuid1()
+                    
+                    magic_cards_misc = MagicCardMiscData.objects.create(
+                        serial = misc_serial,
+                        card = new_card_view,
+                        multiverse_ids = new_card.multiverse_ids,
+                        arena_id = new_card.arena_id,
+                        tcgplayer_id = new_card.tcgplayer_id,
+                        cardmarket_id = new_card.cardmarket_id,
+                        language = new_card.language,
+                        layout = new_card.layout,
+                        highres_image = new_card.highres_image,
+                        image_status = new_card.image_status,
+                        games = new_card.games,
+                        finishes = new_card.finishes,
+                        oversized = new_card.oversized,
+                        promo = new_card.promo,
+                        reprint = new_card.reprint,
+                        variation = new_card.variation,
+                        set_code = new_card.set_code,
+                        digital = new_card.digital,
+                        artist = new_card.artist,
+                        artist_ids = new_card.artist_ids,
+                        illustration_id = new_card.illustration_id,
+                        border_color = new_card.border_color,
+                        frame = new_card.frame,
+                        full_art = new_card.full_art,
+                        textless = new_card.textless,
+                        booster = new_card.booster,
+                        story_spotlight = new_card.story_spotlight,
+                        mtgo_foil_id = new_card.mtgo_foil_id,
+                        printed_name = new_card.printed_name,
+                        printed_type_line = new_card.printed_type_line,
+                        printed_text = new_card.printed_text,
+                        security_stamp = new_card.security_stamp,
+                        promo_types = new_card.promo_types,
+                        watermark = new_card.watermark,
+                        frame_effects = new_card.frame_effects,
+                        card_faces = new_card.card_faces,
+                        preview = new_card.preview,
+                        resource_id = new_card.resource_id,
+                        color_indicator = new_card.color_indicator,
+                        tcgplayer_etched_id = new_card.tcgplayer_etched_id,
+                        content_warning = new_card.content_warning,
+                        flavor_name = new_card.flavor_name,
+                        attraction_lights = new_card.attraction_lights,
+                        variation_of = new_card.variation_of,
+                        create_date = timezone.now(),
+                        update_date = timezone.now()
+                    )
+                    magic_cards_misc.save()
+
+                    mtg_temp_file.file_status = 'processed'
+                    mtg_temp_file.save()
+            
+                except Exception as e:
+                    logger.error(f"Error processing MTG temp file {card}: {str(e)}")
+                
+
+        except Exception as e:
+            mtg_temp_file.file_status = 'failed'
+            mtg_temp_file.failed_status = True
+            mtg_temp_file.save()
+            logger.error(f"Error creating MTG database: {str(e)}")
+            
+def handle_processed_mtg_temp_files():
+    finished = False
+    while not finished:
+        mtg_processed_temp_file = MagicTempFiles.objects.filter(
+            file_status='processed').first()
+
+        if mtg_processed_temp_file is None:
+            finished = True
+            break
+        
+        try:
+            file_location = os.path.join(
+                mtg_processed_temp_file.file_location,
+                f"{mtg_processed_temp_file.file_name}{mtg_processed_temp_file.file_extension}"
+            )
+            if os.path.exists(file_location):
+                os.remove(file_location)
+                
+            create_completed_magic_record = CompletedTempFilesLog.objects.create(
+                serial=str(uuid.uuid4()),
+                file_name = mtg_processed_temp_file.file_name,
+                file_location = mtg_processed_temp_file.file_location,
+                file_extension = mtg_processed_temp_file.file_extension,
+                process_status = 'completed - passed',
+                run_number = mtg_processed_temp_file.run_number,
+                create_date = timezone.now()
+            )
+            create_completed_magic_record.save()
+            
+            mtg_processed_temp_file.delete()
+
+        except:
+            mtg_processed_temp_file.file_status = 'failed post processing'
+            mtg_processed_temp_file.update_date = timezone.now()
+            mtg_processed_temp_file.save()
+
+def handle_failed_mtg_temp_files():
+    finished = False
+    while not finished:
+        mtg_failed_temp_file = MagicTempFiles.objects.filter(
+            file_status='failed').first()
+
+        if mtg_failed_temp_file is None:
+            finished = True
+            break
+        
+        try:
+            file_location = os.path.join(
+                mtg_failed_temp_file.file_location,
+                f"{mtg_failed_temp_file.file_name}{mtg_failed_temp_file.file_extension}"
+            )
+            if os.path.exists(file_location):
+                os.remove(file_location)
+                
+            create_failed_magic_record = CompletedTempFilesLog.objects.create(
+                serial=str(uuid.uuid4()),
+                file_name = mtg_failed_temp_file.file_name,
+                file_location = mtg_failed_temp_file.file_location,
+                file_extension = mtg_failed_temp_file.file_extension,
+                process_status = 'completed - failed',
+                run_number = mtg_failed_temp_file.run_number,
+                create_date = timezone.now()
+            )
+            create_failed_magic_record.save()
+            
+            mtg_failed_temp_file.delete()
+
+        except Exception as e:
+            mtg_failed_temp_file.file_status = 'failed post processing'
+            mtg_failed_temp_file.update_date = timezone.now()
+            mtg_failed_temp_file.save()
+
+        if mtg_failed_temp_file is None:
+            finished = True
+            break

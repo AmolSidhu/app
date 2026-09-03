@@ -31,18 +31,7 @@ class _ViewDashboardsRequestState extends State<ViewDashboardsRequest> {
   @override
   void initState() {
     super.initState();
-    _checkAuthAndLoad();
-  }
-
-  Future<void> _checkAuthAndLoad() async {
-    final token = await _storage.read(key: 'token');
-    if (token == null) {
-      if (mounted) {
-        Navigator.pushReplacementNamed(context, '/login');
-      }
-      return;
-    }
-    await fetchDashboards();
+    fetchDashboards();
   }
 
   Future<void> fetchDashboards() async {
@@ -106,10 +95,10 @@ class _ViewDashboardsRequestState extends State<ViewDashboardsRequest> {
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (_) => CreateDashboardItemPopup(
+      builder: (dialogContext) => CreateDashboardItemPopup(
         dashboardSerial: serial,
         onClose: () {
-          Navigator.pop(context);
+          Navigator.of(dialogContext).pop();
           fetchDashboardItems(serial);
           setState(() => activeDashboardSerial = null);
         },
@@ -126,11 +115,11 @@ class _ViewDashboardsRequestState extends State<ViewDashboardsRequest> {
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (_) => UpdateDashboardItemPopup(
+      builder: (dialogContext) => UpdateDashboardItemPopup(
         dashboardSerial: dashboardSerial,
         dashboardItemSerial: itemSerial,
         onClose: () {
-          Navigator.pop(context);
+          Navigator.of(dialogContext).pop();
           fetchDashboardItems(dashboardSerial);
           setState(() {
             activeDashboardSerial = null;

@@ -1,5 +1,6 @@
-import 'package:flutter_frontend/authGate.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_frontend/authGate.dart';
+import 'package:flutter_frontend/static/mainNavbar.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -11,6 +12,14 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const MaterialApp(home: AuthGate());
+    return MaterialApp(
+      builder: (context, child) {
+        return Navigator(
+          key: MainNavbar.rootNav,
+          onGenerateRoute: (_) => MaterialPageRoute(builder: (_) => child!),
+        );
+      },
+      home: const AuthGate(),
+    );
   }
 }

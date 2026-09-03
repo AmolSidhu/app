@@ -28,10 +28,9 @@ class _VerificationFormState extends State<VerificationForm> {
       );
 
       if (response.statusCode == 200) {
-        Navigator.pushReplacement(
+        Navigator.of(
           context,
-          MaterialPageRoute(builder: (context) => const LoginPage()),
-        );
+        ).push(MaterialPageRoute(builder: (_) => const LoginPage()));
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(jsonDecode(response.body)['message'])),

@@ -1,5 +1,5 @@
 from music.models import CustomMusicPlayerSettings
-from .serial_default_generator import generate_serial_code
+from ..check_functions.serial_default_generator import generate_serial_code
 
 def create_default_music_player_settings(user):
     existing_settings = CustomMusicPlayerSettings.objects.filter(user=user).first()
@@ -16,6 +16,7 @@ def create_default_music_player_settings(user):
     new_settings_record = CustomMusicPlayerSettings.objects.create(
         serial=serial,
         user=user,
+        order_playback=True,
     )
     
     new_settings_record.save()

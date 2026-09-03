@@ -1,6 +1,6 @@
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
-from django.http import HttpResponse
+from django.http import FileResponse
 from django.utils import timezone
 from rest_framework import status
 
@@ -8,10 +8,11 @@ import logging
 import json
 import os
 
-from functions.auth_functions import auth_check
-from functions.serial_default_generator import generate_serial_code
+from functions.check_functions.auth_functions import auth_check
+from functions.check_functions.serial_default_generator import generate_serial_code
 
-from .models import MainArticle, MassUploadFiles, ArticleTags, MyArticleList, MyArticleListRecords
+from .models import (MainArticle, MassUploadFiles, ArticleTags, MyArticleList, MyArticleListRecords,
+                     DocumentationHeader, DocumentationSubHeader, DocumentationContent)
 from .queries import get_article_tag_search_query, get_article_title_search_query
 
 logger = logging.getLogger(__name__)
@@ -50,7 +51,6 @@ def create_single_article(request):
                 article_tag = ArticleTags(
                     serial=serial,
                     main_article=new_article,
-                    article=new_article,
                     tag=tag
                 )
                 article_tag.save()
@@ -174,7 +174,7 @@ def create_articles_list(request):
                             status=status.HTTP_201_CREATED)
         except Exception as e:
             logger.error(f"Error creating articles list: {e}")
-            return Response({"message": "Failed to create articles list"},
+            return Response({"error": "Failed to create articles list"},
                             status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 @api_view(['POST'])
@@ -187,12 +187,12 @@ def add_article_to_my_list(request, article_serial, list_serial):
                 return auth['error']
             article = MainArticle.objects.filter(serial=article_serial).first()
             if not article:
-                return Response({"message": "Article not found"},
+                return Response({"error": "Article not found"},
                                 status=status.HTTP_404_NOT_FOUND)
             my_list = MyArticleList.objects.filter(serial=list_serial,
                                                    user=auth['user']).first()
             if not my_list:
-                return Response({"message": "My Article List not found"},
+                return Response({"error": "My Article List not found"},
                                 status=status.HTTP_404_NOT_FOUND)
             serial = generate_serial_code(
                 config_section='articles',
@@ -211,7 +211,7 @@ def add_article_to_my_list(request, article_serial, list_serial):
                             status=status.HTTP_200_OK)
         except Exception as e:
             logger.error(f"Error adding article to my list: {e}")
-            return Response({"message": "Failed to add article to your list"},
+            return Response({"error": "Failed to add article to your list"},
                             status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 @api_view(['PATCH'])
@@ -261,4 +261,225 @@ def delete_article(request, article_serial):
         except Exception as e:
             logger.error(f"Error deleting article: {e}")
             return Response({"message": "Failed to delete article"},
+                            status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+@api_view(['POST'])
+def create_documentation_header(request):
+    if request.method == 'POST':
+        try:
+            token = request.headers.get('Authorization')
+            auth = auth_check(token)
+            if 'error' in auth:
+                return auth['error']
+            serial = generate_serial_code(
+                config_section='articles',
+                serial_key='documentation_header_serial_code',
+                model=DocumentationHeader,
+                field_name='serial'
+            )
+            create_header = DocumentationHeader(
+                serial=serial,
+                user=auth['user'],
+                title=request.data.get('title', 'New Documentation'),
+                description=request.data.get('description', ''),
+                public=request.data.get('public', False),
+                create_date=timezone.now(),
+                update_date=timezone.now()
+            )
+            create_header.save()
+            return Response({"message": "Documentation header created successfully"},
+                            status=status.HTTP_201_CREATED)
+        except Exception as e:
+            logger.error(f"Error creating documentation header: {e}")
+            return Response({"message": "Failed to create documentation"},
+                            status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+@api_view(['POST'])
+def create_documentation_sub_header(request, header_serial):
+    if request.method == 'POST':
+        try:
+            token = request.headers.get('Authorization')
+            auth = auth_check(token)
+            if 'error' in auth:
+                return auth['error']
+            header = DocumentationHeader.objects.filter(serial=header_serial).first()
+            if not header:
+                return Response({"message": "Documentation header not found"},
+                                status=status.HTTP_400_BAD_REQUEST)
+            serial = generate_serial_code(
+                config_section='articles',
+                serial_key='documentation_sub_header_serial_code',
+                model=DocumentationSubHeader,
+                field_name='serial'
+            )
+            create_sub_header = DocumentationSubHeader(
+                serial=serial,
+                documentation_header=header,
+                user=auth['user'],
+                title=request.data.get('title', 'New Sub Header'),
+                description=request.data.get('description', ''),
+                order=request.data.get('order', 0),
+                create_date=timezone.now(),
+                update_date=timezone.now()
+            )
+            create_sub_header.save()
+            return Response({"message": "Documentation sub header created successfully"},
+                            status=status.HTTP_201_CREATED)
+        except Exception as e:
+            logger.error(f"Error creating documentation section: {e}")
+            return Response({"message": "Failed to create documentation section"},
+                            status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+@api_view(['POST'])
+def create_documentation_content(request, subheader_serial, header_serial):
+    if request.method == 'POST':
+        try:
+            token = request.headers.get('Authorization')
+            auth = auth_check(token)
+            if 'error' in auth:
+                return auth['error']
+            sub_header = DocumentationSubHeader.objects.filter(serial=subheader_serial,
+                                                               documentation_header=header_serial
+                                                               ).first()
+            if not sub_header:
+                return Response({"message": "Documentation sub header not found"},
+                                status=status.HTTP_400_BAD_REQUEST)
+            serial = generate_serial_code(
+                config_section='articles',
+                serial_key='documentation_content_serial_code',
+                model=DocumentationContent,
+                field_name='serial'
+            )
+            create_content = DocumentationContent(
+                serial=serial,
+                documentation_header_id=header_serial,
+                documentation_sub_header_id=subheader_serial,
+                user=auth['user'],
+                title =request.data.get('title', 'New Content'),
+                content = request.data.get('content', ''),
+                order=request.data.get('order', 0),
+                create_date=timezone.now(),
+                update_date=timezone.now()
+            )
+            create_content.save()
+            return Response({"message": "Documentation content created successfully"},
+                            status=status.HTTP_201_CREATED)
+        except Exception as e:
+            logger.error(f"Error creating documentation content: {e}")
+            return Response({"error": "Failed to create documentation content"},
+                            status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            
+@api_view(['GET'])
+def get_documentation_headers(request):
+    if request.method == 'GET':
+        try:
+            token = request.headers.get('Authorization')
+            auth = auth_check(token)
+            if 'error' in auth:
+                return auth['error']
+            all_headers = DocumentationHeader.objects.filter(
+                user=auth['user']).order_by('-create_date')
+            data = []
+            for header in all_headers:
+                data.append({
+                    "serial": header.serial,
+                    "title": header.title,
+                    "description": header.description
+                })
+            return Response({"headers": data,
+                            "message": "Documentation headers retrieved successfully"},
+                            status=status.HTTP_200_OK)
+        except Exception as e:
+            logger.error(f"Error getting documentation headers: {e}")
+            return Response({"error": "Failed to get documentation headers"},
+                            status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+@api_view(['GET'])
+def get_documentation_header(request, header_serial):
+    if request.method == 'GET':
+        try:
+            pass
+        except Exception as e:
+            logger.error(f"Error getting documentation header: {e}")
+            return Response({"error": "Failed to get documentation header"},
+                            status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            
+@api_view(['GET'])
+def get_documentation_sub_headers(request, header_serial):
+    if request.method == 'GET':
+        try:
+            pass
+        except Exception as e:
+            logger.error(f"Error getting documentation sub headers: {e}")
+            return Response({"error": "Failed to get documentation sub headers"},
+                            status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+@api_view(['GET'])
+def get_documentation_contents(request, subheader_serial, header_serial):
+    if request.method == 'GET':
+        try:
+            pass
+        except Exception as e:
+            logger.error(f"Error getting documentation contents: {e}")
+            return Response({"error": "Failed to get documentation contents"},
+                            status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+@api_view(['PATCH'])
+def update_documentation_header(request, header_serial):
+    if request.method == 'PATCH':
+        try:
+            pass
+        except Exception as e:
+            logger.error(f"Error updating documentation header: {e}")
+            return Response({"error": "Failed to update documentation header"},
+                            status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+@api_view(['PATCH'])
+def update_documentation_sub_header(request, subheader_serial, header_serial):
+    if request.method == 'PATCH':
+        try:
+            pass
+        except Exception as e:
+            logger.error(f"Error updating documentation sub header: {e}")
+            return Response({"error": "Failed to update documentation sub header"},
+                            status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+@api_view(['PATCH'])
+def update_documentation_content(request, content_serial, subheader_serial, header_serial):
+    if request.method == 'PATCH':
+        try:
+            pass
+        except Exception as e:
+            logger.error(f"Error updating documentation content: {e}")
+            return Response({"error": "Failed to update documentation content"},
+                            status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            
+@api_view(['GET'])
+def get_bulk_article_template(request):
+    if request.method == 'GET':
+        try:
+            token = request.headers.get('Authorization')
+            auth = auth_check(token)
+            if 'error' in auth:
+                return auth['error']
+            base = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+            with open('json/templates_dir.json', 'r') as f:
+                templates_dir = json.load(f)
+            template = templates_dir['articles']['bulk_article_template']
+            template_path = os.path.join(base, template)
+            if not os.path.exists(template_path):
+                return Response({"error": f"Template file not found at {template_path}"},
+                                status=status.HTTP_404_NOT_FOUND)
+            file = open(template_path, 'rb')
+            response = FileResponse(
+                file,
+                as_attachment=True,
+                filename='bulk_articles_template.json',
+                content_type='application/json',
+                status=status.HTTP_200_OK
+            )
+            return response
+        except Exception as e:
+            logger.error(f"Error downloading bulk article template: {e}")
+            return Response({"error": "Failed to download bulk article template"},
                             status=status.HTTP_500_INTERNAL_SERVER_ERROR)

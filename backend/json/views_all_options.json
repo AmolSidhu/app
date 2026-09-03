@@ -1,0 +1,708 @@
+{
+    "magic_cards": {
+        "card_object": {
+            "user_view": "Card Object",
+            "db_view": "card_object",
+            "data_type": "string",
+            "default": false,
+            "queryable": false,
+            "orderable": false
+        },
+        "card_id": {
+            "user_view": "Card ID",
+            "db_view": "card_id",
+            "data_type": "string",
+            "default": false,
+            "queryable": false,
+            "orderable": false
+        },
+        "oracle_id": {
+            "user_view": "Oracle ID",
+            "db_view": "oracle_id",
+            "data_type": "string",
+            "default": false,
+            "queryable": false,
+            "orderable": false
+        },
+        "multiverse_ids": {
+            "user_view": "Multiverse IDs",
+            "db_view": "multiverse_ids",
+            "data_type": "json",
+            "default": false,
+            "queryable": false,
+            "orderable": false
+        },
+        "mtgo_id": {
+            "user_view": "MTGO ID",
+            "db_view": "mtgo_id",
+            "data_type": "integer",
+            "default": false,
+            "queryable": false,
+            "orderable": false
+        },
+        "arena_id": {
+            "user_view": "Arena ID",
+            "db_view": "arena_id",
+            "data_type": "integer",
+            "default": false,
+            "queryable": false,
+            "orderable": false
+        },
+        "tcgplayer_id": {
+            "user_view": "TCGPlayer ID",
+            "db_view": "tcgplayer_id",
+            "data_type": "integer",
+            "default": false,
+            "queryable": false,
+            "orderable": false
+        },
+        "cardmarket_id": {
+            "user_view": "CardMarket ID",
+            "db_view": "cardmarket_id",
+            "data_type": "integer",
+            "default": false,
+            "queryable": false,
+            "orderable": false
+        },
+        "card_name": {
+            "user_view": "Card Name",
+            "db_view": "card_name",
+            "data_type": "string",
+            "default": true,
+            "queryable": true,
+            "orderable": true
+        },
+        "language": {
+            "user_view": "Language",
+            "db_view": "language",
+            "data_type": "string",
+            "default": false,
+            "queryable": false,
+            "orderable": true
+        },
+        "released_at": {
+            "user_view": "Release Date",
+            "db_view": "released_at",
+            "data_type": "date",
+            "default": true,
+            "queryable": true,
+            "orderable": true
+        },
+        "card_uri": {
+            "user_view": "Card URI",
+            "db_view": "card_uri",
+            "data_type": "string",
+            "default": false,
+            "queryable": false,
+            "orderable": false
+        },
+        "scryfall_uri": {
+            "user_view": "Scryfall URI",
+            "db_view": "scryfall_uri",
+            "data_type": "string",
+            "default": false,
+            "queryable": false,
+            "orderable": false
+        },
+        "layout": {
+            "user_view": "Layout",
+            "db_view": "layout",
+            "data_type": "string",
+            "default": false,
+            "queryable": false,
+            "orderable": false
+        },
+        "highres_image": {
+            "user_view": "High Resolution Image",
+            "db_view": "highres_image",
+            "data_type": "boolean",
+            "default": false,
+            "queryable": false,
+            "orderable": false
+        },
+        "image_status": {
+            "user_view": "Image Status",
+            "db_view": "image_status",
+            "data_type": "string",
+            "default": false,
+            "queryable": false,
+            "orderable": false
+        },
+        "image_uris": {
+            "user_view": "Image URIs",
+            "db_view": "image_uris",
+            "data_type": "json",
+            "default": false,
+            "queryable": false,
+            "orderable": false
+        },
+        "mana_cost": {
+            "user_view": "Mana Cost",
+            "db_view": "mana_cost",
+            "data_type": "string",
+            "default": true,
+            "queryable": true,
+            "orderable": true
+        },
+        "cmc": {
+            "user_view": "Converted Mana Cost",
+            "db_view": "cmc",
+            "data_type": "float",
+            "default": true,
+            "queryable": true,
+            "orderable": true
+        },
+        "type_line": {
+            "user_view": "Type Line",
+            "db_view": "type_line",
+            "data_type": "string",
+            "default": true,
+            "queryable": true,
+            "orderable": true
+        },
+        "oracle_text": {
+            "user_view": "Oracle Text",
+            "db_view": "oracle_text",
+            "data_type": "string",
+            "default": true,
+            "queryable": false,
+            "orderable": false
+        },
+        "colors": {
+            "user_view": "Colors",
+            "db_view": "colors",
+            "data_type": "json",
+            "default": true,
+            "queryable": true,
+            "orderable": true
+        },
+        "color_identity": {
+            "user_view": "Color Identity",
+            "db_view": "color_identity",
+            "data_type": "json",
+            "default": true,
+            "queryable": true,
+            "orderable": true
+        },
+        "keywords": {
+            "user_view": "Keywords",
+            "db_view": "keywords",
+            "data_type": "json",
+            "default": true,
+            "queryable": false,
+            "orderable": true
+        },
+        "legalities": {
+            "user_view": "Legalities",
+            "db_view": "legalities",
+            "data_type": "json",
+            "default": true,
+            "queryable": false,
+            "orderable": false
+        },
+        "games": {
+            "user_view": "Games",
+            "db_view": "games",
+            "data_type": "json",
+            "default": false,
+            "queryable": false,
+            "orderable": false
+        },
+        "produced_mana": {
+            "user_view": "Produced Mana",
+            "db_view": "produced_mana",
+            "data_type": "json",
+            "default": false,
+            "queryable": false,
+            "orderable": true
+        },
+        "reserved": {
+            "user_view": "Reserved List",
+            "db_view": "reserved",
+            "data_type": "boolean",
+            "default": false,
+            "queryable": false,
+            "orderable": false
+        },
+        "game_changer": {
+            "user_view": "Game Changer",
+            "db_view": "game_changer",
+            "data_type": "boolean",
+            "default": false,
+            "queryable": false,
+            "orderable": false
+        },
+        "foil": {
+            "user_view": "Foil",
+            "db_view": "foil",
+            "data_type": "boolean",
+            "default": false,
+            "queryable": false,
+            "orderable": true
+        },
+        "non_foil": {
+            "user_view": "Non-Foil",
+            "db_view": "non_foil",
+            "data_type": "boolean",
+            "default": false,
+            "queryable": false,
+            "orderable": true
+        },
+        "finishes": {
+            "user_view": "Finishes",
+            "db_view": "finishes",
+            "data_type": "json",
+            "default": false,
+            "queryable": false,
+            "orderable": false
+        },
+        "oversized": {
+            "user_view": "Oversized",
+            "db_view": "oversized",
+            "data_type": "boolean",
+            "default": false,
+            "queryable": false,
+            "orderable": false
+        },
+        "promo": {
+            "user_view": "Promo",
+            "db_view": "promo",
+            "data_type": "boolean",
+            "default": false,
+            "queryable": false,
+            "orderable": false
+        },
+        "reprint": {
+            "user_view": "Reprint",
+            "db_view": "reprint",
+            "data_type": "boolean",
+            "default": false,
+            "queryable": true,
+            "orderable": true
+        },
+        "variation": {
+            "user_view": "Variation",
+            "db_view": "variation",
+            "data_type": "boolean",
+            "default": false,
+            "queryable": true,
+            "orderable": false
+        },
+        "set_id": {
+            "user_view": "Set ID",
+            "db_view": "set_id",
+            "data_type": "string",
+            "default": false,
+            "queryable": false,
+            "orderable": false
+        },
+        "set_code": {
+            "user_view": "Set Code",
+            "db_view": "set_code",
+            "data_type": "string",
+            "default": false,
+            "queryable": false,
+            "orderable": false
+        },
+        "set_name": {
+            "user_view": "Set Name",
+            "db_view": "set_name",
+            "data_type": "string",
+            "default": true,
+            "queryable": true,
+            "orderable": true
+        },
+        "set_type": {
+            "user_view": "Set Type",
+            "db_view": "set_type",
+            "data_type": "string",
+            "default": false,
+            "queryable": false,
+            "orderable": false
+        },
+        "set_uri": {
+            "user_view": "Set URI",
+            "db_view": "set_uri",
+            "data_type": "string",
+            "default": false,
+            "queryable": false,
+            "orderable": false
+        },
+        "set_search_uri": {
+            "user_view": "Set Search URI",
+            "db_view": "set_search_uri",
+            "data_type": "string",
+            "default": false,
+            "queryable": false,
+            "orderable": false
+        },
+        "scryfall_set_uri": {
+            "user_view": "Scryfall Set URI",
+            "db_view": "scryfall_set_uri",
+            "data_type": "string",
+            "default": false,
+            "queryable": false,
+            "orderable": false
+        },
+        "rulings_uri": {
+            "user_view": "Rulings URI",
+            "db_view": "rulings_uri",
+            "data_type": "string",
+            "default": true,
+            "queryable": false,
+            "orderable": false
+        },
+        "prints_search_uri": {
+            "user_view": "Prints Search URI",
+            "db_view": "prints_search_uri",
+            "data_type": "string",
+            "default": false,
+            "queryable": false,
+            "orderable": false
+        },
+        "collector_number": {
+            "user_view": "Collector Number",
+            "db_view": "collector_number",
+            "data_type": "string",
+            "default": true,
+            "queryable": false,
+            "orderable": true
+        },
+        "digital": {
+            "user_view": "Digital",
+            "db_view": "digital",
+            "data_type": "boolean",
+            "default": false,
+            "queryable": false,
+            "orderable": false
+        },
+        "rarity": {
+            "user_view": "Rarity",
+            "db_view": "rarity",
+            "data_type": "string",
+            "default": true,
+            "queryable": true,
+            "orderable": true
+        },
+        "card_back_id": {
+            "user_view": "Card Back ID",
+            "db_view": "card_back_id",
+            "data_type": "string",
+            "default": false,
+            "queryable": false,
+            "orderable": false
+        },
+        "artist": {
+            "user_view": "Artist",
+            "db_view": "artist",
+            "data_type": "string",
+            "default": false,
+            "queryable": true,
+            "orderable": true
+        },
+        "artist_ids": {
+            "user_view": "Artist IDs",
+            "db_view": "artist_ids",
+            "data_type": "json",
+            "default": false,
+            "queryable": false,
+            "orderable": false
+        },
+        "illustration_id": {
+            "user_view": "Illustration ID",
+            "db_view": "illustration_id",
+            "data_type": "string",
+            "default": false,
+            "queryable": false,
+            "orderable": false
+        },
+        "border_color": {
+            "user_view": "Border Color",
+            "db_view": "border_color",
+            "data_type": "string",
+            "default": false,
+            "queryable": false,
+            "orderable": false
+        },
+        "frame": {
+            "user_view": "Frame",
+            "db_view": "frame",
+            "data_type": "string",
+            "default": false,
+            "queryable": false,
+            "orderable": false
+        },
+        "full_art": {
+            "user_view": "Full Art",
+            "db_view": "full_art",
+            "data_type": "boolean",
+            "default": false,
+            "queryable": true,
+            "orderable": false
+        },
+        "textless": {
+            "user_view": "Textless",
+            "db_view": "textless",
+            "data_type": "boolean",
+            "default": false,
+            "queryable": false,
+            "orderable": false
+        },
+        "booster": {
+            "user_view": "Booster",
+            "db_view": "booster",
+            "data_type": "boolean",
+            "default": false,
+            "queryable": false,
+            "orderable": false
+        },
+        "story_spotlight": {
+            "user_view": "Story Spotlight",
+            "db_view": "story_spotlight",
+            "data_type": "boolean",
+            "default": false,
+            "queryable": false,
+            "orderable": false
+        },
+        "prices": {
+            "user_view": "Prices",
+            "db_view": "prices",
+            "data_type": "json",
+            "default": true,
+            "queryable": false,
+            "orderable": false
+        },
+        "related_uris": {
+            "user_view": "Related URIs",
+            "db_view": "related_uris",
+            "data_type": "json",
+            "default": false,
+            "queryable": false,
+            "orderable": false
+        },
+        "purchase_uris": {
+            "user_view": "Purchase URIs",
+            "db_view": "purchase_uris",
+            "data_type": "json",
+            "default": false,
+            "queryable": false,
+            "orderable": false
+        },
+        "mtgo_foil_id": {
+            "user_view": "MTGO Foil ID",
+            "db_view": "mtgo_foil_id",
+            "data_type": "integer",
+            "default": false,
+            "queryable": false,
+            "orderable": false
+        },
+        "power": {
+            "user_view": "Power",
+            "db_view": "power",
+            "data_type": "string",
+            "default": true,
+            "queryable": true,
+            "orderable": true
+        },
+        "toughness": {
+            "user_view": "Toughness",
+            "db_view": "toughness",
+            "data_type": "string",
+            "default": true,
+            "queryable": true,
+            "orderable": true
+        },
+        "flavor_text": {
+            "user_view": "Flavor Text",
+            "db_view": "flavor_text",
+            "data_type": "string",
+            "default": true,
+            "queryable": false,
+            "orderable": false
+        },
+        "edhrec_rank": {
+            "user_view": "EDHREC Rank",
+            "db_view": "edhrec_rank",
+            "data_type": "integer",
+            "default": true,
+            "queryable": true,
+            "orderable": false
+        },
+        "penny_rank": {
+            "user_view": "Penny Rank",
+            "db_view": "penny_rank",
+            "data_type": "integer",
+            "default": false,
+            "queryable": false,
+            "orderable": false
+        },
+        "printed_name": {
+            "user_view": "Printed Name",
+            "db_view": "printed_name",
+            "data_type": "string",
+            "default": false,
+            "queryable": false,
+            "orderable": false
+        },
+        "printed_type_line": {
+            "user_view": "Printed Type Line",
+            "db_view": "printed_type_line",
+            "data_type": "string",
+            "default": false,
+            "queryable": false,
+            "orderable": false
+        },
+        "printed_text": {
+            "user_view": "Printed Text",
+            "db_view": "printed_text",
+            "data_type": "string",
+            "default": false,
+            "queryable": false,
+            "orderable": false
+        },
+        "security_stamp": {
+            "user_view": "Security Stamp",
+            "db_view": "security_stamp",
+            "data_type": "string",
+            "default": false,
+            "queryable": false,
+            "orderable": false
+        },
+        "all_parts": {
+            "user_view": "All Parts",
+            "db_view": "all_parts",
+            "data_type": "json",
+            "default": false,
+            "queryable": false,
+            "orderable": false
+        },
+        "promo_types": {
+            "user_view": "Promo Types",
+            "db_view": "promo_types",
+            "data_type": "json",
+            "default": false,
+            "queryable": false,
+            "orderable": false
+        },
+        "loyalty": {
+            "user_view": "Loyalty",
+            "db_view": "loyalty",
+            "data_type": "string",
+            "default": true,
+            "queryable": true,
+            "orderable": false
+        },
+        "watermark": {
+            "user_view": "Watermark",
+            "db_view": "watermark",
+            "data_type": "string",
+            "default": false,
+            "queryable": false,
+            "orderable": false
+        },
+        "frame_effects": {
+            "user_view": "Frame Effects",
+            "db_view": "frame_effects",
+            "data_type": "json",
+            "default": false,
+            "queryable": false,
+            "orderable": false
+        },
+        "card_faces": {
+            "user_view": "Card Faces",
+            "db_view": "card_faces",
+            "data_type": "json",
+            "default": false,
+            "queryable": false,
+            "orderable": false
+        },
+        "preview": {
+            "user_view": "Preview",
+            "db_view": "preview",
+            "data_type": "json",
+            "default": false,
+            "queryable": false,
+            "orderable": false
+        },
+        "resource_id": {
+            "user_view": "Resource ID",
+            "db_view": "resource_id",
+            "data_type": "string",
+            "default": false,
+            "queryable": false,
+            "orderable": false
+        },
+        "color_indicator": {
+            "user_view": "Color Indicator",
+            "db_view": "color_indicator",
+            "data_type": "json",
+            "default": false,
+            "queryable": false,
+            "orderable": false
+        },
+        "tcgplayer_etched_id": {
+            "user_view": "TCGPlayer Etched ID",
+            "db_view": "tcgplayer_etched_id",
+            "data_type": "string",
+            "default": false,
+            "queryable": false,
+            "orderable": false
+        },
+        "content_warning": {
+            "user_view": "Content Warning",
+            "db_view": "content_warning",
+            "data_type": "string",
+            "default": false,
+            "queryable": false,
+            "orderable": false
+        },
+        "flavor_name": {
+            "user_view": "Flavor Name",
+            "db_view": "flavor_name",
+            "data_type": "string",
+            "default": false,
+            "queryable": false,
+            "orderable": false
+        },
+        "attraction_lights": {
+            "user_view": "Attraction Lights",
+            "db_view": "attraction_lights",
+            "data_type": "json",
+            "default": false,
+            "queryable": false,
+            "orderable": false
+        },
+        "variation_of": {
+            "user_view": "Variation Of",
+            "db_view": "variation_of",
+            "data_type": "string",
+            "default": false,
+            "queryable": false,
+            "orderable": false
+        },
+        "life_modifier": {
+            "user_view": "Life Modifier",
+            "db_view": "life_modifier",
+            "data_type": "float",
+            "default": false,
+            "queryable": false,
+            "orderable": false
+        },
+        "hand_modifier": {
+            "user_view": "Hand Modifier",
+            "db_view": "hand_modifier",
+            "data_type": "string",
+            "default": false,
+            "queryable": false,
+            "orderable": false
+        },
+        "defense": {
+            "user_view": "Defense",
+            "db_view": "defense",
+            "data_type": "float",
+            "default": false,
+            "queryable": false,
+            "orderable": false
+        }
+    }
+}
